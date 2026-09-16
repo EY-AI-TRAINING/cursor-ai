@@ -1,0 +1,546 @@
+<title>Cursor Interface & Setup</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:14px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,68px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:640px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  .note-row{ display:flex; gap:14px; flex-wrap:wrap; margin-top:22px; }
+  .note-chip{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:7px 14px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#install" data-target="install"><span class="dot"></span><span class="rail-label">01 · Install &amp; license</span></a>
+  <a href="#anatomy" data-target="anatomy"><span class="dot"></span><span class="rail-label">02 · Interface</span></a>
+  <a href="#migrate" data-target="migrate"><span class="dot"></span><span class="rail-label">03 · Migration</span></a>
+  <a href="#modelconfig" data-target="modelconfig"><span class="dot"></span><span class="rail-label">04 · Model &amp; agent config</span></a>
+  <a href="#mcp" data-target="mcp"><span class="dot"></span><span class="rail-label">05 · MCP servers</span></a>
+  <a href="#trust" data-target="trust"><span class="dot"></span><span class="rail-label">06 · Workspace trust</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">07 · Hands-on</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">08 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#install" data-target="install">01</a>
+  <a href="#anatomy" data-target="anatomy">02</a>
+  <a href="#migrate" data-target="migrate">03</a>
+  <a href="#modelconfig" data-target="modelconfig">04</a>
+  <a href="#mcp" data-target="mcp">05</a>
+  <a href="#trust" data-target="trust">06</a>
+  <a href="#handson" data-target="handson">07</a>
+  <a href="#recap" data-target="recap">08</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 1 · Foundations — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Cursor Interface &amp; Setup</h1>
+    <p class="lede hero-lede">Module 3 — 30 minutes. Get Cursor installed, licensed, and configured on a real workspace — the environment every remaining module in this course runs inside.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">4</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">2</span><span class="stat-label">subtopics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">setup lab</span></li>
+      <li class="stat-tile"><span class="stat-num">30</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#install"><span class="agenda-index">01</span><span>Installing &amp; connecting your enterprise account</span></a></li>
+      <li><a href="#anatomy"><span class="agenda-index">02</span><span>Interface walkthrough — editor, sidebar, palette, chat/agent panel</span></a></li>
+      <li><a href="#migrate"><span class="agenda-index">03</span><span>Importing VS Code settings &amp; workspace setup</span></a></li>
+      <li><a href="#modelconfig"><span class="agenda-index">04</span><span>Model selection &amp; basic agent configuration</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="install">
+  <div class="section-inner">
+    <p class="eyebrow">01 — Getting in</p>
+    <h2 class="section-title">One sign-in unlocks the agent</h2>
+    <p class="lede">Installing the binary is the easy part. What actually matters is the chain behind it: your company's identity provider authenticates you, the license server confirms your Team or Enterprise seat, and only then does Cursor unlock agent capabilities — background execution, terminal access, multi-file edits — on your machine.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 820 360" role="img" aria-label="Diagram showing your machine signing in to the company SSO or identity provider, which verifies your seat with the license server, which confirms back to your machine, unlocking agent capabilities such as background execution, terminal access, and multi-file edits." style="min-width:620px">
+          <rect class="box" x="40" y="140" width="230" height="64" rx="10"></rect>
+          <text class="lbl-strong" x="155" y="166" text-anchor="middle">YOUR MACHINE</text>
+          <text class="lbl" x="155" y="182" text-anchor="middle">Cursor installed</text>
+
+          <rect class="box" x="300" y="30" width="230" height="64" rx="10"></rect>
+          <text class="lbl-strong" x="415" y="56" text-anchor="middle">COMPANY SSO / IDP</text>
+          <text class="lbl" x="415" y="72" text-anchor="middle">authenticates you</text>
+
+          <rect class="box" x="560" y="140" width="220" height="64" rx="10"></rect>
+          <text class="lbl-strong" x="670" y="166" text-anchor="middle">LICENSE / SEAT SERVER</text>
+          <text class="lbl" x="670" y="182" text-anchor="middle">Team or Enterprise seat</text>
+
+          <line class="arrow" x1="200" y1="138" x2="350" y2="96" marker-end="url(#arrow)"></line>
+          <text class="lbl" x="245" y="108" font-size="10">sign in</text>
+
+          <line class="arrow" x1="480" y1="96" x2="610" y2="138" marker-end="url(#arrow)"></line>
+          <text class="lbl" x="560" y="108" font-size="10">verify seat</text>
+
+          <path class="arrow" d="M670,206 C 670,250 155,250 155,206" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="410" y="264" text-anchor="middle" font-size="10">token + seat confirmed</text>
+
+          <rect class="box-teal" x="200" y="284" width="420" height="54" rx="10"></rect>
+          <text class="txt-teal" x="410" y="306" text-anchor="middle">AGENT CAPABILITIES ENABLED</text>
+          <text class="lbl" x="410" y="322" text-anchor="middle" font-size="10">background execution · terminal · multi-file edits</text>
+          <line class="arrow" x1="410" y1="250" x2="410" y2="282" marker-end="url(#arrow)"></line>
+        </svg>
+      </div>
+      <figcaption>Nothing agentic turns on until identity and seat both check out — installing the app alone doesn't unlock it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="anatomy">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Interface</p>
+    <h2 class="section-title">Four regions, one window</h2>
+    <p class="lede">Everything in Cursor lives in one of four places: the editor where code actually sits, a sidebar for files, search, and source control, a command palette that appears on demand for any action by name, and a chat/agent panel where you state intent and review what the model proposes.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 820 460" role="img" aria-label="Wireframe of the Cursor window showing four regions: a left sidebar for files, search and source control; a center editor with code; a right chat and agent panel with a user message and a proposed diff; and a command palette that floats above the window on demand." style="min-width:640px">
+          <rect class="box" x="20" y="20" width="780" height="420" rx="14"></rect>
+          <line x1="20" y1="54" x2="800" y2="54" stroke="var(--line-strong)"></line>
+          <text class="lbl" x="410" y="42" text-anchor="middle" font-size="10">CURSOR — training-repo</text>
+
+          <rect x="20" y="54" width="140" height="386" fill="var(--paper)" stroke="var(--line-strong)"></rect>
+          <text class="lbl-strong" x="90" y="82" text-anchor="middle" font-size="10">SIDEBAR</text>
+          <rect x="34" y="102" width="112" height="20" rx="4" fill="none" stroke="var(--ink-soft)"></rect>
+          <text class="lbl" x="90" y="116" text-anchor="middle" font-size="9.5">Files</text>
+          <rect x="34" y="134" width="112" height="20" rx="4" fill="none" stroke="var(--ink-soft)"></rect>
+          <text class="lbl" x="90" y="148" text-anchor="middle" font-size="9.5">Search</text>
+          <rect x="34" y="166" width="112" height="20" rx="4" fill="none" stroke="var(--ink-soft)"></rect>
+          <text class="lbl" x="90" y="180" text-anchor="middle" font-size="9.5">Source control</text>
+
+          <rect x="160" y="54" width="380" height="386" fill="var(--paper-raised)" stroke="var(--line-strong)"></rect>
+          <text class="lbl-strong" x="350" y="100" text-anchor="middle" font-size="10">EDITOR</text>
+          <rect class="fill-plum dim" x="180" y="122" width="200" height="8" opacity="0.3"></rect>
+          <rect class="fill-plum dim" x="180" y="140" width="260" height="8" opacity="0.3"></rect>
+          <rect class="fill-plum dim" x="200" y="158" width="150" height="8" opacity="0.3"></rect>
+          <rect class="fill-plum dim" x="180" y="176" width="220" height="8" opacity="0.3"></rect>
+          <rect class="fill-plum dim" x="200" y="194" width="180" height="8" opacity="0.3"></rect>
+
+          <rect x="540" y="54" width="260" height="386" fill="var(--paper-raised)" stroke="var(--line-strong)"></rect>
+          <text class="lbl-strong" x="670" y="100" text-anchor="middle" font-size="10">CHAT / AGENT PANEL</text>
+          <rect class="box-plum" x="556" y="120" width="170" height="32" rx="8"></rect>
+          <text class="txt-plum" x="641" y="140" text-anchor="middle" font-size="9">"add validation to parseOrder"</text>
+          <rect class="box" x="580" y="164" width="200" height="52" rx="8"></rect>
+          <line x1="594" y1="182" x2="700" y2="182" stroke="var(--teal)" stroke-width="3"></line>
+          <line x1="594" y1="196" x2="670" y2="196" stroke="var(--brick)" stroke-width="3"></line>
+          <text class="lbl" x="680" y="228" text-anchor="middle" font-size="9">proposed diff</text>
+
+          <rect x="260" y="42" width="300" height="42" rx="8" fill="var(--paper-raised)" stroke="var(--copper)" stroke-dasharray="4 3"></rect>
+          <text class="txt-copper" x="410" y="67" text-anchor="middle" font-size="10">⌘⇧P — COMMAND PALETTE (on demand)</text>
+        </svg>
+      </div>
+      <figcaption>The palette is the only region that isn't always on screen — it floats above everything when summoned, then disappears.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="migrate">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Continuity</p>
+    <h2 class="section-title">Nothing you've tuned gets lost</h2>
+    <p class="lede">Cursor is a VS Code–compatible fork: your <code>settings.json</code>, keybindings, and most extensions import directly. What's new sits alongside them — a <code>.cursor/rules</code> directory for persistent AI instructions and workspace-level MCP configuration — additions, not replacements.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 760 300" role="img" aria-label="Migration diagram: VS Code's settings.json, keybindings.json, and extensions import into a Cursor workspace, which keeps all three and adds two new items — a .cursor/rules directory and workspace-level MCP configuration." style="min-width:600px">
+          <rect class="box" x="40" y="40" width="280" height="220" rx="12"></rect>
+          <text class="lbl-strong" x="180" y="68" text-anchor="middle">VS CODE</text>
+          <rect x="60" y="88" width="240" height="28" rx="5" fill="none" stroke="var(--ink-soft)"></rect>
+          <text class="lbl" x="180" y="106" text-anchor="middle">settings.json</text>
+          <rect x="60" y="124" width="240" height="28" rx="5" fill="none" stroke="var(--ink-soft)"></rect>
+          <text class="lbl" x="180" y="142" text-anchor="middle">keybindings.json</text>
+          <rect x="60" y="160" width="240" height="28" rx="5" fill="none" stroke="var(--ink-soft)"></rect>
+          <text class="lbl" x="180" y="178" text-anchor="middle">extensions</text>
+          <text class="lbl" x="180" y="220" text-anchor="middle" font-size="10" opacity="0.7">… your existing setup</text>
+
+          <line class="arrow" x1="326" y1="150" x2="414" y2="150" marker-end="url(#arrow)"></line>
+          <text class="lbl" x="370" y="136" text-anchor="middle" font-size="10">import</text>
+
+          <rect class="box" x="440" y="20" width="280" height="260" rx="12"></rect>
+          <text class="lbl-strong" x="580" y="48" text-anchor="middle">CURSOR WORKSPACE</text>
+          <rect x="460" y="66" width="240" height="26" rx="5" fill="none" stroke="var(--ink-soft)"></rect>
+          <text class="lbl" x="580" y="83" text-anchor="middle" font-size="10.5">settings.json</text>
+          <rect x="460" y="100" width="240" height="26" rx="5" fill="none" stroke="var(--ink-soft)"></rect>
+          <text class="lbl" x="580" y="117" text-anchor="middle" font-size="10.5">keybindings.json</text>
+          <rect x="460" y="134" width="240" height="26" rx="5" fill="none" stroke="var(--ink-soft)"></rect>
+          <text class="lbl" x="580" y="151" text-anchor="middle" font-size="10.5">extensions</text>
+          <rect class="box-plum" x="460" y="176" width="240" height="26" rx="5"></rect>
+          <text class="txt-plum" x="580" y="193" text-anchor="middle" font-size="10.5">.cursor/rules</text>
+          <rect class="box-plum" x="460" y="210" width="240" height="26" rx="5"></rect>
+          <text class="txt-plum" x="580" y="227" text-anchor="middle" font-size="10.5">MCP config (workspace)</text>
+          <text class="txt-plum" x="580" y="256" text-anchor="middle" font-size="10">+ new — carried over, not replaced</text>
+        </svg>
+      </div>
+      <figcaption>Everything above the plum line is your old setup, unchanged. Everything plum is what Cursor adds on top of it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="modelconfig">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Configuration</p>
+    <h2 class="section-title">Pick the model, shape the agent</h2>
+    <p class="lede">Model choice is a per-task decision — a fast, lightweight model for quick edits, a stronger reasoning model for multi-file agent work — and it sits next to a small set of agent settings that decide how much autonomy the model gets: whether terminal commands auto-run, and whether the codebase stays indexed for context.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 700 270" role="img" aria-label="Mockup of an agent settings panel: a model slider from fast to frontier, an agent mode toggle switched on, an auto-run terminal toggle switched off, and a codebase indexing toggle switched on." style="min-width:520px">
+          <rect class="box" x="40" y="20" width="620" height="230" rx="14"></rect>
+          <text class="lbl-strong" x="350" y="46" text-anchor="middle">AGENT SETTINGS</text>
+          <line x1="56" y1="58" x2="644" y2="58" stroke="var(--line-strong)"></line>
+
+          <text class="lbl-strong" x="60" y="96" font-size="11">MODEL</text>
+          <line x1="220" y1="92" x2="560" y2="92" stroke="var(--ink-soft)" stroke-width="3"></line>
+          <circle cx="420" cy="92" r="9" class="fill-plum"></circle>
+          <text class="lbl" x="220" y="112">fast</text>
+          <text class="lbl" x="560" y="112" text-anchor="end">frontier</text>
+
+          <text class="lbl-strong" x="60" y="144" font-size="11">AGENT MODE</text>
+          <rect x="560" y="132" width="44" height="22" rx="11" class="box-teal"></rect>
+          <circle cx="592" cy="143" r="8" fill="var(--paper-raised)" stroke="var(--teal)" stroke-width="1.5"></circle>
+          <text class="txt-teal" x="546" y="147" text-anchor="end" font-size="10">on</text>
+
+          <text class="lbl-strong" x="60" y="182" font-size="11">AUTO-RUN TERMINAL</text>
+          <rect x="560" y="170" width="44" height="22" rx="11" fill="none" stroke="var(--ink-soft)"></rect>
+          <circle cx="572" cy="181" r="8" fill="var(--paper-raised)" stroke="var(--ink-soft)" stroke-width="1.5"></circle>
+          <text class="lbl" x="546" y="185" text-anchor="end" font-size="10">ask each time</text>
+
+          <text class="lbl-strong" x="60" y="220" font-size="11">CODEBASE INDEXING</text>
+          <rect x="560" y="208" width="44" height="22" rx="11" class="box-teal"></rect>
+          <circle cx="592" cy="219" r="8" fill="var(--paper-raised)" stroke="var(--teal)" stroke-width="1.5"></circle>
+          <text class="txt-teal" x="546" y="223" text-anchor="end" font-size="10">on</text>
+        </svg>
+      </div>
+      <figcaption>Every remaining lab in this course assumes these are set deliberately, not left on their defaults.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="mcp">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Subtopic: grounding at the workspace level</p>
+    <h2 class="section-title">Wiring the workspace to the outside world</h2>
+    <p class="lede">MCP — Model Context Protocol — is configured once per workspace and gives every agent in it live tools instead of static copy-paste: a connection to your repository, your documentation, and your ticketing system, each reachable the same standardized way.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 780 260" role="img" aria-label="The Cursor workspace acting as an MCP client, connected to three MCP servers: repository, documentation, and ticketing." style="min-width:600px">
+          <rect class="box-plum" x="40" y="100" width="220" height="60" rx="10"></rect>
+          <text class="txt-plum" x="150" y="126" text-anchor="middle">CURSOR WORKSPACE</text>
+          <text class="lbl" x="150" y="142" text-anchor="middle" font-size="10">MCP client</text>
+
+          <rect class="box-teal" x="460" y="20" width="220" height="52" rx="8"></rect>
+          <text class="txt-teal" x="570" y="50" text-anchor="middle">REPOSITORY</text>
+
+          <rect class="box-teal" x="460" y="104" width="220" height="52" rx="8"></rect>
+          <text class="txt-teal" x="570" y="134" text-anchor="middle">DOCUMENTATION</text>
+
+          <rect class="box-teal" x="460" y="188" width="220" height="52" rx="8"></rect>
+          <text class="txt-teal" x="570" y="211" text-anchor="middle" font-size="11">TICKETING</text>
+          <text class="lbl" x="570" y="227" text-anchor="middle" font-size="9.5">(Jira / Azure DevOps)</text>
+
+          <line class="arrow" x1="262" y1="118" x2="456" y2="46" marker-end="url(#arrow)"></line>
+          <line class="arrow" x1="262" y1="130" x2="456" y2="130" marker-end="url(#arrow)"></line>
+          <line class="arrow" x1="262" y1="142" x2="456" y2="214" marker-end="url(#arrow)"></line>
+          <text class="lbl" x="360" y="80" text-anchor="middle" font-size="9.5">MCP</text>
+          <text class="lbl" x="360" y="122" text-anchor="middle" font-size="9.5">MCP</text>
+          <text class="lbl" x="360" y="182" text-anchor="middle" font-size="9.5">MCP</text>
+        </svg>
+      </div>
+      <figcaption>One connection set up here becomes live, queryable context for every agent, lab, and later module in this workspace.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="trust">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Subtopic: safety boundary</p>
+    <h2 class="section-title">Trust is a workspace-level switch</h2>
+    <p class="lede">Opening a folder Cursor hasn't seen before asks one question first: do you trust it? Say yes, and the agent can run terminal commands and edit files within the permissions you grant. Say no — or leave it unanswered — and Cursor stays read-only until you decide.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 640 220" role="img" aria-label="Opening a workspace leads to a trust decision: trusting it allows the agent to run terminal commands and edit files within scoped permissions, while not trusting it keeps Cursor read-only with suggestions only." style="min-width:480px">
+          <rect class="box" x="20" y="85" width="150" height="50" rx="8"></rect>
+          <text class="lbl-strong" x="95" y="106" text-anchor="middle" font-size="10.5">OPEN WORKSPACE</text>
+          <text class="lbl" x="95" y="122" text-anchor="middle" font-size="9">first time seen</text>
+          <line class="arrow" x1="172" y1="110" x2="243" y2="110" marker-end="url(#arrow)"></line>
+          <polygon class="box" points="300,65 355,110 300,155 245,110"></polygon>
+          <text class="lbl" x="300" y="106" text-anchor="middle" font-size="9.5">trust this</text>
+          <text class="lbl" x="300" y="118" text-anchor="middle" font-size="9.5">workspace?</text>
+
+          <line class="arrow" x1="345" y1="92" x2="428" y2="48" marker-end="url(#arrow)"></line>
+          <text class="txt-teal" x="390" y="65" text-anchor="middle" font-size="10">yes</text>
+          <rect class="box-teal" x="430" y="20" width="190" height="55" rx="8"></rect>
+          <text class="txt-teal" x="525" y="41" text-anchor="middle" font-size="10.5">AGENT CAN RUN TERMINAL</text>
+          <text class="txt-teal" x="525" y="56" text-anchor="middle" font-size="10.5">EDIT FILES — scoped permissions</text>
+
+          <line class="arrow" x1="345" y1="128" x2="428" y2="172" marker-end="url(#arrow)"></line>
+          <text class="txt-brick" x="390" y="162" text-anchor="middle" font-size="10">no</text>
+          <rect class="box-brick" x="430" y="150" width="190" height="55" rx="8"></rect>
+          <text class="txt-brick" x="525" y="171" text-anchor="middle" font-size="10.5">READ-ONLY</text>
+          <text class="txt-brick" x="525" y="186" text-anchor="middle" font-size="10">suggestions only, no execution</text>
+        </svg>
+      </div>
+      <figcaption>The same gate pattern from Module 1's verification step — here applied before the agent ever gets a tool in its hand.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Hands-on</p>
+    <h2 class="section-title">Setup &amp; workspace validation</h2>
+    <p class="lede">This module's lab is the environment itself: by the end, you have a trusted, connected, validated workspace every later lab in this course assumes is already in place.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 150" role="img" aria-label="A six-step setup checklist: install, sign in and verify seat, import VS Code settings, trust the training workspace, confirm MCP connection, and run one agent command as validation." style="min-width:760px">
+          <line x1="60" y1="50" x2="840" y2="50" class="arrow-thin" stroke="var(--line-strong)"></line>
+
+          <circle cx="60" cy="50" r="15" class="box-teal"></circle>
+          <path d="M53,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="60" y="90" text-anchor="middle" font-size="9.5">INSTALL</text>
+
+          <circle cx="216" cy="50" r="15" class="box-teal"></circle>
+          <path d="M209,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="216" y="90" text-anchor="middle" font-size="9.5">SIGN IN &amp;</text>
+          <text class="lbl-strong" x="216" y="103" text-anchor="middle" font-size="9.5">VERIFY SEAT</text>
+
+          <circle cx="372" cy="50" r="15" class="box-teal"></circle>
+          <path d="M365,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="372" y="90" text-anchor="middle" font-size="9.5">IMPORT VS CODE</text>
+          <text class="lbl-strong" x="372" y="103" text-anchor="middle" font-size="9.5">SETTINGS</text>
+
+          <circle cx="528" cy="50" r="15" class="box-teal"></circle>
+          <path d="M521,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="528" y="90" text-anchor="middle" font-size="9.5">TRUST TRAINING</text>
+          <text class="lbl-strong" x="528" y="103" text-anchor="middle" font-size="9.5">WORKSPACE</text>
+
+          <circle cx="684" cy="50" r="15" class="box-teal"></circle>
+          <path d="M677,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="684" y="90" text-anchor="middle" font-size="9.5">CONFIRM MCP</text>
+          <text class="lbl-strong" x="684" y="103" text-anchor="middle" font-size="9.5">CONNECTION</text>
+
+          <circle cx="840" cy="50" r="15" class="box-teal"></circle>
+          <path d="M833,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="840" y="90" text-anchor="middle" font-size="9.5">RUN FIRST</text>
+          <text class="lbl-strong" x="840" y="103" text-anchor="middle" font-size="9.5">AGENT COMMAND</text>
+        </svg>
+      </div>
+      <figcaption>Validation, not a deliverable — the last step is deliberately trivial, proving the whole chain works end to end.</figcaption>
+    </figure>
+    <div class="note-row">
+      <span class="note-chip">.cursor/rules present</span>
+      <span class="note-chip">MCP servers reachable</span>
+      <span class="note-chip">Workspace marked trusted</span>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Before Module 4</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Enterprise auth + seat verification is what actually unlocks agent capabilities, not just installing the app.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Cursor keeps your VS Code muscle memory and adds AI-specific config on top, not instead of it.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Workspace trust is a real permission boundary — the agent's blast radius depends on which side of it you're on.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>MCP is configured once per workspace and becomes live context every agent in it can reach.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 4 — AI Chat, Context &amp; Ask Mode</strong> starts actually using this configured workspace: chat, @-mentions, and context scoping.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 3 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

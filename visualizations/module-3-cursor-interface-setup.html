@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 3 — Cursor Interface &amp; Setup</title>
+<meta name="description" content="Interactive walkthrough: installing and licensing Cursor, touring its interface, importing VS Code settings, model/agent configuration, MCP connections, and workspace trust.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%99%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+.tabbar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{cursor:pointer;}
+.tab-btn.active{background:var(--grad-1);border-color:transparent;color:#fff;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.8px;font-weight:600;color:var(--text-faint);padding:8px 11px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:640px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Install wizard ===================== */
+.wizard-dots{display:flex;align-items:center;gap:8px;margin-bottom:24px;}
+.wizard-dot{width:30px;height:30px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--text-faint);cursor:pointer;flex:0 0 auto;transition:all .15s;}
+.wizard-dot.active{background:var(--grad-1);border-color:transparent;color:#fff;}
+.wizard-dot.done{background:rgba(52,211,153,0.15);border-color:var(--good);color:var(--good);}
+.wizard-line{flex:1;height:2px;background:var(--border);}
+.wizard-line.done{background:var(--good);}
+.wizard-body{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center;}
+@media (max-width:760px){.wizard-body{grid-template-columns:1fr;}}
+.wizard-text h4{font-size:16px;margin-bottom:10px;}
+.wizard-text p{font-size:14px;color:var(--text-dim);}
+.mock-screen{background:var(--bg-2);border:1px solid var(--border-soft);border-radius:12px;padding:20px;min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:10px;}
+.mock-bar-track{height:10px;background:var(--surface-3);border-radius:5px;overflow:hidden;}
+.mock-bar-fill{height:100%;background:var(--grad-2);width:0%;transition:width 1.4s cubic-bezier(.2,.8,.2,1);}
+.mock-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12.5px;color:var(--text-dim);background:var(--surface-2);padding:9px 12px;border-radius:8px;}
+.mock-badge{font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:999px;}
+.wizard-controls{display:flex;gap:10px;margin-top:22px;}
+
+/* ===================== Interface tour ===================== */
+.ide-window{border:1px solid var(--border);border-radius:12px;overflow:hidden;display:grid;grid-template-columns:150px 1fr 220px;grid-template-rows:40px 280px 34px;background:var(--bg-2);}
+.ide-zone{position:relative;border:1px solid transparent;cursor:pointer;padding:12px;font-family:var(--mono);font-size:11px;color:var(--text-faint);transition:all .15s;display:flex;flex-direction:column;align-items:flex-start;gap:6px;}
+.ide-zone:hover{background:rgba(168,85,247,0.06);}
+.ide-zone.active{border-color:var(--accent);background:rgba(168,85,247,0.12);color:var(--accent-soft);box-shadow:inset 0 0 0 1px rgba(168,85,247,0.3);}
+.ide-top{grid-column:1/4;grid-row:1;background:var(--surface-2);border-bottom:1px solid var(--border-soft);flex-direction:row;align-items:center;}
+.ide-side{grid-column:1;grid-row:2;background:var(--surface);border-right:1px solid var(--border-soft);}
+.ide-editor{grid-column:2;grid-row:2;background:var(--bg);}
+.ide-panel{grid-column:3;grid-row:2;background:var(--surface);border-left:1px solid var(--border-soft);}
+.ide-status{grid-column:1/4;grid-row:3;background:var(--surface-2);border-top:1px solid var(--border-soft);flex-direction:row;align-items:center;}
+.hotspot-dot{width:7px;height:7px;border-radius:50%;background:var(--accent-2);position:absolute;top:8px;right:8px;animation:pulse 1.8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(1.5);}}
+.ide-zone.active .hotspot-dot{display:none;}
+.ide-line{width:100%;height:6px;border-radius:3px;background:var(--surface-3);}
+.ide-desc{margin-top:18px;padding:18px 20px;}
+.ide-desc b{color:var(--accent-2);font-family:var(--mono);font-size:12px;text-transform:uppercase;}
+.ghost{opacity:0.4;font-style:italic;}
+.mode-chip{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:5px;background:var(--surface-3);}
+.mode-chip.on{background:var(--grad-1);color:#fff;}
+.tour-controls{display:flex;gap:10px;align-items:center;margin-bottom:16px;}
+
+/* ===================== Import panel ===================== */
+.import-list{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
+.import-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-soft);font-size:13.8px;}
+.import-status{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.import-item.done{border-color:rgba(52,211,153,0.35);}
+.import-item.done .import-status{color:var(--good);}
+.import-banner{margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;display:none;}
+.import-banner.show{display:block;animation:fadein .3s ease;}
+.setup-card{padding:16px;font-size:13.3px;color:var(--text-dim);}
+.setup-card b{display:block;color:var(--text);font-size:14px;margin-bottom:6px;}
+
+/* ===================== Model & toggles ===================== */
+.model-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media (max-width:820px){.model-grid{grid-template-columns:1fr;}}
+.model-card{padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;}
+.model-card:hover{border-color:var(--accent-soft);}
+.model-card.selected{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));}
+.model-card .mname{font-weight:700;font-size:14.5px;}
+.model-card .mdesc{font-size:12.5px;color:var(--text-dim);margin-top:6px;min-height:44px;}
+.meter-row{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.meter-row span{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);width:44px;}
+.meter-track{flex:1;height:6px;background:var(--surface-3);border-radius:3px;overflow:hidden;}
+.meter-fill{height:100%;background:var(--grad-2);}
+.selected-note{margin-top:16px;padding:12px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-soft);font-size:13.5px;}
+
+.switch-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-soft);margin-bottom:8px;gap:14px;}
+.switch-row .label{font-size:13.8px;}
+.switch-row .label small{display:block;color:var(--text-faint);font-size:11.5px;margin-top:2px;}
+.switch{position:relative;width:42px;height:24px;flex:0 0 auto;}
+.switch input{opacity:0;width:0;height:0;position:absolute;}
+.switch .track{position:absolute;inset:0;background:var(--surface-3);border:1px solid var(--border);border-radius:12px;transition:all .2s;cursor:pointer;}
+.switch .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--text-faint);transition:all .2s;}
+.switch input:checked + .track{background:var(--grad-1);border-color:transparent;}
+.switch input:checked + .track .knob{transform:translateX(18px);background:#fff;}
+.stepper-num{display:flex;align-items:center;gap:10px;flex:0 0 auto;}
+.stepper-num button{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:var(--surface-3);color:var(--text);cursor:pointer;font-size:14px;}
+.stepper-num .val{font-family:var(--mono);font-weight:700;min-width:18px;text-align:center;}
+
+/* ===================== MCP hub ===================== */
+.mcp-hub-banner{text-align:center;padding:16px;border-radius:12px;background:var(--surface-3);border:1px solid var(--border);font-weight:700;font-size:15px;margin-bottom:6px;}
+.mcp-connector{width:2px;height:20px;background:var(--border);margin:0 auto;}
+.mcp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media (max-width:820px){.mcp-grid{grid-template-columns:1fr;}}
+.mcp-card{padding:18px;border-radius:12px;border:1px solid var(--border);background:var(--surface);text-align:center;transition:all .2s;}
+.mcp-card.connected{border-color:var(--good);background:linear-gradient(160deg, rgba(52,211,153,0.1), var(--surface));}
+.mcp-icon{font-size:24px;}
+.mcp-name{font-weight:700;font-size:14.5px;margin-top:8px;}
+.mcp-status{margin-top:8px;}
+.mcp-desc{font-size:12.5px;color:var(--text-dim);margin-top:10px;min-height:56px;}
+
+/* ===================== Trust levels ===================== */
+.trust-tabbar{display:flex;gap:8px;margin-bottom:18px;}
+.trust-tab{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;text-align:center;font-size:13px;font-weight:700;transition:all .15s;}
+.trust-tab.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.16), var(--surface));}
+.matrix-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+table.matrix{border-collapse:collapse;width:100%;min-width:520px;font-size:13.3px;}
+table.matrix th, table.matrix td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:middle;}
+table.matrix thead th{background:var(--surface-3);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);text-align:center;}
+table.matrix tbody th{color:var(--text);font-weight:600;background:var(--surface);}
+table.matrix td{color:var(--text-dim);background:var(--surface);text-align:center;font-size:16px;}
+table.matrix td.hl{background:linear-gradient(160deg, rgba(168,85,247,0.12), var(--surface));}
+table.matrix tbody tr:last-child td, table.matrix tbody tr:last-child th{border-bottom:none;}
+
+.permission-dialog{max-width:460px;margin:20px auto 0;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);padding:18px;}
+.permission-dialog .ptitle{font-weight:700;font-size:14px;display:flex;gap:8px;align-items:center;}
+.permission-dialog .pcmd{margin-top:10px;font-family:var(--mono);font-size:13px;background:var(--bg-2);border-radius:8px;padding:10px 12px;color:var(--warn);}
+.permission-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.permission-result{margin-top:14px;padding:10px 12px;border-radius:8px;font-size:13px;display:none;}
+.permission-result.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Checklist ===================== */
+.checklist{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);text-decoration:line-through;}
+.check-label{font-size:14px;}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){
+  .section{padding:60px 16px;}
+  .ide-window{grid-template-columns:90px 1fr 0;grid-template-rows:36px 240px 30px;}
+  .ide-panel{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="module-2-introduction-to-cursor-ai.html" class="brand"><span class="brand-badge">⚙️</span> Module 3</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#install">Install</a>
+      <a href="#interface">Interface</a>
+      <a href="#migrate">Import</a>
+      <a href="#models">Models</a>
+      <a href="#mcp">MCP</a>
+      <a href="#trust">Trust</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-2-introduction-to-cursor-ai.html" class="prev-link">← Module 2</a>
+    <a href="module-4-ai-chat-context-ask-mode.html" class="prev-link">Module 4 →</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 1 · Module 3</div>
+    <h1>Cursor Interface<br>&amp; Setup</h1>
+    <p class="hero-sub">You know what Cursor is and where it fits (Module 2). Now let's actually get it running: install and license it, find your way around the interface, bring your VS Code setup over, configure a model and agent basics, connect it to the systems your team uses, and understand what it's allowed to touch before you let it loose.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 30 min</span>
+      <span class="pill pill-neutral">🛠 Hands-on setup exercise</span>
+      <span class="pill pill-neutral">🔌 Ends with MCP + trust config</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. INSTALL / LICENSE WIZARD -->
+<!-- ============================================================ -->
+<section class="section" id="install">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / Installing &amp; connecting your enterprise account</span>
+      <h2>Four steps from download to licensed</h2>
+      <p>Click through the wizard below the way you'll click through the real one.</p>
+    </div>
+    <div class="card reveal">
+      <div class="wizard-dots" id="wizardDots"></div>
+      <div class="wizard-body">
+        <div class="wizard-text" id="wizardText"></div>
+        <div class="mock-screen" id="wizardScreen"></div>
+      </div>
+      <div class="wizard-controls">
+        <button class="btn" id="wizBack">← Back</button>
+        <button class="btn btn-primary" id="wizNext">Next →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. INTERFACE WALKTHROUGH -->
+<!-- ============================================================ -->
+<section class="section" id="interface">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / Interface walkthrough</span>
+      <h2>Editor, Sidebar, Command Palette, Chat/Agent Panel</h2>
+      <p>Click a zone, or press play for a guided tour.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tour-controls">
+        <button class="btn btn-sm btn-primary" id="tourPlay">▶ Guided tour</button>
+        <button class="btn btn-sm" id="tourStop">■ Stop</button>
+        <span class="hint" id="tourHint">or click any zone below</span>
+      </div>
+      <div class="ide-window" id="ideWindow">
+        <div class="ide-zone ide-top" data-zone="top"><span>▸ Command Palette — ⌘⇧P</span><span class="hotspot-dot"></span></div>
+        <div class="ide-side ide-zone" data-zone="side">
+          <span>📁 Explorer</span>
+          <div class="ide-line"></div><div class="ide-line" style="width:70%;"></div><div class="ide-line" style="width:55%;"></div>
+          <span style="margin-top:6px;">🔍 Search &nbsp; 🧩 Extensions</span>
+          <span class="hotspot-dot"></span>
+        </div>
+        <div class="ide-editor ide-zone" data-zone="editor">
+          <span>📝 Editor</span>
+          <div class="ide-line" style="width:90%;"></div>
+          <div><span style="color:var(--text-dim);">const items = users.</span><span class="ghost">filter(u =&gt; u.active)</span></div>
+          <div class="ide-line" style="width:60%;"></div>
+          <span class="hotspot-dot"></span>
+        </div>
+        <div class="ide-panel ide-zone" data-zone="panel">
+          <span>💬 <span class="mode-chip">Ask</span> <span class="mode-chip on">Chat</span> <span class="mode-chip">Agent</span></span>
+          <div class="ide-line" style="width:80%;"></div><div class="ide-line" style="width:50%;"></div>
+          <span class="hotspot-dot"></span>
+        </div>
+        <div class="ide-status ide-zone" data-zone="status"><span>🧠 Model: Balanced &nbsp; ⎇ main &nbsp; ✓ Enterprise</span><span class="hotspot-dot"></span></div>
+      </div>
+      <div class="card-soft ide-desc" id="ideDesc"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. IMPORT VS CODE / WORKSPACE SETUP -->
+<!-- ============================================================ -->
+<section class="section" id="migrate">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / Importing VS Code settings &amp; workspace setup</span>
+      <h2>Bring your setup with you</h2>
+      <p>Cursor can import your existing VS Code configuration on first run — nothing to rebuild from scratch.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card reveal">
+        <h4 style="font-size:15px;">Import from VS Code</h4>
+        <div class="import-list" id="importList"></div>
+        <button class="btn btn-primary btn-sm" id="importBtn" style="margin-top:16px;">⇩ Import my VS Code setup</button>
+        <div class="import-banner" id="importBanner">✅ Import complete — 5/5 carried over. Nothing to reconfigure.</div>
+      </div>
+      <div class="card reveal">
+        <h4 style="font-size:15px;margin-bottom:12px;">Workspace &amp; project setup</h4>
+        <div class="grid-2" style="gap:10px;">
+          <div class="card-soft setup-card"><b>📂 Open your folder</b>File → Open Folder, same as VS Code. Cursor treats the folder root as the workspace.</div>
+          <div class="card-soft setup-card"><b>🗂️ Indexing</b>Cursor indexes the codebase in the background so chat/agent answers are grounded in real files, not guesses.</div>
+          <div class="card-soft setup-card"><b>🚫 .cursorignore</b>Exclude noisy paths (node_modules, build output, secrets) from indexing and context — same idea as .gitignore.</div>
+          <div class="card-soft setup-card"><b>⚙️ Workspace settings</b>Project-level config lives alongside your imported VS Code settings — shared with teammates who open the same repo.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. MODEL SELECTION & AGENT CONFIG -->
+<!-- ============================================================ -->
+<section class="section" id="models">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Model selection &amp; basic agent configuration</span>
+      <h2>Pick a model, set a few guardrails</h2>
+      <p>Different models trade off speed against reasoning depth. Basic agent settings decide how much it can do before checking in with you.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card reveal">
+        <h4 style="font-size:15px;margin-bottom:12px;">Model picker</h4>
+        <div class="model-grid" id="modelGrid"></div>
+        <div class="selected-note" id="modelNote"></div>
+      </div>
+      <div class="card reveal">
+        <h4 style="font-size:15px;margin-bottom:12px;">Basic agent configuration</h4>
+        <div id="agentToggles"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. MCP SERVERS (SUBTOPIC) -->
+<!-- ============================================================ -->
+<section class="section" id="mcp">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Connecting MCP servers at the workspace level</span>
+      <h2>Reaching beyond the local files</h2>
+      <p>Configured once per workspace — anyone opening the same repo inherits the same connections. A full deep dive lands on Day 4; this is the setup step.</p>
+    </div>
+    <div class="card reveal">
+      <div class="mcp-hub-banner">📁 This workspace</div>
+      <div class="mcp-connector"></div>
+      <div class="mcp-grid" id="mcpGrid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. WORKSPACE TRUST & SAFE TOOL EXECUTION (SUBTOPIC) -->
+<!-- ============================================================ -->
+<section class="section" id="trust">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / Workspace trust, permissions &amp; safe tool execution</span>
+      <h2>What the agent is allowed to touch</h2>
+      <p>Trust is a dial, not a switch. Each level unlocks more autonomy — and more responsibility on your side.</p>
+    </div>
+    <div class="card reveal">
+      <div class="trust-tabbar" id="trustTabbar"></div>
+      <div class="matrix-wrap">
+        <table class="matrix" id="trustMatrix"></table>
+      </div>
+      <p class="hint" style="margin-top:14px;">Try the permission prompt an agent would actually show you mid-task:</p>
+      <div class="permission-dialog">
+        <div class="ptitle">🛑 Permission requested</div>
+        <div class="pcmd">Agent wants to run: <code>npm install</code></div>
+        <div class="permission-actions">
+          <button class="btn btn-sm" data-perm="deny">Deny</button>
+          <button class="btn btn-sm" data-perm="once">Allow once</button>
+          <button class="btn btn-sm btn-primary" data-perm="always">Always allow this command</button>
+        </div>
+        <div class="permission-result" id="permResult"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. HANDS-ON -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Hands-on — setup &amp; workspace validation</span>
+      <h2>Confirm everything is actually wired up</h2>
+      <p>Work through the checklist — this mirrors the validation exercise you'll run for real.</p>
+    </div>
+    <div class="card reveal">
+      <div class="checklist" id="checklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0 / 6 verified</div>
+      <div class="setup-done" id="setupDone">✅ Workspace validated — ready for Module 4: AI Chat, Context &amp; Ask Mode.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">08 / Knowledge check</span>
+      <h2>Quick check before Module 4</h2>
+      <p>Five questions from what you just walked through.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/5</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">What to carry into Module 4</h3>
+    <ul>
+      <li>Installing Cursor and connecting your enterprise account is what enables Agent capabilities — a personal/free account won't have them.</li>
+      <li>The interface has four zones worth knowing cold: Editor, Sidebar, Command Palette, and the Ask/Chat/Agent panel.</li>
+      <li>VS Code keybindings, theme, extensions, and snippets import directly — you're not starting from zero.</li>
+      <li>Model choice is a speed-vs-depth trade-off; basic agent settings decide how much runs before it checks in with you.</li>
+      <li>MCP servers (repo, docs, ticketing) are connected once per workspace and shared by anyone who opens it.</li>
+      <li>Workspace trust is a dial — Restricted → Trusted → Trusted+Auto-run — each level unlocking more autonomous action.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-2-introduction-to-cursor-ai.html" class="btn">← Module 2: Introduction to Cursor AI</a>
+    <a href="#" class="btn">↑ Back to top</a>
+    <a href="module-4-ai-chat-context-ask-mode.html" class="btn">Module 4: AI Chat, Context &amp; Ask Mode →</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 3 — Cursor Interface &amp; Setup · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["install","license","sso","seat","mcp","trust","permission","workspace","index","model","agent","import","settings","sidebar","palette"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ============================================================
+   1. INSTALL WIZARD
+   ============================================================ */
+(function(){
+  var steps = [
+    { title:'1 · Download & install', text:'Download Cursor for your OS (Windows/Mac/Linux) and install it like any other application — it\'s a fork of VS Code, so the shell will feel instantly familiar.',
+      screen:function(el){ el.innerHTML = '<div class="mock-row"><span>Cursor-Setup.dmg</span><span>142 MB</span></div><div class="mock-bar-track"><div class="mock-bar-fill" id="dlFill"></div></div>';
+        requestAnimationFrame(function(){ var f=document.getElementById('dlFill'); if(f) f.style.width='100%'; }); } },
+    { title:'2 · Connect enterprise account', text:'Sign in through your organization\'s SSO. This links Cursor to your Team/Enterprise license instead of a personal free account.',
+      screen:function(el){ el.innerHTML = '<div class="mock-row"><span>🔐 Sign in with SSO</span><span class="mock-badge pill-neutral">redirecting…</span></div><div class="mock-row"><span>you@company.com</span><span class="mock-badge pill-good">verified</span></div>'; } },
+    { title:'3 · Verify your seat', text:'Check Settings → Account to confirm your plan shows Team/Enterprise with Agent capabilities enabled — not Free or a Pro trial.',
+      screen:function(el){ el.innerHTML = '<div class="mock-row"><span>Plan</span><span class="mock-badge pill-good">Enterprise</span></div><div class="mock-row"><span>Agent capabilities</span><span class="mock-badge pill-good">Enabled</span></div><div class="mock-row"><span>Seats used</span><span>1 / 500</span></div>'; } },
+    { title:'4 · You\'re in', text:'Cursor is installed and licensed under your organization. Next stop: getting oriented in the interface.',
+      screen:function(el){ el.innerHTML = '<div style="text-align:center;"><div style="font-size:34px;">✅</div><div style="margin-top:8px;font-family:var(--mono);font-size:13px;color:var(--good);">Installed &amp; licensed</div></div>'; } }
+  ];
+  var idx = 0;
+  var dotsEl = document.getElementById('wizardDots');
+  var textEl = document.getElementById('wizardText');
+  var screenEl = document.getElementById('wizardScreen');
+  var backBtn = document.getElementById('wizBack');
+  var nextBtn = document.getElementById('wizNext');
+
+  function renderDots(){
+    dotsEl.innerHTML = '';
+    steps.forEach(function(s, i){
+      var dot = document.createElement('div');
+      dot.className = 'wizard-dot' + (i === idx ? ' active' : i < idx ? ' done' : '');
+      dot.textContent = i < idx ? '✓' : (i+1);
+      dot.addEventListener('click', function(){ idx = i; render(); });
+      dotsEl.appendChild(dot);
+      if(i < steps.length - 1){
+        var line = document.createElement('div');
+        line.className = 'wizard-line' + (i < idx ? ' done' : '');
+        dotsEl.appendChild(line);
+      }
+    });
+  }
+  function render(){
+    renderDots();
+    var s = steps[idx];
+    textEl.innerHTML = '<h4>'+s.title+'</h4><p>'+s.text+'</p>';
+    s.screen(screenEl);
+    backBtn.disabled = idx === 0;
+    nextBtn.textContent = idx === steps.length - 1 ? '↺ Restart' : 'Next →';
+  }
+  backBtn.addEventListener('click', function(){ if(idx > 0){ idx--; render(); } });
+  nextBtn.addEventListener('click', function(){
+    if(idx === steps.length - 1){ idx = 0; } else { idx++; }
+    render();
+  });
+  render();
+})();
+
+/* ============================================================
+   2. INTERFACE TOUR
+   ============================================================ */
+(function(){
+  var zones = {
+    top: { label:'▸ Command Palette', text:'⌘/Ctrl+Shift+P opens it. Every Cursor and inherited VS Code command lives here — including "Cursor: New Chat", "Cursor: Connect MCP Server", and account actions.' },
+    side: { label:'📁 Sidebar — Explorer / Search / Extensions', text:'Your file tree, exactly like VS Code. Search and Extensions tabs live in the same rail — nothing to relearn.' },
+    editor: { label:'📝 Editor', text:'Tab completion shows ghost text inline as you type — press Tab to accept, keep typing to ignore. Multi-line, whole-edit predictions, not just word completion.' },
+    panel: { label:'💬 Chat / Agent Panel', text:'Three modes in one panel: Ask (read-only Q&A), Chat (Q&A plus suggested edits you apply), Agent (autonomous multi-file, multi-step execution).' },
+    status: { label:'⚙️ Status Bar', text:'Model picker, current Git branch, and your license/seat status — all visible at a glance without leaving the editor.' }
+  };
+  var order = ['top','side','editor','panel','status'];
+  var win = document.getElementById('ideWindow');
+  var desc = document.getElementById('ideDesc');
+  var hint = document.getElementById('tourHint');
+  var timer = null;
+  var tourIdx = 0;
+
+  function setActive(zone){
+    win.querySelectorAll('.ide-zone').forEach(function(z){ z.classList.toggle('active', z.dataset.zone === zone); });
+    var z = zones[zone];
+    desc.innerHTML = '<b>'+z.label+'</b><p style="margin-top:8px;font-size:14px;color:var(--text-dim);">'+z.text+'</p>';
+  }
+  function stopTour(){
+    if(timer){ clearInterval(timer); timer = null; }
+    hint.textContent = 'or click any zone below';
+  }
+  win.querySelectorAll('.ide-zone').forEach(function(z){
+    z.addEventListener('click', function(){ stopTour(); setActive(z.dataset.zone); });
+  });
+  document.getElementById('tourPlay').addEventListener('click', function(){
+    stopTour();
+    tourIdx = 0;
+    setActive(order[tourIdx]);
+    hint.textContent = 'touring… zone ' + (tourIdx+1) + ' of ' + order.length;
+    timer = setInterval(function(){
+      tourIdx = (tourIdx + 1) % order.length;
+      setActive(order[tourIdx]);
+      hint.textContent = 'touring… zone ' + (tourIdx+1) + ' of ' + order.length;
+    }, 2200);
+  });
+  document.getElementById('tourStop').addEventListener('click', stopTour);
+  setActive('editor');
+})();
+
+/* ============================================================
+   3. IMPORT VS CODE
+   ============================================================ */
+(function(){
+  var items = ['Keybindings', 'Color theme', 'Extensions (24)', 'Code snippets', 'settings.json'];
+  var list = document.getElementById('importList');
+  var banner = document.getElementById('importBanner');
+  var rows = [];
+  items.forEach(function(name){
+    var row = document.createElement('div');
+    row.className = 'import-item';
+    row.innerHTML = '<span>'+name+'</span><span class="import-status">pending</span>';
+    list.appendChild(row);
+    rows.push(row);
+  });
+  document.getElementById('importBtn').addEventListener('click', function(btnEvt){
+    banner.classList.remove('show');
+    rows.forEach(function(row, i){ row.classList.remove('done'); row.querySelector('.import-status').textContent = 'pending'; });
+    rows.forEach(function(row, i){
+      setTimeout(function(){
+        row.classList.add('done');
+        row.querySelector('.import-status').textContent = '✓ imported';
+        if(i === rows.length - 1){ setTimeout(function(){ banner.classList.add('show'); }, 250); }
+      }, (i+1) * 380);
+    });
+  });
+})();
+
+/* ============================================================
+   4a. MODEL PICKER
+   ============================================================ */
+(function(){
+  var models = [
+    { name:'Fast', speed:90, depth:30, desc:'Best for quick edits, Tab completion, simple Q&A. Lowest latency.' },
+    { name:'Balanced', speed:60, depth:60, desc:'Good default for most chat and agent tasks — the safe starting choice.' },
+    { name:'Max reasoning', speed:25, depth:95, desc:'Best for complex multi-file agent work, tricky bugs, architecture questions. Slower.' }
+  ];
+  var grid = document.getElementById('modelGrid');
+  var note = document.getElementById('modelNote');
+  var selected = 1;
+  function render(){
+    grid.innerHTML = '';
+    models.forEach(function(m, i){
+      var card = document.createElement('div');
+      card.className = 'model-card' + (i === selected ? ' selected' : '');
+      card.innerHTML = '<div class="mname">'+m.name+'</div><div class="mdesc">'+m.desc+'</div>'+
+        '<div class="meter-row"><span>speed</span><div class="meter-track"><div class="meter-fill" style="width:'+m.speed+'%"></div></div></div>'+
+        '<div class="meter-row"><span>depth</span><div class="meter-track"><div class="meter-fill" style="width:'+m.depth+'%"></div></div></div>';
+      card.addEventListener('click', function(){ selected = i; render(); });
+      grid.appendChild(card);
+    });
+    note.innerHTML = '<b>Selected:</b> '+models[selected].name+' — '+models[selected].desc;
+  }
+  render();
+})();
+
+/* ============================================================
+   4b. AGENT TOGGLES
+   ============================================================ */
+(function(){
+  var wrap = document.getElementById('agentToggles');
+  var switches = [
+    { id:'sw1', label:'Auto-run safe terminal commands', hint:'e.g. running tests — still asks for anything destructive', checked:true },
+    { id:'sw2', label:'Ask before editing files outside current selection', hint:'keeps multi-file changes visible before they happen', checked:true }
+  ];
+  switches.forEach(function(s){
+    var row = document.createElement('div');
+    row.className = 'switch-row';
+    row.innerHTML = '<span class="label">'+s.label+'<small>'+s.hint+'</small></span>'+
+      '<label class="switch"><input type="checkbox" '+(s.checked ? 'checked' : '')+'><span class="track"><span class="knob"></span></span></label>';
+    wrap.appendChild(row);
+  });
+  var stepRow = document.createElement('div');
+  stepRow.className = 'switch-row';
+  stepRow.innerHTML = '<span class="label">Max agent iterations before checkpoint<small>agent pauses for your review after this many steps</small></span>'+
+    '<div class="stepper-num"><button id="stepDown">−</button><span class="val" id="stepVal">5</span><button id="stepUp">+</button></div>';
+  wrap.appendChild(stepRow);
+  var val = 5;
+  var valEl = stepRow.querySelector('#stepVal');
+  stepRow.querySelector('#stepDown').addEventListener('click', function(){ val = Math.max(1, val - 1); valEl.textContent = val; });
+  stepRow.querySelector('#stepUp').addEventListener('click', function(){ val = Math.min(15, val + 1); valEl.textContent = val; });
+})();
+
+/* ============================================================
+   5. MCP SERVERS
+   ============================================================ */
+(function(){
+  var servers = [
+    { icon:'🗂️', name:'Repository', desc:'Reaches your Git hosting beyond the local clone — PRs, issues, and code search across repos.' },
+    { icon:'📚', name:'Docs', desc:'Connects to your documentation source (wiki, Confluence, README hub) so agents cite real docs, not guesses.' },
+    { icon:'🎫', name:'Ticketing', desc:'Connects to Jira/Azure DevOps so agents can read ticket context — and later, update status directly.' }
+  ];
+  var grid = document.getElementById('mcpGrid');
+  servers.forEach(function(s){
+    var connected = false;
+    var card = document.createElement('div');
+    card.className = 'mcp-card';
+    function render(){
+      card.className = 'mcp-card' + (connected ? ' connected' : '');
+      card.innerHTML = '<div class="mcp-icon">'+s.icon+'</div><div class="mcp-name">'+s.name+'</div>'+
+        '<div class="mcp-status"><span class="pill '+(connected ? 'pill-good' : 'pill-neutral')+'">'+(connected ? '🟢 Connected' : '⚪ Not connected')+'</span></div>'+
+        '<div class="mcp-desc">'+s.desc+'</div>'+
+        '<button class="btn btn-sm" style="margin-top:6px;">'+(connected ? 'Disconnect' : 'Connect')+'</button>';
+      card.querySelector('button').addEventListener('click', function(){ connected = !connected; render(); });
+    }
+    render();
+    grid.appendChild(card);
+  });
+})();
+
+/* ============================================================
+   6a. TRUST LEVELS MATRIX
+   ============================================================ */
+(function(){
+  var levels = ['Restricted', 'Trusted', 'Trusted + Auto-run'];
+  var caps = [
+    { name:'Read files', at:[true, true, true] },
+    { name:'Suggest edits (you approve)', at:[false, true, true] },
+    { name:'Apply edits directly', at:[false, true, true] },
+    { name:'Run terminal commands (ask each time)', at:[false, true, true] },
+    { name:'Auto-run pre-approved safe commands', at:[false, false, true] }
+  ];
+  var tabbar = document.getElementById('trustTabbar');
+  var table = document.getElementById('trustMatrix');
+  var activeLevel = 1;
+
+  function renderTable(){
+    var thead = '<thead><tr><th style="text-align:left;">Capability</th>';
+    levels.forEach(function(l, i){ thead += '<th'+(i===activeLevel ? ' style="color:var(--accent-soft);"' : '')+'>'+l+'</th>'; });
+    thead += '</tr></thead>';
+    var tbody = '<tbody>';
+    caps.forEach(function(c){
+      tbody += '<tr><th style="text-align:left;">'+c.name+'</th>';
+      c.at.forEach(function(on, i){
+        tbody += '<td class="'+(i===activeLevel ? 'hl' : '')+'">'+(on ? '<span style="color:var(--good);">✓</span>' : '<span style="color:var(--text-faint);">—</span>')+'</td>';
+      });
+      tbody += '</tr>';
+    });
+    tbody += '</tbody>';
+    table.innerHTML = thead + tbody;
+  }
+  function renderTabs(){
+    tabbar.innerHTML = '';
+    levels.forEach(function(l, i){
+      var t = document.createElement('div');
+      t.className = 'trust-tab' + (i === activeLevel ? ' active' : '');
+      t.textContent = l;
+      t.addEventListener('click', function(){ activeLevel = i; renderTabs(); renderTable(); });
+      tabbar.appendChild(t);
+    });
+  }
+  renderTabs();
+  renderTable();
+})();
+
+/* ============================================================
+   6b. PERMISSION DIALOG
+   ============================================================ */
+(function(){
+  var resultEl = document.getElementById('permResult');
+  var msgs = {
+    deny: { text:'🚫 Denied — the agent will not run this command and will try another approach or ask you what to do instead.', cls:'pill-bad' },
+    once: { text:'✅ Allowed once — the command runs this time only. You\'ll be asked again next time.', cls:'pill-good' },
+    always: { text:'✅ Always allowed — this exact command runs without asking from now on, in this workspace.', cls:'pill-warn' }
+  };
+  document.querySelectorAll('[data-perm]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var m = msgs[btn.dataset.perm];
+      resultEl.innerHTML = m.text;
+      resultEl.className = 'permission-result show';
+      resultEl.style.background = 'var(--surface-3)';
+      resultEl.style.border = '1px solid var(--border)';
+    });
+  });
+})();
+
+/* ============================================================
+   7. CHECKLIST
+   ============================================================ */
+(function(){
+  var items = [
+    'Cursor installed and enterprise account connected',
+    'Interface tour complete — can locate Editor, Sidebar, Command Palette, Chat/Agent Panel',
+    'VS Code settings/extensions imported (or confirmed not needed)',
+    'A model is selected and basic agent settings reviewed',
+    'At least one MCP server connected at the workspace level',
+    'Workspace trust level understood and set appropriately'
+  ];
+  var list = document.getElementById('checklist');
+  var fill = document.getElementById('progressFill');
+  var label = document.getElementById('progressLabel');
+  var done = document.getElementById('setupDone');
+  var checked = new Array(items.length).fill(false);
+
+  items.forEach(function(text, i){
+    var row = document.createElement('div');
+    row.className = 'check-item';
+    row.innerHTML = '<span class="check-box">✓</span><span class="check-label">'+text+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+      update();
+    });
+    list.appendChild(row);
+  });
+  function update(){
+    var count = checked.filter(Boolean).length;
+    fill.style.width = (count / items.length * 100) + '%';
+    label.textContent = count + ' / ' + items.length + ' verified';
+    done.classList.toggle('show', count === items.length);
+  }
+  update();
+})();
+
+/* ============================================================
+   8. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:'What does connecting Cursor to your enterprise account primarily unlock, versus a personal free account?', options:[
+        'A different color theme',
+        'Team/Enterprise license with Agent capabilities enabled',
+        'Faster typing speed',
+        'Nothing — accounts are identical'
+      ], correct:1, explain:'The enterprise/SSO sign-in is what activates your organization\'s licensed plan and Agent capabilities (Section 01).' },
+    { q:'Which part of the interface lets you switch between Ask, Chat, and Agent modes?', options:[
+        'The Command Palette',
+        'The Sidebar / Explorer',
+        'The Chat/Agent Panel',
+        'The Status Bar'
+      ], correct:2, explain:'Ask, Chat, and Agent all live in the same panel — you switch modes there depending on how much autonomy you want (Section 02).' },
+    { q:'When you import your VS Code setup into Cursor, what comes over?', options:[
+        'Keybindings, theme, extensions, snippets, and settings.json',
+        'Your Git commit history',
+        'Your stored passwords and credentials',
+        'Nothing — Cursor requires a fresh setup'
+      ], correct:0, explain:'Import covers editor configuration, not security-sensitive data or repo history (Section 03).' },
+    { q:'What is the purpose of connecting MCP servers at the workspace level?', options:[
+        'To change the editor theme for the team',
+        'To let agents reach the repo host, docs, and ticketing systems beyond local files — shared by anyone opening that workspace',
+        'To install VS Code extensions automatically',
+        'MCP only affects Tab completion speed'
+      ], correct:1, explain:'MCP connections extend what an agent can see and act on beyond your local file tree, and are shared per workspace (Section 05).' },
+    { q:'In the workspace trust model, what changes as trust increases from Restricted to Trusted + Auto-run?', options:[
+        'Nothing changes — trust is cosmetic',
+        'The agent gains progressively more ability to edit files and run commands without asking each time',
+        'The model gets replaced with a faster one',
+        'Trust only affects Tab completion, not Agent mode'
+      ], correct:1, explain:'Trust is a dial: read-only at the bottom, up through suggesting edits, applying them, running commands, and finally auto-running pre-approved ones (Section 06).' }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.innerHTML = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — you\'re ready for Module 4.'
+      : score >= questions.length - 1
+      ? 'Nice work — solid grasp of Cursor setup.'
+      : 'Worth a re-skim of the sections above before Module 4.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>

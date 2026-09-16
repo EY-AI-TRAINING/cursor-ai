@@ -1,0 +1,488 @@
+<title>Introduction to Cursor AI</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:15px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,68px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:640px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:820px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  .note-row{ display:flex; gap:14px; flex-wrap:wrap; margin-top:22px; }
+  .note-chip{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:7px 14px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#idea" data-target="idea"><span class="dot"></span><span class="rail-label">01 · What it is</span></a>
+  <a href="#positioning" data-target="positioning"><span class="dot"></span><span class="rail-label">02 · Positioning</span></a>
+  <a href="#sdlc" data-target="sdlc"><span class="dot"></span><span class="rail-label">03 · SDLC footprint</span></a>
+  <a href="#modes" data-target="modes"><span class="dot"></span><span class="rail-label">04 · Local vs. background</span></a>
+  <a href="#landscape" data-target="landscape"><span class="dot"></span><span class="rail-label">05 · Landscape recap</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">06 · Hands-on</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">07 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#idea" data-target="idea">01</a>
+  <a href="#positioning" data-target="positioning">02</a>
+  <a href="#sdlc" data-target="sdlc">03</a>
+  <a href="#modes" data-target="modes">04</a>
+  <a href="#landscape" data-target="landscape">05</a>
+  <a href="#handson" data-target="handson">06</a>
+  <a href="#recap" data-target="recap">07</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 1 · Foundations — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Introduction to Cursor AI</h1>
+    <p class="lede hero-lede">Module 2 — 30 minutes. Before touching the interface, place Cursor precisely: what kind of tool it is, how it differs from an autocomplete plugin, how far its footprint reaches across the SDLC, and the two very different ways you'll run it.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">4</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">subtopic</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">hands-on tour</span></li>
+      <li class="stat-tile"><span class="stat-num">30</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#idea"><span class="agenda-index">01</span><span>What Cursor AI is &amp; how it differs from traditional IDEs</span></a></li>
+      <li><a href="#positioning"><span class="agenda-index">02</span><span>Cursor vs. GitHub Copilot &amp; other AI coding tools</span></a></li>
+      <li><a href="#sdlc"><span class="agenda-index">03</span><span>Cursor's role across the AI-assisted SDLC</span></a></li>
+      <li><a href="#modes"><span class="agenda-index">04</span><span>Local development vs. delegated/background agents</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="idea">
+  <div class="section-inner">
+    <p class="eyebrow">01 — What it is</p>
+    <h2 class="section-title">Same editor shape, a different loop inside it</h2>
+    <p class="lede">A traditional IDE is a human-driven loop: you write code, a compiler or runtime tells you what happened, you read the output and fix it yourself. Cursor keeps that same editor shape but closes the loop differently — your intent and an index of your actual codebase both feed a model, which proposes a change for you to review and approve. It's still your codebase and your decision on every diff; what changed is who drafts the first pass.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 780 300" role="img" aria-label="Comparison of a traditional IDE loop — developer writes code, compiler or runtime runs it, developer reads output and debugs — with Cursor's loop, where developer intent and a codebase index both feed a model that proposes a diff for the developer to review and approve." style="min-width:600px">
+          <text class="lbl-strong" x="170" y="30" text-anchor="middle">TRADITIONAL IDE</text>
+          <rect class="box" x="60" y="46" width="220" height="44" rx="8"></rect>
+          <text class="lbl-strong" x="170" y="72" text-anchor="middle" font-size="11">DEVELOPER WRITES CODE</text>
+          <line class="arrow" x1="170" y1="90" x2="170" y2="114" marker-end="url(#arrow)"></line>
+          <rect class="box" x="60" y="116" width="220" height="44" rx="8"></rect>
+          <text class="lbl-strong" x="170" y="142" text-anchor="middle" font-size="11">COMPILER / RUNTIME</text>
+          <line class="arrow" x1="170" y1="160" x2="170" y2="184" marker-end="url(#arrow)"></line>
+          <rect class="box" x="60" y="186" width="220" height="44" rx="8"></rect>
+          <text class="lbl-strong" x="170" y="212" text-anchor="middle" font-size="11">READ OUTPUT &amp; DEBUG</text>
+          <path class="arrow" d="M170,230 C 10,258 10,66 58,68" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="150" y="278" text-anchor="middle">manual loop, one step at a time</text>
+
+          <text class="lbl-strong" x="610" y="30" text-anchor="middle">CURSOR (AI-NATIVE IDE)</text>
+          <rect class="box" x="500" y="46" width="220" height="44" rx="8"></rect>
+          <text class="lbl-strong" x="610" y="72" text-anchor="middle" font-size="11">DEVELOPER STATES INTENT</text>
+
+          <rect class="box-teal" x="415" y="106" width="112" height="24" rx="12"></rect>
+          <text class="txt-teal" x="471" y="122" text-anchor="middle" font-size="9.5">CODEBASE INDEX</text>
+          <line class="arrow-thin" stroke="var(--teal)" x1="500" y1="120" x2="527" y2="120"></line>
+
+          <line class="arrow" x1="610" y1="90" x2="610" y2="114" marker-end="url(#arrow)"></line>
+          <rect class="box-plum" x="500" y="116" width="220" height="44" rx="8"></rect>
+          <text class="txt-plum" x="610" y="142" text-anchor="middle" font-size="11">MODEL + CODEBASE CONTEXT</text>
+          <line class="arrow" x1="610" y1="160" x2="610" y2="184" marker-end="url(#arrow)"></line>
+          <rect class="box" x="500" y="186" width="220" height="44" rx="8"></rect>
+          <text class="lbl-strong" x="610" y="212" text-anchor="middle" font-size="11">REVIEW &amp; APPROVE DIFF</text>
+          <path class="arrow" d="M720,230 C 870,258 870,66 722,68" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="770" y="278" text-anchor="middle">collaborative loop — human stays in review</text>
+        </svg>
+      </div>
+      <figcaption>Same goal, working code — but Cursor's loop starts from a model that already knows your codebase, not a blank cursor.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="positioning">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Positioning</p>
+    <h2 class="section-title">Not "Copilot, but different"</h2>
+    <p class="lede">Placing AI coding tools on two axes makes the real distinction visible. One axis is where the tool lives — a separate chat window with no view of your repository, or built into the IDE itself. The other is how far its autonomy goes — a single-line autocomplete, or a full agentic workflow that plans, edits multiple files, and runs your terminal. Copilot made autocomplete-in-the-IDE mainstream; Cursor's ground floor is the full agentic corner of this map.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 720 420" role="img" aria-label="A two-axis positioning map: generic chat AI sits chat-based with low autonomy, GitHub Copilot sits IDE-integrated with autocomplete-level autonomy, and Cursor sits IDE-integrated with full agentic autonomy in the top-right quadrant." style="min-width:520px">
+          <rect x="350" y="30" width="330" height="200" fill="var(--plum)" fill-opacity="0.10" stroke="var(--plum)" stroke-dasharray="5 4" rx="10"></rect>
+          <text class="txt-plum" x="515" y="50" text-anchor="middle" font-size="10.5">where this course operates</text>
+
+          <line x1="90" y1="30" x2="90" y2="360" class="arrow-thin" stroke="var(--ink-soft)"></line>
+          <line x1="90" y1="360" x2="680" y2="360" class="arrow-thin" stroke="var(--ink-soft)"></line>
+          <text class="lbl" x="95" y="42" font-size="10.5">▲ full agentic workflow</text>
+          <text class="lbl" x="95" y="350" font-size="10.5">▼ autocomplete only</text>
+          <text class="lbl" x="95" y="382" font-size="10.5">chat-based</text>
+          <text class="lbl" x="680" y="382" text-anchor="end" font-size="10.5">IDE-integrated</text>
+
+          <circle cx="180" cy="300" r="8" class="fill-brick" fill-opacity="0.7"></circle>
+          <text class="lbl" x="180" y="322" text-anchor="middle">Generic chat AI</text>
+          <text class="lbl" x="180" y="336" text-anchor="middle" font-size="9.5">(ChatGPT / Claude web)</text>
+
+          <circle cx="440" cy="220" r="8" class="fill-copper"></circle>
+          <text class="txt-copper" x="440" y="242" text-anchor="middle" font-size="11">GitHub Copilot</text>
+          <text class="lbl" x="440" y="256" text-anchor="middle" font-size="9.5">autocomplete-first, growing chat</text>
+
+          <circle cx="610" cy="90" r="10" class="fill-plum"></circle>
+          <text class="txt-plum" x="610" y="72" text-anchor="middle" font-size="12">CURSOR</text>
+          <text class="lbl" x="610" y="112" text-anchor="middle" font-size="9.5">chat + inline + multi-file agent</text>
+        </svg>
+      </div>
+      <figcaption>Same map, three positions. The differentiator isn't "AI in the editor" — Copilot already does that — it's how far the autonomy extends.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="sdlc">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Footprint</p>
+    <h2 class="section-title">Bigger than the code you're typing</h2>
+    <p class="lede">A classic AI coding assistant earns its keep in one lifecycle stage: Development. Used as an agentic engineering platform — the way this course treats it — Cursor's footprint stretches across the full SDLC: requirements exploration, design and spec work, development, testing, review, deployment, and maintenance. Module 9 onward is where that wider footprint gets hands-on.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 820 220" role="img" aria-label="Seven SDLC stages — requirements, design, development, testing, review, deployment, maintenance — shown inside a highlighted band representing Cursor's agentic engineering footprint, with a copper outline calling out development alone as the narrower classic coding-assistant footprint." style="min-width:680px">
+          <rect x="12" y="118" width="796" height="72" rx="14" fill="var(--plum)" fill-opacity="0.10" stroke="var(--plum)" stroke-dasharray="5 4"></rect>
+
+          <rect class="box" x="20" y="132" width="96" height="44" rx="6"></rect>
+          <text class="lbl-strong" x="68" y="158" text-anchor="middle" font-size="10">REQS</text>
+          <rect class="box" x="132" y="132" width="96" height="44" rx="6"></rect>
+          <text class="lbl-strong" x="180" y="158" text-anchor="middle" font-size="10">DESIGN</text>
+          <rect class="box" x="244" y="132" width="96" height="44" rx="6"></rect>
+          <text class="lbl-strong" x="292" y="158" text-anchor="middle" font-size="10">DEV</text>
+          <rect class="box" x="356" y="132" width="96" height="44" rx="6"></rect>
+          <text class="lbl-strong" x="404" y="158" text-anchor="middle" font-size="10">TEST</text>
+          <rect class="box" x="468" y="132" width="96" height="44" rx="6"></rect>
+          <text class="lbl-strong" x="516" y="158" text-anchor="middle" font-size="10">REVIEW</text>
+          <rect class="box" x="580" y="132" width="96" height="44" rx="6"></rect>
+          <text class="lbl-strong" x="628" y="158" text-anchor="middle" font-size="10">DEPLOY</text>
+          <rect class="box" x="692" y="132" width="96" height="44" rx="6"></rect>
+          <text class="lbl-strong" x="740" y="158" text-anchor="middle" font-size="9.5">MAINTAIN</text>
+
+          <rect x="240" y="126" width="104" height="56" rx="8" fill="none" stroke="var(--copper)" stroke-width="2.5"></rect>
+
+          <text class="txt-copper" x="292" y="108" text-anchor="middle" font-size="11">① classic coding assistant stops here</text>
+          <text class="txt-plum" x="410" y="205" text-anchor="middle" font-size="11">② Cursor + agentic workflows span the full lifecycle — this course</text>
+        </svg>
+      </div>
+      <figcaption>The outlined box is where "AI coding tool" usually ends. The shaded band is where this course starts.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="modes">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Execution modes</p>
+    <h2 class="section-title">Watched, or delegated</h2>
+    <p class="lede">Local execution keeps the agent on your machine, in your editor, working in a tight synchronous loop you watch step by step — the mode you'll use for most of this course. Background/delegated execution hands a whole task to an agent running on separate compute; it works independently while you do something else, and you come back to review a finished result. Same underlying agent, two different trust models.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 780 280" role="img" aria-label="Local execution shows a developer and agent inside the same machine in a tight synchronous loop. Background execution shows a developer handing a task to an agent on separate compute, which works asynchronously and returns a result for later review." style="min-width:600px">
+          <text class="lbl-strong" x="200" y="30" text-anchor="middle">LOCAL / FOREGROUND</text>
+          <rect class="box" x="60" y="46" width="280" height="170" rx="14"></rect>
+          <text class="lbl" x="200" y="66" text-anchor="middle" font-size="10">YOUR MACHINE</text>
+          <circle cx="140" cy="120" r="26" class="box-teal"></circle>
+          <text class="txt-teal" x="140" y="124" text-anchor="middle" font-size="10">DEV</text>
+          <circle cx="260" cy="120" r="26" class="box-plum"></circle>
+          <text class="txt-plum" x="260" y="124" text-anchor="middle" font-size="9.5">AGENT</text>
+          <line class="arrow-thin" stroke="var(--ink-soft)" x1="166" y1="112" x2="234" y2="112" marker-end="url(#arrow)"></line>
+          <line class="arrow-thin" stroke="var(--ink-soft)" x1="234" y1="130" x2="166" y2="130" marker-end="url(#arrow)"></line>
+          <text class="lbl" x="200" y="98" text-anchor="middle" font-size="9.5">watches every step</text>
+          <text class="lbl" x="200" y="192" text-anchor="middle" font-size="10.5">tight loop, synchronous</text>
+
+          <text class="lbl-strong" x="610" y="30" text-anchor="middle">DELEGATED / BACKGROUND</text>
+          <rect class="box" x="540" y="42" width="140" height="36" rx="8"></rect>
+          <text class="lbl-strong" x="610" y="65" text-anchor="middle" font-size="10.5">DEVELOPER</text>
+          <line class="arrow" x1="640" y1="78" x2="670" y2="98" marker-end="url(#arrow)"></line>
+          <text class="lbl" x="690" y="90" font-size="9.5">assigns a task</text>
+          <rect class="box-teal" x="560" y="100" width="180" height="56" rx="28"></rect>
+          <text class="txt-teal" x="650" y="123" text-anchor="middle" font-size="10.5">BACKGROUND AGENT</text>
+          <text class="lbl" x="650" y="138" text-anchor="middle" font-size="9">separate compute, works alone</text>
+          <line class="arrow" x1="650" y1="156" x2="650" y2="182" marker-end="url(#arrow)"></line>
+          <rect class="box" x="560" y="184" width="180" height="40" rx="8"></rect>
+          <text class="lbl-strong" x="650" y="208" text-anchor="middle" font-size="10">RESULT: PR READY</text>
+          <path class="arrow" d="M560,204 C 470,220 470,60 538,58" stroke-dasharray="4 4" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="490" y="140" font-size="9.5">check back</text>
+          <text class="lbl" x="490" y="152" font-size="9.5">later — async</text>
+        </svg>
+      </div>
+      <figcaption>Local trades speed of delegation for real-time oversight; background trades oversight for parallel throughput.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="landscape">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Subtopic: positioning within Module 1</p>
+    <h2 class="section-title">Where Cursor sits on the maturity curve</h2>
+    <p class="lede">Module 1 introduced a four-stage landscape: prompt-driven coding, context engineering, agents, and multi-agent orchestration. Cursor isn't parked at one point on that curve — its native capabilities span from context engineering through agents, and the subagent/orchestration modules later in this course push you into the fourth stage using the same platform.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 820 170" role="img" aria-label="The four-stage course landscape from Module 1 — prompt-driven coding, context engineering, agents, multi-agent orchestration — with a bracket showing Cursor's native capability spanning from context engineering through agents, extending toward orchestration later in the course." style="min-width:680px">
+          <path d="M210,40 L210,30 L750,30 L750,40" fill="none" stroke="var(--plum)" stroke-width="2"></path>
+          <text class="txt-plum" x="480" y="20" text-anchor="middle" font-size="11">Cursor operates here — orchestration comes later in this course</text>
+
+          <rect class="box" x="20" y="50" width="170" height="70" rx="10"></rect>
+          <text class="lbl-strong" x="105" y="88" text-anchor="middle" font-size="10.5">PROMPT-DRIVEN CODING</text>
+
+          <line class="arrow" x1="192" y1="85" x2="206" y2="85" marker-end="url(#arrow)"></line>
+          <rect class="box box-teal" x="210" y="50" width="170" height="70" rx="10"></rect>
+          <text class="txt-teal" x="295" y="88" text-anchor="middle" font-size="10.5">CONTEXT ENGINEERING</text>
+
+          <line class="arrow" x1="382" y1="85" x2="396" y2="85" marker-end="url(#arrow)"></line>
+          <rect class="box box-teal" x="400" y="50" width="170" height="70" rx="10"></rect>
+          <text class="txt-teal" x="485" y="88" text-anchor="middle" font-size="10.5">AGENTS</text>
+
+          <line class="arrow" x1="572" y1="85" x2="586" y2="85" marker-end="url(#arrow)"></line>
+          <rect class="box box-plum" x="590" y="50" width="170" height="70" rx="10"></rect>
+          <text class="txt-plum" x="675" y="82" text-anchor="middle" font-size="10">MULTI-AGENT</text>
+          <text class="txt-plum" x="675" y="96" text-anchor="middle" font-size="10">ORCHESTRATION</text>
+
+          <text class="lbl" x="105" y="140" text-anchor="middle" font-size="9.5">Module 1 baseline</text>
+          <text class="lbl" x="480" y="140" text-anchor="middle" font-size="9.5">Cursor's native ground: Modules 2–8</text>
+          <text class="lbl" x="675" y="140" text-anchor="middle" font-size="9.5">Modules 15–19</text>
+        </svg>
+      </div>
+      <figcaption>Same roadmap from Module 1 — this time with Cursor's actual footprint marked on it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Hands-on</p>
+    <h2 class="section-title">Quick tour &amp; license verification</h2>
+    <p class="lede">A light, four-step checkpoint before Module 3 goes deep on setup: confirm access, then get oriented in the interface you'll live in for the next 32 hours.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 760 150" role="img" aria-label="A four-step checklist: sign in, verify license and seat, tour the editor interface, confirm model access." style="min-width:560px">
+          <line x1="100" y1="50" x2="700" y2="50" class="arrow-thin" stroke="var(--line-strong)"></line>
+
+          <circle cx="100" cy="50" r="15" class="box-teal"></circle>
+          <path d="M93,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="100" y="90" text-anchor="middle" font-size="10.5">SIGN IN</text>
+
+          <circle cx="300" cy="50" r="15" class="box-teal"></circle>
+          <path d="M293,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="300" y="90" text-anchor="middle" font-size="10.5">VERIFY LICENSE / SEAT</text>
+
+          <circle cx="500" cy="50" r="15" class="box-teal"></circle>
+          <path d="M493,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="500" y="90" text-anchor="middle" font-size="10">TOUR: EDITOR · SIDEBAR</text>
+          <text class="lbl-strong" x="500" y="104" text-anchor="middle" font-size="10">PALETTE · CHAT/AGENT PANEL</text>
+
+          <circle cx="700" cy="50" r="15" class="box-teal"></circle>
+          <path d="M693,50 l5,6 l10,-13" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>
+          <text class="lbl-strong" x="700" y="90" text-anchor="middle" font-size="10.5">CONFIRM MODEL ACCESS</text>
+        </svg>
+      </div>
+      <figcaption>No lab deliverable here — the goal is a working, verified environment before Module 3's deeper setup.</figcaption>
+    </figure>
+    <div class="note-row">
+      <span class="note-chip">Enterprise / Team seat</span>
+      <span class="note-chip">Agent capabilities enabled</span>
+      <span class="note-chip">Company SSO approved</span>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Before Module 3</p>
+    <h2 class="section-title">Carry these three ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Cursor pairs a model that already knows your codebase with an editor loop you stay in control of.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>The differentiator isn't "AI in the IDE" — it's full agentic autonomy, not autocomplete depth.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Local (watched, synchronous) and background (delegated, async) are two trust models for the same agent.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 3 — Cursor Interface &amp; Setup</strong> installs Cursor, connects your enterprise license, and walks the editor, sidebar, and command palette hands-on.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 2 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

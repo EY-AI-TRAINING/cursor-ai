@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 1 — GenAI/LLM Foundations Refresher</title>
+<meta name="description" content="Interactive refresher on GenAI/LLM foundations: token generation, context windows, prompting, limitations, agents, and the AI-assisted SDLC.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%A0%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens ===================== */
+:root{
+  --bg:#0a0d16;
+  --bg-2:#0d1120;
+  --surface:#131a2c;
+  --surface-2:#1a2338;
+  --surface-3:#212b47;
+  --border:#2a3454;
+  --border-soft:#1e2740;
+  --text:#eef0fa;
+  --text-dim:#a6aed0;
+  --text-faint:#6d76a0;
+  --accent:#a855f7;
+  --accent-2:#22d3ee;
+  --accent-soft:#c084fc;
+  --warn:#f59e0b;
+  --danger:#fb7185;
+  --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6);
+  --radius:16px;
+  --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb;
+  --bg-2:#eef0fa;
+  --surface:#ffffff;
+  --surface-2:#f7f8ff;
+  --surface-3:#eef0fc;
+  --border:#dde1f5;
+  --border-soft:#e7e9f7;
+  --text:#181c30;
+  --text-dim:#4b5278;
+  --text-faint:#8790b5;
+  --accent:#8b2fd6;
+  --accent-2:#0891b2;
+  --accent-soft:#7c3aed;
+  --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+
+/* ===================== Layout helpers ===================== */
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;
+  letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-2);font-weight:600;
+  background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);padding:5px 12px;border-radius:999px;
+}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media (max-width:820px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+
+.btn{
+  font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);
+  background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn-primary:hover{box-shadow:0 10px 28px -6px rgba(168,85,247,0.75);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+/* scroll reveal */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+/* ===================== Top nav ===================== */
+.topnav{
+  position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);
+  background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);
+}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:18px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{
+  white-space:nowrap;font-size:12.8px;font-weight:600;color:var(--text-faint);padding:8px 11px;border-radius:8px;
+  text-decoration:none;transition:all .15s ease;
+}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{
+  border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;
+}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:620px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{
+  position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;
+  mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Section 1: token predictor ===================== */
+.predictor{padding:26px;}
+.predictor-sentence{
+  font-family:var(--mono);font-size:19px;line-height:1.7;min-height:2.4em;padding:18px 20px;
+  background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;margin-bottom:22px;
+}
+.predictor-sentence .base{color:var(--text-dim);}
+.predictor-sentence .picked{color:var(--text);font-weight:700;}
+.predictor-sentence .picked.alt{color:var(--warn);}
+.predictor-sentence .cursor{display:inline-block;width:2px;height:1em;background:var(--accent-2);vertical-align:middle;animation:blink 1s step-end infinite;margin-left:2px;}
+@keyframes blink{50%{opacity:0;}}
+.candidates{display:flex;flex-direction:column;gap:8px;}
+.cand-row{display:grid;grid-template-columns:120px 1fr 60px;align-items:center;gap:12px;cursor:pointer;padding:6px 8px;border-radius:8px;transition:background .12s;}
+.cand-row:hover{background:var(--surface-2);}
+.cand-tok{font-family:var(--mono);font-size:14px;font-weight:600;}
+.cand-bar-track{height:20px;background:var(--surface-3);border-radius:6px;overflow:hidden;position:relative;}
+.cand-bar-fill{height:100%;border-radius:6px;background:var(--grad-2);width:0%;transition:width .5s cubic-bezier(.2,.8,.2,1);}
+.cand-row.best .cand-bar-fill{background:var(--grad-1);}
+.cand-pct{font-family:var(--mono);font-size:12.5px;color:var(--text-faint);text-align:right;}
+.predictor-controls{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;align-items:center;}
+.predictor-note{margin-top:16px;font-size:13.5px;color:var(--text-faint);border-left:2px solid var(--accent);padding-left:12px;}
+
+/* ===================== Tokenizer ===================== */
+.tok-input{
+  width:100%;min-height:72px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:10px;
+  color:var(--text);font-family:var(--sans);font-size:14.5px;padding:12px 14px;resize:vertical;
+}
+.tok-input:focus{outline:none;border-color:var(--accent-soft);}
+.tok-output{margin-top:16px;display:flex;flex-wrap:wrap;gap:2px;padding:16px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:10px;min-height:60px;align-items:center;}
+.chip{font-family:var(--mono);font-size:13px;padding:4px 6px;border-radius:5px;line-height:1.5;}
+.tok-stats{display:flex;gap:22px;margin-top:14px;flex-wrap:wrap;}
+.tok-stat b{font-size:20px;display:block;font-family:var(--mono);}
+.tok-stat span{font-size:12px;color:var(--text-faint);}
+
+/* ===================== Context window ===================== */
+.cw-presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.cw-preset{cursor:pointer;}
+.cw-preset.active{background:var(--grad-1);border-color:transparent;color:#fff;}
+.cw-bar-wrap{margin:18px 0;}
+.cw-bar-track{height:26px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:8px;overflow:hidden;display:flex;}
+.cw-bar-fill{height:100%;background:var(--grad-2);transition:width .4s ease;}
+.cw-bar-fill.over{background:linear-gradient(90deg,var(--warn),var(--danger));}
+.cw-bar-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--text-faint);margin-top:6px;}
+.cw-log{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;padding-right:4px;}
+.cw-msg{padding:10px 13px;border-radius:10px;border:1px solid var(--border-soft);font-size:13.5px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;transition:opacity .3s, transform .3s;}
+.cw-msg .role{font-family:var(--mono);font-size:11px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;}
+.cw-msg.user{background:var(--surface-2);}
+.cw-msg.assistant{background:var(--surface-3);}
+.cw-msg.pinned{border-color:var(--accent);background:rgba(168,85,247,0.08);}
+.cw-msg.dropped{opacity:0.35;text-decoration:line-through;}
+.cw-msg .cost{font-family:var(--mono);font-size:11.5px;color:var(--text-faint);white-space:nowrap;}
+.cw-dropped-tag{color:var(--danger);font-size:11px;font-family:var(--mono);}
+
+/* ===================== Prompting ===================== */
+.clarity-meter{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin-top:12px;}
+.clarity-fill{height:100%;border-radius:4px;}
+.prompt-box{font-family:var(--mono);font-size:13px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;padding:12px;color:var(--text-dim);white-space:pre-wrap;}
+.output-box{margin-top:12px;font-size:13.5px;background:var(--surface-2);border:1px solid var(--border-soft);border-left:3px solid var(--accent-2);border-radius:8px;padding:12px;}
+
+.stack-layer{border-radius:14px;padding:20px;position:relative;}
+.stack-outer{background:linear-gradient(160deg, rgba(168,85,247,0.14), rgba(168,85,247,0.02));border:1.5px dashed rgba(168,85,247,0.45);}
+.stack-inner{background:var(--surface-2);border:1px solid var(--border-soft);margin-top:14px;border-radius:10px;padding:16px;}
+.stack-tag{position:absolute;top:-11px;left:16px;background:var(--bg);padding:0 8px;font-family:var(--mono);font-size:11px;color:var(--accent-soft);}
+
+/* ===================== Tabs (limits) ===================== */
+.tabbar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{cursor:pointer;}
+.tab-btn.active{background:var(--grad-1);border-color:transparent;color:#fff;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fadein .35s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.chatbubble{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:14px 16px;font-size:14px;position:relative;}
+.chatbubble.user{background:var(--surface-3);}
+.chatbubble .who{font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-bottom:6px;text-transform:uppercase;}
+.flag-btn{margin-top:12px;}
+.flag-reveal{margin-top:12px;padding:12px 14px;border-radius:10px;background:rgba(251,113,133,0.09);border:1px solid rgba(251,113,133,0.35);color:#fecdd3;font-size:13.5px;display:none;}
+.flag-reveal.show{display:block;animation:fadein .3s ease;}
+
+.timeline-track{height:14px;border-radius:7px;background:var(--surface-2);position:relative;overflow:hidden;margin:26px 0 10px;}
+.timeline-fill{position:absolute;top:0;bottom:0;left:0;background:linear-gradient(90deg,var(--good),var(--accent-2));}
+.timeline-blind{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg, rgba(251,113,133,0.5), rgba(251,113,133,0.5) 6px, rgba(251,113,133,0.25) 6px, rgba(251,113,133,0.25) 12px);}
+.timeline-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--text-faint);}
+
+.dice-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;}
+.dice-card{flex:1;min-width:220px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:10px;padding:14px;font-size:13.5px;}
+.dice-card .run-tag{font-family:var(--mono);font-size:11px;color:var(--accent-2);margin-bottom:6px;}
+
+/* ===================== Deterministic vs GenAI ===================== */
+.compare-panel{padding:22px;border-radius:14px;border:1px solid var(--border);}
+.compare-panel.det{background:linear-gradient(160deg, rgba(34,211,238,0.08), transparent);}
+.compare-panel.gen{background:linear-gradient(160deg, rgba(168,85,247,0.1), transparent);}
+.compare-io{font-family:var(--mono);font-size:13px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;padding:12px;margin:12px 0;}
+.compare-counter{font-family:var(--mono);font-size:12px;color:var(--text-faint);margin-top:10px;}
+
+/* ===================== SDLC stepper ===================== */
+.stepper{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+.step-btn{flex:1;min-width:150px;text-align:left;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;}
+.step-btn:hover{border-color:var(--accent-soft);}
+.step-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));box-shadow:0 0 0 1px rgba(168,85,247,0.3);}
+.step-num{font-family:var(--mono);color:var(--accent-2);font-size:12px;}
+.step-title{font-weight:700;margin-top:6px;font-size:14.5px;}
+.step-bar{height:5px;border-radius:3px;background:var(--surface-3);margin-top:12px;overflow:hidden;}
+.step-bar-fill{height:100%;background:var(--grad-1);}
+.step-detail{padding:22px;}
+.step-detail .example{margin-top:14px;padding:12px 14px;background:var(--bg-2);border-left:3px solid var(--accent-2);border-radius:8px;font-family:var(--mono);font-size:13px;color:var(--text-dim);}
+
+/* ===================== Glossary flip cards ===================== */
+.glossary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media (max-width:820px){.glossary-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:560px){.glossary-grid{grid-template-columns:1fr;}}
+.flip-card{perspective:1200px;height:150px;cursor:pointer;}
+.flip-inner{position:relative;width:100%;height:100%;transition:transform .5s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d;}
+.flip-card.flipped .flip-inner{transform:rotateY(180deg);}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;padding:16px;display:flex;flex-direction:column;justify-content:center;border:1px solid var(--border);}
+.flip-front{background:var(--surface);}
+.flip-front .term-icon{font-size:22px;margin-bottom:8px;}
+.flip-front .term-name{font-weight:700;font-size:15px;}
+.flip-front .term-hint{color:var(--text-faint);font-size:11.5px;margin-top:6px;font-family:var(--mono);}
+.flip-back{background:var(--surface-3);transform:rotateY(180deg);font-size:12.8px;color:var(--text-dim);}
+
+/* ===================== Trust pipeline ===================== */
+.pipeline{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;}
+.pipe-node{flex:1;min-width:150px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;text-align:center;position:relative;transition:all .15s;}
+.pipe-node:hover{border-color:var(--accent-soft);}
+.pipe-node.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));}
+.pipe-node .icon{font-size:26px;}
+.pipe-node .label{font-weight:700;font-size:13.5px;margin-top:8px;}
+.pipe-arrow{display:flex;align-items:center;justify-content:center;padding:0 8px;color:var(--text-faint);font-size:18px;}
+.pipe-detail{margin-top:20px;padding:18px 20px;min-height:70px;}
+.risk-box{margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(245,158,11,0.09);border:1px solid rgba(245,158,11,0.3);font-size:13px;color:#fde68a;display:none;}
+.risk-box.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Hands-on compare ===================== */
+.handson-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media (max-width:820px){.handson-grid{grid-template-columns:1fr;}}
+.hc-panel{border-radius:14px;padding:20px;border:1px solid var(--border);}
+.hc-panel.raw{background:linear-gradient(160deg, rgba(251,113,133,0.08), transparent);}
+.hc-panel.grounded{background:linear-gradient(160deg, rgba(52,211,153,0.1), transparent);}
+.hc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.hc-body{font-size:13.8px;background:var(--surface-2);border-radius:10px;padding:14px;border:1px solid var(--border-soft);}
+.hc-body .cite{font-family:var(--mono);font-size:11.5px;color:var(--accent-2);background:rgba(34,211,238,0.08);padding:1px 6px;border-radius:4px;}
+.hc-checklist{margin-top:12px;display:flex;flex-direction:column;gap:6px;font-size:13px;}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.to-top{display:inline-flex;margin-top:20px;}
+
+@media (max-width:640px){
+  .section{padding:60px 16px;}
+  .cand-row{grid-template-columns:90px 1fr 46px;gap:8px;}
+}
+</style>
+</head>
+<body>
+
+<div class="token-stream" id="tokenStream" aria-hidden="true"></div>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="brand-badge">🧠</span> Module 1</div>
+    <div class="navlinks" id="navlinks">
+      <a href="#generation">Generation</a>
+      <a href="#tokens">Tokens</a>
+      <a href="#prompting">Prompting</a>
+      <a href="#limits">Limits</a>
+      <a href="#compare">Deterministic</a>
+      <a href="#landscape">SDLC</a>
+      <a href="#glossary">Glossary</a>
+      <a href="#trust">Trust</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-2-introduction-to-cursor-ai.html" class="prev-link" style="margin-left:auto;">Module 2 →</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 1 · Module 1</div>
+    <h1>GenAI / LLM Foundations<br>Refresher</h1>
+    <p class="hero-sub">Before we touch Cursor, agents, or MCP, let's ground the mental model: how these models actually generate text, what constrains them, and why every AI-assisted engineering workflow still needs verification, traceability, and human judgment.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 45 min</span>
+      <span class="pill pill-neutral">🎯 Non-mathematical</span>
+      <span class="pill pill-neutral">🖱 11 interactive sections</span>
+      <span class="pill pill-neutral">📝 Ends with a knowledge check</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. HOW LLMS GENERATE TEXT -->
+<!-- ============================================================ -->
+<section class="section" id="generation">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / How LLMs generate text</span>
+      <h2>One token at a time, and nothing more mysterious</h2>
+      <p>An LLM doesn't "know" the ending of a sentence when it starts. At each step it looks at everything so far and produces a probability for every possible next token — then one gets picked, gets appended, and the whole thing repeats. This is <b>autoregressive generation</b>. Try it below: click a candidate at each step (the boldest bar is what the model would pick by default).</p>
+    </div>
+    <div class="card predictor reveal">
+      <div class="predictor-sentence" id="predSentence"></div>
+      <div class="candidates" id="predCandidates"></div>
+      <div class="predictor-controls">
+        <button class="btn btn-primary" id="predAuto">▶ Auto-generate (greedy)</button>
+        <button class="btn" id="predReset">↺ Reset</button>
+        <span class="hint" id="predStatus"></span>
+      </div>
+      <div class="predictor-note">This is a simplified, hand-scripted illustration — real models choose from a vocabulary of tens of thousands of tokens at every single step, using probabilities learned from massive training data, not a fixed script like this demo.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. TOKENS & CONTEXT WINDOWS -->
+<!-- ============================================================ -->
+<section class="section" id="tokens">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / Tokens &amp; context windows</span>
+      <h2>Models don't read words. They read tokens.</h2>
+      <p>A token is roughly a word-piece — short words are usually one token, longer or unusual ones get split into chunks. Everything the model can "see" at once — your instructions, the files you attached, the whole conversation — has to fit inside a fixed budget called the <b>context window</b>. That budget is exactly why agent and tool design has to be deliberate about what gets included.</p>
+    </div>
+
+    <div class="card reveal" style="margin-bottom:20px;">
+      <h4 style="font-size:15px;">Try the tokenizer</h4>
+      <textarea class="tok-input" id="tokInput">Context engineering means giving the agent exactly the right files, docs, and constraints — not everything.</textarea>
+      <div class="tok-output" id="tokOutput"></div>
+      <div class="tok-stats">
+        <div class="tok-stat"><b id="tokCount">0</b><span>tokens</span></div>
+        <div class="tok-stat"><b id="charCount">0</b><span>characters</span></div>
+        <div class="tok-stat"><b id="charPerTok">0</b><span>chars / token</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px;">Illustrative tokenizer (splits long words into ~4-character chunks to show the idea). Real models use byte-pair encoding trained on huge corpora — the mechanism you're seeing here is the same shape, not the same vocabulary.</p>
+    </div>
+
+    <div class="card reveal">
+      <h4 style="font-size:15px;">Watch a context window fill up — and spill</h4>
+      <p class="hint">Window sizes below are scaled down for a legible demo. Real models today range from ~8K to 1M+ tokens — the truncation mechanism is identical at any scale.</p>
+      <div class="cw-presets" id="cwPresets"></div>
+      <div class="cw-bar-wrap">
+        <div class="cw-bar-track"><div class="cw-bar-fill" id="cwBarFill"></div></div>
+        <div class="cw-bar-label"><span id="cwUsed">0 tokens used</span><span id="cwBudget">/ 1600 token budget</span></div>
+      </div>
+      <div style="display:flex;gap:10px;margin:14px 0 18px;">
+        <button class="btn btn-primary btn-sm" id="cwAdd">+ Add conversation turn</button>
+        <button class="btn btn-sm" id="cwReset">↺ Reset conversation</button>
+      </div>
+      <div class="cw-log" id="cwLog"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. PROMPTING FUNDAMENTALS -->
+<!-- ============================================================ -->
+<section class="section" id="prompting">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / Prompting fundamentals</span>
+      <h2>Same model, wildly different results</h2>
+      <p>Three levers do most of the work: how clear your instruction is, whether the model has examples to pattern-match against, and the split between system prompts (persistent rules) and user prompts (per-turn asks).</p>
+    </div>
+
+    <div class="card reveal" style="margin-bottom:20px;">
+      <h4 style="font-size:15px;margin-bottom:16px;">Instruction clarity</h4>
+      <div class="grid-2">
+        <div class="card-soft" style="padding:18px;">
+          <span class="pill pill-bad">Vague</span>
+          <div class="prompt-box" style="margin-top:12px;">"fix the bug"</div>
+          <div class="output-box">Here's a general approach: add error handling, double-check your inputs, and review recent changes for anything that looks off.</div>
+          <div class="clarity-meter"><div class="clarity-fill" style="width:18%;background:var(--danger);"></div></div>
+          <span class="tag">clarity score: 18%</span>
+        </div>
+        <div class="card-soft" style="padding:18px;">
+          <span class="pill pill-good">Clear</span>
+          <div class="prompt-box" style="margin-top:12px;">"Fix the NullPointerException in UserService.getProfile() (line 42) — it happens when user.email is null. Add a null check and return HTTP 400 'Email required' instead of crashing. Keep the method signature unchanged."</div>
+          <div class="output-box">Added a null check before line 42: if <code>user.email</code> is null, return <code>400</code> with "Email required". Signature unchanged, 1 file touched.</div>
+          <div class="clarity-meter"><div class="clarity-fill" style="width:94%;background:var(--good);"></div></div>
+          <span class="tag">clarity score: 94%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card reveal">
+        <h4 style="font-size:15px;">System vs. user prompts</h4>
+        <p class="hint" style="margin:8px 0 14px;">The system prompt is set once and persists every turn. User prompts change turn by turn. Click through and watch the system rules keep shaping every response.</p>
+        <div class="stack-layer stack-outer">
+          <span class="stack-tag">🔒 system prompt — persists every turn</span>
+          <div class="prompt-box" style="margin-top:4px;">You are a senior code reviewer. Always: (1) flag security issues first, (2) cite file:line, (3) stay under 150 words, (4) never invent APIs that aren't in the repo.</div>
+          <div class="stack-inner">
+            <span class="tag">🔄 user prompt — turn <span id="suTurnNum">1</span> of 3</span>
+            <div class="prompt-box" id="suUserPrompt" style="margin-top:8px;"></div>
+            <div class="output-box" id="suOutput"></div>
+          </div>
+        </div>
+        <div style="margin-top:14px;"><button class="btn btn-sm" id="suNext">Next turn →</button></div>
+      </div>
+
+      <div class="card reveal">
+        <h4 style="font-size:15px;">Few-shot vs. zero-shot</h4>
+        <p class="hint" style="margin:8px 0 14px;">Same instruction, same model. Examples change the output's <i>shape</i> without changing the underlying rules.</p>
+        <div class="tabbar">
+          <button class="btn tab-btn btn-sm active" data-fs="zero">Zero-shot</button>
+          <button class="btn tab-btn btn-sm" data-fs="few">Few-shot</button>
+        </div>
+        <div id="fsZero" class="tab-panel active">
+          <div class="prompt-box">Rewrite this commit message to be more descriptive: "fix bug"</div>
+          <div class="output-box">"Fix null pointer exception in UserService.getProfile by adding a null check"</div>
+          <span class="tag">Reasonable — but no consistent format.</span>
+        </div>
+        <div id="fsFew" class="tab-panel">
+          <div class="prompt-box">Convert to Conventional Commits format.
+Before: "added login" → After: "feat(auth): add login endpoint"
+Before: "css fix" → After: "fix(ui): correct button alignment on mobile"
+Before: "fix bug" → After:</div>
+          <div class="output-box">"fix(user-service): add null check to prevent NPE in getProfile()"</div>
+          <span class="tag">Matches the demonstrated convention exactly.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. CAPABILITIES & LIMITATIONS -->
+<!-- ============================================================ -->
+<section class="section" id="limits">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Capabilities &amp; known limitations</span>
+      <h2>Fluent is not the same as correct</h2>
+      <p>Generative AI is remarkably capable — and has specific, predictable failure modes. Knowing the shape of these limitations is what makes the rest of this course (verification, grounding, agents with guardrails) make sense.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tabbar">
+        <button class="btn tab-btn active" data-tab="hallucination">🌀 Hallucination</button>
+        <button class="btn tab-btn" data-tab="cutoff">🕐 Knowledge cutoff</button>
+        <button class="btn tab-btn" data-tab="nondeterminism">🎲 Non-determinism</button>
+      </div>
+
+      <div class="tab-panel active" id="panel-hallucination">
+        <div class="chatbubble user"><div class="who">Developer</div>What's the syntax to retry a fetch using <code>requests.retry_with_backoff()</code>?</div>
+        <div class="chatbubble" style="margin-top:10px;"><div class="who">Model</div>You can use <code>requests.retry_with_backoff(url, max_attempts=3, backoff_factor=2)</code> — it automatically retries failed requests with exponential backoff.</div>
+        <button class="btn btn-sm flag-btn" id="revealHallucination">⚠️ Reveal the problem</button>
+        <div class="flag-reveal" id="hallucinationReveal"><b>Fabricated.</b> <code>requests.retry_with_backoff()</code> does not exist in the <code>requests</code> library. The real approach uses <code>urllib3.util.Retry</code> wired into an <code>HTTPAdapter</code>. The answer was fluent, confident, specific — and wrong. That combination is exactly what makes hallucination dangerous.</div>
+      </div>
+
+      <div class="tab-panel" id="panel-cutoff">
+        <p style="font-size:14px;color:var(--text-dim);">Every model has a training data cutoff. Anything that happened after that date is a blind spot unless the model is explicitly grounded with fresh information (search, docs, your repo).</p>
+        <div class="timeline-track">
+          <div class="timeline-fill" style="width:62%;"></div>
+          <div class="timeline-blind" style="left:62%;right:0;"></div>
+        </div>
+        <div class="timeline-labels"><span>Training data begins</span><span>Training cutoff</span><span>Today</span></div>
+        <div class="output-box" style="margin-top:18px;">Example: ask about a library version released after cutoff, and the model may not know it exists — or may confidently describe an older version as if it were current.</div>
+      </div>
+
+      <div class="tab-panel" id="panel-nondeterminism">
+        <p style="font-size:14px;color:var(--text-dim);">Same prompt, run more than once, can produce different — often equally valid — outputs. This is the opposite of how traditional code behaves.</p>
+        <div class="prompt-box" style="margin-top:12px;">"Write a one-line comment explaining this function."</div>
+        <div class="dice-row" id="diceRow"></div>
+        <div style="margin-top:14px;"><button class="btn btn-sm" id="diceRoll">🎲 Run again</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. GENAI VS DETERMINISTIC SOFTWARE -->
+<!-- ============================================================ -->
+<section class="section" id="compare">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / GenAI vs. traditional software</span>
+      <h2>Same input. Different guarantee.</h2>
+      <p>This is the core mental shift for engineers: traditional code is a fixed set of rules — same input always yields the same output. A generative model is probabilistic — same input can yield different, plausible outputs. Press "Run" on each panel a few times.</p>
+    </div>
+    <div class="grid-2">
+      <div class="compare-panel det reveal">
+        <span class="pill pill-neutral">⚙️ Traditional software</span>
+        <div class="compare-io">function add(a, b) {<br>&nbsp;&nbsp;return a + b;<br>}<br><br>add(2, 3)</div>
+        <div class="output-box" id="detOutput">→ 5</div>
+        <div class="compare-counter" id="detCounter">runs: 0 · identical every time ✅</div>
+        <button class="btn btn-sm" style="margin-top:14px;" id="detRun">▶ Run</button>
+      </div>
+      <div class="compare-panel gen reveal">
+        <span class="pill pill-neutral">✨ Generative AI</span>
+        <div class="compare-io">Prompt: "Summarize this paragraph in one sentence."<br>Input: [same paragraph, every run]</div>
+        <div class="output-box" id="genOutput">→ press Run</div>
+        <div class="compare-counter" id="genCounter">runs: 0 · output can vary 🎲</div>
+        <button class="btn btn-sm" style="margin-top:14px;" id="genRun">▶ Run</button>
+      </div>
+    </div>
+    <p class="hint reveal" style="margin-top:18px;">This is precisely why AI-assisted engineering workflows lean on verification, traceability, and human judgment — see Section 08.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. AI-ASSISTED SDLC LANDSCAPE -->
+<!-- ============================================================ -->
+<section class="section" id="landscape">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / The AI-assisted SDLC landscape</span>
+      <h2>From typing prompts to orchestrating agents</h2>
+      <p>This course climbs this ladder over the next 7 days. Click each stage.</p>
+    </div>
+    <div class="card reveal">
+      <div class="stepper" id="sdlcStepper"></div>
+      <div class="card-soft step-detail" id="sdlcDetail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. GLOSSARY -->
+<!-- ============================================================ -->
+<section class="section" id="glossary">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Core terminology</span>
+      <h2>The vocabulary this whole course is built on</h2>
+      <p>Flip each card. These nine terms recur in every module from here on.</p>
+    </div>
+    <div class="glossary-grid" id="glossaryGrid"></div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. TRUST PIPELINE -->
+<!-- ============================================================ -->
+<section class="section" id="trust">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">08 / Why verification &amp; traceability matter</span>
+      <h2>Never ship straight from "AI wrote it"</h2>
+      <p>Because outputs can be confidently wrong and non-deterministic (Sections 04–05), engineering workflows insert checkpoints between generation and production. Click each node.</p>
+    </div>
+    <div class="card reveal">
+      <div class="pipeline" id="pipeline"></div>
+      <div class="card-soft pipe-detail" id="pipeDetail"></div>
+      <div style="margin-top:14px;"><button class="btn btn-sm" id="riskToggle">⚠️ What if we skip this?</button></div>
+      <div class="risk-box" id="riskBox"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 9. HANDS-ON: RAW VS GROUNDED -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">09 / Hands-on — the module's guided comparison</span>
+      <h2>Raw LLM response vs. codebase-grounded agent</h2>
+      <p>Same question, two very different answers. This is the exercise the module is built around — establishing why context and grounding matter before we ever open Cursor.</p>
+    </div>
+    <div class="prompt-box reveal" style="margin-bottom:20px;">"How do we currently handle retry logic for the payment API?"</div>
+    <div class="handson-grid">
+      <div class="hc-panel raw reveal">
+        <div class="hc-head"><span class="pill pill-bad">Raw LLM — no grounding</span></div>
+        <div class="hc-body">A common approach is to wrap your HTTP call in a retry loop with exponential backoff — e.g. retry up to 3–5 times, doubling the delay each attempt, and give up after a max threshold. Libraries like <code>tenacity</code> or <code>retry</code> can help implement this pattern.</div>
+        <div class="hc-checklist">
+          <span>❌ Generic — textbook advice, not your code</span>
+          <span>❌ Unverifiable — no file or line to check</span>
+          <span>⚠️ May not match what's actually implemented</span>
+        </div>
+      </div>
+      <div class="hc-panel grounded reveal">
+        <div class="hc-head"><span class="pill pill-good">Codebase-grounded agent</span></div>
+        <div class="hc-body">Retry logic lives in <span class="cite">PaymentClient.ts:88</span>, inside <code>withExponentialBackoff()</code>. It's configured with <code>MAX_RETRIES = 3</code> and a 200ms base delay, and only retries on HTTP 502/503/504 — 4xx errors fail immediately. Called from <span class="cite">checkoutService.ts:41</span>.</div>
+        <div class="hc-checklist">
+          <span>✅ Specific — real file, real function, real constants</span>
+          <span>✅ Citable — you can open the exact lines and check</span>
+          <span>✅ Verifiable — matches what's actually deployed</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 10. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">10 / Knowledge check</span>
+      <h2>Quick check before we move on</h2>
+      <p>Five questions, straight from what you just walked through. No pressure — retry as many times as you like.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/5</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">What to carry into Module 2</h3>
+    <ul>
+      <li>LLMs generate text one token at a time, guided by learned probabilities — not lookup or search.</li>
+      <li>Tokens and context windows are hard constraints that shape everything about agent and tool design.</li>
+      <li>Clear instructions, well-placed examples, and system/user prompt separation change output quality dramatically.</li>
+      <li>Hallucination, knowledge cutoffs, and non-determinism are predictable, not occasional — design around them.</li>
+      <li>GenAI is probabilistic where traditional software is deterministic — that gap is why verification matters.</li>
+      <li>The SDLC ladder — prompt-driven → context engineering → agents → multi-agent — is the spine of this entire course.</li>
+      <li>Grounded, codebase-aware answers beat generic ones. That's the whole reason Cursor exists.</li>
+    </ul>
+  </div>
+  <a href="#" class="btn to-top">↑ Back to top</a>
+  <p class="footer-line" style="margin-top:26px;">Module 1 — GenAI/LLM Foundations Refresher · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["the","agent","reads","context","window","tokenize","predict","next","token","grounded","spec","verify","MCP","orchestrate","subagent","generate","probability","embed"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state + smooth scroll offset ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){
+    links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); });
+  }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else {
+    items.forEach(function(i){ i.classList.add('in-view'); });
+  }
+})();
+
+/* ============================================================
+   1. TOKEN PREDICTOR
+   ============================================================ */
+(function(){
+  var steps = [
+    { after:"", candidates:[
+      {t:"flagged", p:0.34, best:true},{t:"approved", p:0.28},{t:"suggested", p:0.19},
+      {t:"ignored", p:0.09},{t:"deleted", p:0.06},{t:"yawned", p:0.04}
+    ]},
+    { after:" flagged", candidates:[
+      {t:"three", p:0.31, best:true},{t:"a", p:0.27},{t:"several", p:0.22},{t:"the", p:0.14},{t:"purple", p:0.06}
+    ]},
+    { after:" flagged three", candidates:[
+      {t:"potential", p:0.36, best:true},{t:"critical", p:0.29},{t:"unused", p:0.18},{t:"minor", p:0.10},{t:"banana", p:0.07}
+    ]},
+    { after:" flagged three potential", candidates:[
+      {t:"issues", p:0.52, best:true},{t:"bugs", p:0.24},{t:"risks", p:0.17},{t:"elephants", p:0.04},{t:"cupcakes", p:0.03}
+    ]}
+  ];
+  var base = "The AI assistant reviewed the pull request and";
+  var picked = [];
+  var stepIdx = 0;
+  var diverged = false;
+  var sentenceEl = document.getElementById('predSentence');
+  var candEl = document.getElementById('predCandidates');
+  var statusEl = document.getElementById('predStatus');
+  var autoBtn = document.getElementById('predAuto');
+  var resetBtn = document.getElementById('predReset');
+
+  function renderSentence(){
+    var html = '<span class="base">'+base+'</span>';
+    picked.forEach(function(p){ html += ' <span class="picked'+(p.alt?' alt':'')+'">'+p.tok+'</span>'; });
+    if(stepIdx < steps.length && !diverged){ html += '<span class="cursor"></span>'; }
+    else if(diverged){ html += '<span style="color:var(--warn);font-family:var(--mono);font-size:13px;"> 🔀 path diverged</span>'; }
+    else { html += '<span class="picked">.</span> <span class="pill pill-good" style="margin-left:8px;">✅ complete</span>'; }
+    sentenceEl.innerHTML = html;
+  }
+
+  function renderCandidates(){
+    candEl.innerHTML = '';
+    if(diverged){
+      candEl.innerHTML = '<p class="hint">In a real model, generation would keep going from this new context. This demo scripts one likely path — hit Reset to explore it.</p>';
+      autoBtn.disabled = true;
+      return;
+    }
+    if(stepIdx >= steps.length){
+      candEl.innerHTML = '<p class="hint">Sentence complete. Hit Reset to generate again.</p>';
+      autoBtn.disabled = true;
+      return;
+    }
+    autoBtn.disabled = false;
+    var cands = steps[stepIdx].candidates.slice().sort(function(a,b){ return b.p - a.p; });
+    cands.forEach(function(c){
+      var row = document.createElement('div');
+      row.className = 'cand-row' + (c.best ? ' best' : '');
+      row.innerHTML = '<span class="cand-tok">'+c.t+'</span>'+
+        '<span class="cand-bar-track"><span class="cand-bar-fill" style="width:0%"></span></span>'+
+        '<span class="cand-pct">'+Math.round(c.p*100)+'%</span>';
+      row.addEventListener('click', function(){ choose(c); });
+      candEl.appendChild(row);
+      requestAnimationFrame(function(){
+        row.querySelector('.cand-bar-fill').style.width = (c.p*100)+'%';
+      });
+    });
+  }
+
+  function choose(c){
+    picked.push({tok:c.t, alt: !c.best});
+    if(!c.best){ diverged = true; }
+    else { stepIdx++; }
+    statusEl.textContent = 'step ' + Math.min(stepIdx, steps.length) + ' of ' + steps.length;
+    renderSentence();
+    renderCandidates();
+  }
+
+  function reset(){
+    picked = []; stepIdx = 0; diverged = false;
+    statusEl.textContent = 'step 0 of ' + steps.length;
+    renderSentence();
+    renderCandidates();
+  }
+
+  autoBtn.addEventListener('click', function(){
+    if(stepIdx < steps.length && !diverged){
+      var best = steps[stepIdx].candidates.find(function(c){ return c.best; });
+      choose(best);
+    }
+  });
+  resetBtn.addEventListener('click', reset);
+  reset();
+})();
+
+/* ============================================================
+   2a. TOKENIZER
+   ============================================================ */
+(function(){
+  var input = document.getElementById('tokInput');
+  var output = document.getElementById('tokOutput');
+  var tokCount = document.getElementById('tokCount');
+  var charCount = document.getElementById('charCount');
+  var charPerTok = document.getElementById('charPerTok');
+  var palette = ['#a855f7','#22d3ee','#f59e0b','#34d399','#fb7185','#818cf8'];
+
+  function approxTokenize(text){
+    var pieces = text.match(/\s+|[A-Za-z0-9]+|[^\sA-Za-z0-9]+/g) || [];
+    var tokens = [];
+    pieces.forEach(function(piece){
+      if(/^\s+$/.test(piece)){ return; }
+      var precededBySpace = false;
+      // crude check handled by iterating original string is overkill; mark via next loop below
+      if(/^[A-Za-z0-9]+$/.test(piece) && piece.length > 7){
+        var chunks = [];
+        for(var i=0;i<piece.length;i+=4){ chunks.push(piece.slice(i, i+4)); }
+        chunks.forEach(function(c, idx){ tokens.push({text:c, cont: idx>0}); });
+      } else {
+        tokens.push({text:piece, cont:false});
+      }
+    });
+    return tokens;
+  }
+
+  function render(){
+    var text = input.value;
+    var tokens = approxTokenize(text);
+    output.innerHTML = '';
+    var colorIdx = 0;
+    tokens.forEach(function(tok){
+      if(!tok.cont){ colorIdx = (colorIdx+1) % palette.length; }
+      var chip = document.createElement('span');
+      chip.className = 'chip';
+      var color = palette[colorIdx];
+      chip.style.background = color + '22';
+      chip.style.color = color;
+      chip.style.border = '1px solid ' + color + '55';
+      if(tok.cont){ chip.style.borderLeft = '1px dashed ' + color; chip.style.marginLeft='-1px'; }
+      chip.textContent = tok.text;
+      output.appendChild(chip);
+    });
+    tokCount.textContent = tokens.length;
+    charCount.textContent = text.length;
+    charPerTok.textContent = tokens.length ? (text.length / tokens.length).toFixed(1) : '0';
+  }
+
+  var t;
+  input.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(render, 120); });
+  render();
+})();
+
+/* ============================================================
+   2b. CONTEXT WINDOW
+   ============================================================ */
+(function(){
+  var presets = [{label:'Small · 800', val:800},{label:'Medium · 1,600', val:1600},{label:'Large · 3,200', val:3200}];
+  var presetWrap = document.getElementById('cwPresets');
+  var budget = 1600;
+  var pinnedTokens = 150;
+  var demoTurns = [
+    {role:'user', text:'Summarize the auth module.', tokens:60},
+    {role:'assistant', text:'The auth module handles login, JWT issuance, and refresh tokens across 4 files.', tokens:90},
+    {role:'user', text:'Now add rate limiting to the login endpoint.', tokens:70},
+    {role:'assistant', text:'Added a token-bucket limiter in RateLimiter.ts and wired it into POST /login.', tokens:110},
+    {role:'user', text:'Write unit tests for the limiter.', tokens:65},
+    {role:'assistant', text:'Added 6 tests covering burst limits, refill timing, and concurrent requests.', tokens:130},
+    {role:'user', text:'Explain the refill timing test in detail.', tokens:55},
+    {role:'assistant', text:'The refill test advances a fake clock in 1s increments and asserts capacity returns after the configured window.', tokens:150},
+    {role:'user', text:'Any edge cases we might be missing?', tokens:45},
+    {role:'assistant', text:'Clock skew across pods and simultaneous requests at t=0 can both cause off-by-one allowances.', tokens:140}
+  ];
+  var conversation = [];
+  var turnCounter = 0;
+
+  presets.forEach(function(p){
+    var b = document.createElement('button');
+    b.className = 'btn cw-preset' + (p.val === budget ? ' active' : '');
+    b.textContent = p.label;
+    b.addEventListener('click', function(){
+      budget = p.val;
+      presetWrap.querySelectorAll('.cw-preset').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    presetWrap.appendChild(b);
+  });
+
+  function addTurn(){
+    var demo = demoTurns[turnCounter % demoTurns.length];
+    var repeatNum = Math.floor(turnCounter / demoTurns.length);
+    conversation.push({
+      role: demo.role,
+      text: demo.text + (repeatNum > 0 ? ' (turn ' + (turnCounter+1) + ')' : ''),
+      tokens: demo.tokens
+    });
+    turnCounter++;
+    render();
+  }
+
+  function render(){
+    var log = document.getElementById('cwLog');
+    log.innerHTML = '';
+
+    var pinned = document.createElement('div');
+    pinned.className = 'cw-msg pinned';
+    pinned.innerHTML = '<div><div class="role">🔒 system — pinned</div>Persistent instructions &amp; rules</div><span class="cost">'+pinnedTokens+' tok</span>';
+    log.appendChild(pinned);
+
+    var runningBudgetLeft = budget - pinnedTokens;
+    var withActive = [];
+    var cumulative = 0;
+    for(var i = conversation.length - 1; i >= 0; i--){
+      cumulative += conversation[i].tokens;
+      withActive[i] = cumulative <= runningBudgetLeft;
+    }
+
+    var usedTokens = pinnedTokens;
+    var droppedCount = 0;
+
+    conversation.forEach(function(msg, idx){
+      var active = withActive[idx];
+      if(active) usedTokens += msg.tokens; else droppedCount++;
+      var row = document.createElement('div');
+      row.className = 'cw-msg ' + msg.role + (active ? '' : ' dropped');
+      row.innerHTML = '<div><div class="role">'+ (msg.role === 'user' ? '👤 user' : '🤖 assistant') +
+        (active ? '' : ' <span class="cw-dropped-tag">· dropped from context</span>') +
+        '</div>'+msg.text+'</div><span class="cost">'+msg.tokens+' tok</span>';
+      log.appendChild(row);
+    });
+
+    var pct = Math.min(100, (usedTokens / budget) * 100);
+    var fill = document.getElementById('cwBarFill');
+    fill.style.width = pct + '%';
+    fill.classList.toggle('over', usedTokens >= budget && droppedCount > 0);
+    document.getElementById('cwUsed').textContent = usedTokens + ' tokens used' + (droppedCount ? ' · ' + droppedCount + ' turn(s) dropped' : '');
+    document.getElementById('cwBudget').textContent = '/ ' + budget + ' token budget';
+  }
+
+  document.getElementById('cwAdd').addEventListener('click', addTurn);
+  document.getElementById('cwReset').addEventListener('click', function(){
+    conversation = []; turnCounter = 0; render();
+  });
+  render();
+})();
+
+/* ============================================================
+   3a. SYSTEM VS USER PROMPT
+   ============================================================ */
+(function(){
+  var turns = [
+    { user:'Review PaymentService.ts', out:'⚠️ Line 41: card token logged in plaintext — security issue. See PaymentService.ts:41. (62 words)' },
+    { user:'Now review the changes in AuthMiddleware.ts', out:'⚠️ Line 19: missing expiry check on refresh token — security issue. See AuthMiddleware.ts:19. (58 words)' },
+    { user:'Summarize all issues found so far', out:'2 security issues flagged: plaintext token log (PaymentService.ts:41), missing expiry check (AuthMiddleware.ts:19). Both cited with file:line, both under 150 words.' }
+  ];
+  var idx = 0;
+  function render(){
+    document.getElementById('suTurnNum').textContent = idx+1;
+    document.getElementById('suUserPrompt').textContent = turns[idx].user;
+    document.getElementById('suOutput').textContent = turns[idx].out;
+  }
+  document.getElementById('suNext').addEventListener('click', function(){
+    idx = (idx+1) % turns.length; render();
+  });
+  render();
+})();
+
+/* ============================================================
+   3b. FEW-SHOT TABS
+   ============================================================ */
+(function(){
+  var btns = document.querySelectorAll('[data-fs]');
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      btns.forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      document.getElementById('fsZero').classList.toggle('active', b.dataset.fs === 'zero');
+      document.getElementById('fsFew').classList.toggle('active', b.dataset.fs === 'few');
+    });
+  });
+})();
+
+/* ============================================================
+   4. LIMITATIONS TABS
+   ============================================================ */
+(function(){
+  var btns = document.querySelectorAll('[data-tab]');
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      btns.forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+      document.getElementById('panel-'+b.dataset.tab).classList.add('active');
+    });
+  });
+
+  document.getElementById('revealHallucination').addEventListener('click', function(){
+    document.getElementById('hallucinationReveal').classList.toggle('show');
+  });
+
+  var diceOutputs = [
+    ["// Calculates the total price including tax and discounts","// Applies the discount, then adds tax to get the final total","// Returns the checkout total after tax and discount adjustments"],
+    ["// Computes the final price after applying discounts and tax","// Totals the cart, factoring in both discounts and applicable tax","// Derives the payable amount from price, discount, and tax rate"]
+  ];
+  var diceRow = document.getElementById('diceRow');
+  var runCount = 0;
+  function rollDice(){
+    var set = diceOutputs[runCount % diceOutputs.length];
+    diceRow.innerHTML = '';
+    set.forEach(function(text, i){
+      var card = document.createElement('div');
+      card.className = 'dice-card';
+      card.innerHTML = '<div class="run-tag">run '+(runCount+1)+' · sample '+(i+1)+'</div>'+text;
+      diceRow.appendChild(card);
+    });
+    runCount++;
+  }
+  document.getElementById('diceRoll').addEventListener('click', rollDice);
+  rollDice();
+})();
+
+/* ============================================================
+   5. DETERMINISTIC VS GENAI
+   ============================================================ */
+(function(){
+  var detCount = 0;
+  document.getElementById('detRun').addEventListener('click', function(){
+    detCount++;
+    document.getElementById('detOutput').textContent = '→ 5';
+    document.getElementById('detCounter').textContent = 'runs: '+detCount+' · identical every time ✅';
+  });
+  var genOutputs = [
+    'This function calculates the checkout total by applying discounts before tax.',
+    'The checkout total is computed by first applying any discount, then adding tax.',
+    'Tax is added after discounts are applied to determine the final checkout total.'
+  ];
+  var genCount = 0;
+  document.getElementById('genRun').addEventListener('click', function(){
+    document.getElementById('genOutput').textContent = '→ "' + genOutputs[genCount % genOutputs.length] + '"';
+    genCount++;
+    document.getElementById('genCounter').textContent = 'runs: '+genCount+' · output can vary 🎲';
+  });
+})();
+
+/* ============================================================
+   6. SDLC STEPPER
+   ============================================================ */
+(function(){
+  var stages = [
+    { title:'Prompt-driven coding', pct:25, icon:'💬',
+      desc:'You ask the AI to write or explain a snippet. You copy, paste, and verify it yourself, one exchange at a time.',
+      example:'"Write a regex to validate emails" → paste into your file, test manually.' },
+    { title:'Context engineering', pct:50, icon:'🧩',
+      desc:'You deliberately feed the model the right files, docs, and constraints — @-mentioning code, linking specs — so the answer is grounded in your actual system instead of a generic guess.',
+      example:'"@UserService.ts @SRS.md implement password reset to match the spec"' },
+    { title:'Agents', pct:75, icon:'🤖',
+      desc:'The AI plans multi-step work, uses tools (reads files, runs the terminal, edits code, runs tests), and iterates toward a goal within a defined scope — largely on its own.',
+      example:'Agent reads the ticket → edits 3 files → runs tests → fixes a failure → reports back.' },
+    { title:'Multi-agent workflows', pct:100, icon:'🕸️',
+      desc:'Multiple specialized agents/subagents collaborate under orchestration — each with a narrow role, coordinated toward one larger deliverable.',
+      example:'Test-writer agent → implementer agent → reviewer agent → human approval gate.' }
+  ];
+  var stepperEl = document.getElementById('sdlcStepper');
+  var detailEl = document.getElementById('sdlcDetail');
+  var active = 0;
+
+  function renderDetail(){
+    var s = stages[active];
+    detailEl.innerHTML = '<div style="font-size:22px;">'+s.icon+'</div>'+
+      '<h4 style="margin-top:10px;font-size:16px;">'+s.title+'</h4>'+
+      '<p style="margin-top:8px;font-size:14px;color:var(--text-dim);">'+s.desc+'</p>'+
+      '<div class="example">'+s.example+'</div>';
+  }
+
+  stages.forEach(function(s, i){
+    var btn = document.createElement('div');
+    btn.className = 'step-btn' + (i===0 ? ' active' : '');
+    btn.innerHTML = '<div class="step-num">STAGE '+(i+1)+'</div><div class="step-title">'+s.icon+' '+s.title+'</div>'+
+      '<div class="step-bar"><div class="step-bar-fill" style="width:'+s.pct+'%"></div></div>';
+    btn.addEventListener('click', function(){
+      active = i;
+      stepperEl.querySelectorAll('.step-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderDetail();
+    });
+    stepperEl.appendChild(btn);
+  });
+  renderDetail();
+})();
+
+/* ============================================================
+   7. GLOSSARY FLIP CARDS
+   ============================================================ */
+(function(){
+  var terms = [
+    {icon:'🧠', name:'LLM', hint:'Large Language Model', def:'A model trained on huge amounts of text to predict the next token — the engine behind chat and coding assistants.'},
+    {icon:'📏', name:'Context Window', hint:'the token budget', def:'The maximum amount of text (measured in tokens) a model can see at once. Instructions, files, and conversation history all share this budget.'},
+    {icon:'🧩', name:'Context Engineering', hint:'what goes in', def:'Deliberately selecting and shaping what enters the context window — the right files, docs, constraints — so the answer is grounded and relevant.'},
+    {icon:'🤖', name:'Agent', hint:'plans + acts', def:'An AI system that can plan, use tools, and take multi-step actions toward a goal, rather than just answering a single prompt.'},
+    {icon:'🎯', name:'Subagent', hint:'narrow + delegated', def:'A specialized, narrowly-scoped agent delegated a specific piece of work (e.g., "write tests") within a larger agentic workflow.'},
+    {icon:'🛠️', name:'Skill', hint:'packaged capability', def:'A packaged, reusable set of instructions or capability an agent can invoke for a specific recurring task.'},
+    {icon:'🕸️', name:'Orchestration', hint:'the coordination layer', def:'The layer that sequences and manages multiple agents/subagents — deciding what runs when, in what order, with what handoffs.'},
+    {icon:'🔌', name:'MCP', hint:'Model Context Protocol', def:'An open protocol that lets agents connect to external tools and data — repos, docs, ticketing systems, APIs — in a standardized way.'},
+    {icon:'📋', name:'Spec-Driven Development', hint:'spec as source of truth', def:'Treating a structured, versioned specification as the source of truth an agent implements against, with traceability from spec → code → tests.'}
+  ];
+  var grid = document.getElementById('glossaryGrid');
+  terms.forEach(function(term){
+    var card = document.createElement('div');
+    card.className = 'flip-card';
+    card.innerHTML = '<div class="flip-inner">'+
+      '<div class="flip-face flip-front"><div class="term-icon">'+term.icon+'</div><div class="term-name">'+term.name+'</div><div class="term-hint">'+term.hint+'</div></div>'+
+      '<div class="flip-face flip-back">'+term.def+'</div>'+
+    '</div>';
+    card.addEventListener('click', function(){ card.classList.toggle('flipped'); });
+    grid.appendChild(card);
+  });
+})();
+
+/* ============================================================
+   8. TRUST PIPELINE
+   ============================================================ */
+(function(){
+  var nodes = [
+    {icon:'✨', label:'AI Output', detail:'The model produces a draft — code, a plan, an analysis. Treat it as a first draft, not a final answer.', risk:'Skip straight to production and you inherit every hallucination and every non-deterministic quirk with zero safety net.'},
+    {icon:'✅', label:'Verify', detail:'Run tests, linters, and review. Confirm the output actually does what it claims — don\'t trust the confident tone.', risk:'Skip verification → a fabricated API call (Section 04) ships straight to production and crashes at runtime.'},
+    {icon:'🔗', label:'Trace', detail:'Link the change back to a spec or ticket so anyone can answer "why does this code exist?" later.', risk:'Skip tracing → six months from now nobody can explain why this logic exists, and nobody dares remove it.'},
+    {icon:'👤', label:'Human judgment', detail:'A person applies context the model doesn\'t have — business priorities, risk tolerance, org history — before it ships.', risk:'Skip human judgment → technically-passing code ships that is correct in isolation but wrong for the business.'},
+    {icon:'🚀', label:'Ship', detail:'Now it merges — reviewed, traceable, and owned by a human who approved it.', risk:'There\'s no bypassing this step safely — it\'s the payoff for doing the previous four.'}
+  ];
+  var pipeline = document.getElementById('pipeline');
+  var detail = document.getElementById('pipeDetail');
+  var riskBox = document.getElementById('riskBox');
+  var active = 0;
+
+  function renderDetail(){
+    detail.innerHTML = '<b>'+nodes[active].icon+' '+nodes[active].label+'</b><p style="margin-top:8px;font-size:14px;color:var(--text-dim);">'+nodes[active].detail+'</p>';
+    riskBox.classList.remove('show');
+  }
+
+  nodes.forEach(function(n, i){
+    if(i > 0){
+      var arrow = document.createElement('div');
+      arrow.className = 'pipe-arrow';
+      arrow.textContent = '→';
+      pipeline.appendChild(arrow);
+    }
+    var node = document.createElement('div');
+    node.className = 'pipe-node' + (i===0 ? ' active' : '');
+    node.innerHTML = '<div class="icon">'+n.icon+'</div><div class="label">'+n.label+'</div>';
+    node.addEventListener('click', function(){
+      active = i;
+      pipeline.querySelectorAll('.pipe-node').forEach(function(x){ x.classList.remove('active'); });
+      node.classList.add('active');
+      renderDetail();
+    });
+    pipeline.appendChild(node);
+  });
+
+  document.getElementById('riskToggle').addEventListener('click', function(){
+    riskBox.textContent = '⚠️ ' + nodes[active].risk;
+    riskBox.classList.toggle('show');
+  });
+
+  renderDetail();
+})();
+
+/* ============================================================
+   10. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:'What does an LLM fundamentally do at each generation step?', options:[
+        'Looks up the exact answer in a database',
+        'Predicts the most likely next token given everything so far',
+        'Executes a fixed set of deterministic rules',
+        'Searches the internet in real time'
+      ], correct:1, explain:'LLMs are autoregressive — they predict one token at a time based on learned probabilities, not lookup (Section 01).' },
+    { q:'Why do context windows matter for agent and tool design?', options:[
+        'They limit how much text/code the model can consider at once',
+        'They control the model\'s internet access',
+        'They only affect billing, not behavior',
+        'They\'re irrelevant to coding agents'
+      ], correct:0, explain:'Everything — instructions, files, history — has to fit inside a fixed token budget (Section 02).' },
+    { q:'A model confidently states a method exists that doesn\'t. What is this called?', options:[
+        'Non-determinism','Context engineering','Hallucination','Orchestration'
+      ], correct:2, explain:'Hallucination: fluent, confident, and wrong (Section 04).' },
+    { q:'What\'s the key difference between traditional software and generative AI?', options:[
+        'GenAI is always faster to execute',
+        'Traditional software is deterministic; GenAI is probabilistic and can vary',
+        'GenAI never makes mistakes',
+        'They are functionally identical'
+      ], correct:1, explain:'Same input can yield different (still plausible) outputs from a model — never true for a pure function (Section 05).' },
+    { q:'What best describes "context engineering"?', options:[
+        'Making the model itself bigger',
+        'Deliberately selecting and shaping what goes into the model\'s context so answers are grounded',
+        'A synonym for hallucination',
+        'Writing more unit tests'
+      ], correct:1, explain:'Context engineering is about curating the right inputs — files, docs, constraints — not the model\'s size (Section 06 / Glossary).' }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.textContent = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — solid foundation for the rest of the course.'
+      : score >= questions.length - 1
+      ? 'Nice work — you\'ve got the core ideas.'
+      : 'Worth a re-skim of the sections above before Module 2.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>

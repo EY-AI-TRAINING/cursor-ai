@@ -1,0 +1,519 @@
+<title>AI Chat & Context Mastery</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:13px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  /* mode comparison */
+  .mode-compare{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .mode-compare{ grid-template-columns:1fr; } }
+  .mode-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .mode-card h3{ font-family:var(--font-mono); font-size:13px; text-transform:uppercase; letter-spacing:.05em; margin:0 0 16px; color:var(--ink); }
+  .mode-card.ask{ border-top:3px solid var(--ink-soft); }
+  .mode-card.agent{ border-top:3px solid var(--plum); }
+  .mode-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .mode-list li{ display:flex; gap:10px; font-size:13.5px; align-items:flex-start; }
+  .mode-mark{ flex:none; font-weight:700; width:16px; }
+  .mode-mark.yes{ color:var(--teal); } .mode-mark.no{ color:var(--brick); }
+  .mode-note{ margin:16px 0 0; font-size:12.5px; color:var(--ink-soft); border-top:1px dashed var(--line-strong); padding-top:12px; }
+
+  /* activity cards */
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#scope" data-target="scope"><span class="dot"></span><span class="rail-label">01 · Chat &amp; scope</span></a>
+  <a href="#mentions" data-target="mentions"><span class="dot"></span><span class="rail-label">02 · @-mentions</span></a>
+  <a href="#modes" data-target="modes"><span class="dot"></span><span class="rail-label">03 · Ask vs. Agent</span></a>
+  <a href="#reliability" data-target="reliability"><span class="dot"></span><span class="rail-label">04 · Reliability curve</span></a>
+  <a href="#history" data-target="history"><span class="dot"></span><span class="rail-label">05 · History &amp; limits</span></a>
+  <a href="#promptcraft" data-target="promptcraft"><span class="dot"></span><span class="rail-label">06 · Prompt craft</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">07 · Hands-on</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">08 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#scope" data-target="scope">01</a>
+  <a href="#mentions" data-target="mentions">02</a>
+  <a href="#modes" data-target="modes">03</a>
+  <a href="#reliability" data-target="reliability">04</a>
+  <a href="#history" data-target="history">05</a>
+  <a href="#promptcraft" data-target="promptcraft">06</a>
+  <a href="#handson" data-target="handson">07</a>
+  <a href="#recap" data-target="recap">08</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 1 · Foundations — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">AI Chat, Context &amp; Ask Mode</h1>
+    <p class="lede hero-lede">Module 4 — 60 minutes, the longest session of Day 1. Chat is where most engineers spend their first real hours in Cursor — and where sloppy context habits get expensive fastest. This module is about controlling what the model sees, on purpose, every time you ask it something.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">subtopic</span></li>
+      <li class="stat-tile"><span class="stat-num">2</span><span class="stat-label">exercise + quiz</span></li>
+      <li class="stat-tile"><span class="stat-num">60</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#scope"><span class="agenda-index">01</span><span>AI Chat for code queries — file, folder &amp; codebase context</span></a></li>
+      <li><a href="#mentions"><span class="agenda-index">02</span><span>@-mentions — referencing files, docs, symbols &amp; project context</span></a></li>
+      <li><a href="#modes"><span class="agenda-index">03</span><span>Chat/Ask mode vs. Agent mode</span></a></li>
+      <li><a href="#reliability"><span class="agenda-index">04</span><span>Context selection &amp; scoping for reliable answers</span></a></li>
+      <li><a href="#history"><span class="agenda-index">05</span><span>Managing conversation history &amp; context limits</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="scope">
+  <div class="section-inner">
+    <p class="eyebrow">01 — Scope</p>
+    <h2 class="section-title">Same question, three different scopes</h2>
+    <p class="lede">AI Chat answers from whatever scope you hand it — a single open file, a chosen folder, or the whole indexed codebase. Scope isn't a setting you pick once; it's the single biggest lever on whether the answer is generic or exactly right for your repo.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 280" role="img" aria-label="Three context scopes — file, folder, and codebase — feeding progressively thicker arrows into the model, producing an answer grounded only to whatever scope was selected." style="min-width:640px">
+          <rect class="fill-plum dim" x="20" y="30" width="100" height="26" opacity="0.18"></rect>
+          <text class="lbl-strong" x="70" y="47" text-anchor="middle" font-size="10">FILE</text>
+          <rect class="dim" x="140" y="30" width="90" height="26" fill="var(--ink-soft)" opacity="0.35"></rect>
+          <line class="arrow" stroke-width="2" x1="230" y1="43" x2="640" y2="115" marker-end="url(#arrow)"></line>
+
+          <rect class="fill-plum dim" x="20" y="112" width="100" height="26" opacity="0.18"></rect>
+          <text class="lbl-strong" x="70" y="129" text-anchor="middle" font-size="10">FOLDER</text>
+          <rect class="fill-copper" x="140" y="112" width="220" height="26"></rect>
+          <line class="arrow" stroke-width="4" x1="360" y1="125" x2="640" y2="140" marker-end="url(#arrow)"></line>
+
+          <rect class="fill-plum dim" x="20" y="194" width="100" height="26" opacity="0.18"></rect>
+          <text class="lbl-strong" x="70" y="211" text-anchor="middle" font-size="10">CODEBASE</text>
+          <rect class="fill-teal" x="140" y="194" width="380" height="26"></rect>
+          <line class="arrow" stroke-width="7" x1="520" y1="207" x2="640" y2="165" marker-end="url(#arrow)"></line>
+
+          <rect class="box" x="650" y="70" width="140" height="100" rx="10"></rect>
+          <text class="lbl-strong" x="720" y="112" text-anchor="middle">MODEL</text>
+          <text class="lbl" x="720" y="130" text-anchor="middle" font-size="9.5">answers only from</text>
+          <text class="lbl" x="720" y="144" text-anchor="middle" font-size="9.5">what's in scope</text>
+
+          <line class="arrow" x1="720" y1="170" x2="720" y2="196" marker-end="url(#arrow)"></line>
+          <rect class="box" x="650" y="198" width="140" height="44" rx="8"></rect>
+          <text class="lbl-strong" x="720" y="218" text-anchor="middle" font-size="9.5">ANSWER — grounded</text>
+          <text class="lbl-strong" x="720" y="232" text-anchor="middle" font-size="9.5">to selected scope</text>
+        </svg>
+      </div>
+      <figcaption>Wider isn't automatically better — it's more expensive and more diffuse. The right scope is the smallest one that actually contains the answer.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="mentions">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Precision</p>
+    <h2 class="section-title">@ turns "somewhere in the repo" into an address</h2>
+    <p class="lede">Typing @ opens a picker for files, folders, docs, symbols, and the codebase index itself. Each mention resolves to something concrete before the model ever sees your message — not a vague pointer, but an actual file, an actual function, an actual document, attached to the prompt.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 780 260" role="img" aria-label="A chat input containing two at-mentions, parseOrder and CONTRIBUTING.md, each resolving to a concrete chip — a specific function location and a specific file — which are both attached to a single context bundle sent with the prompt." style="min-width:600px">
+          <rect class="box" x="40" y="30" width="700" height="50" rx="10"></rect>
+          <text x="60" y="60" font-size="12" fill="var(--ink)">Fix the bug in <tspan class="txt-teal">@parseOrder</tspan> using the rules in <tspan class="txt-copper">@CONTRIBUTING.md</tspan></text>
+
+          <rect class="box-teal" x="40" y="110" width="330" height="34" rx="8"></rect>
+          <text class="txt-teal" x="205" y="132" text-anchor="middle" font-size="10.5">@parseOrder → orders.ts:42 (function)</text>
+          <rect class="box-copper" x="390" y="110" width="330" height="34" rx="8"></rect>
+          <text class="txt-copper" x="555" y="132" text-anchor="middle" font-size="10.5">@CONTRIBUTING.md → full file</text>
+
+          <line class="arrow" x1="205" y1="144" x2="300" y2="170" marker-end="url(#arrow)"></line>
+          <line class="arrow" x1="555" y1="144" x2="460" y2="170" marker-end="url(#arrow)"></line>
+
+          <rect class="box-plum" x="40" y="172" width="700" height="48" rx="10"></rect>
+          <text class="txt-plum" x="390" y="200" text-anchor="middle" font-size="11">CONTEXT BUNDLE ATTACHED TO PROMPT</text>
+
+          <text class="lbl" x="390" y="246" text-anchor="middle" font-size="10.5">@ also resolves folders, docs, symbols, and the whole codebase index</text>
+        </svg>
+      </div>
+      <figcaption>The model never has to guess which "parseOrder" you meant — the mention already resolved it before generation started.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="modes">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Boundaries</p>
+    <h2 class="section-title">One reads, the other acts</h2>
+    <p class="lede">Ask mode is a conversation: it reads code, explains it, and answers questions, but it never touches your files or your terminal. Agent mode is a worker: it proposes edits across multiple files and can run terminal commands — but every one of those actions still waits on your review, per Module 1's verification gate.</p>
+    <div class="mode-compare">
+      <div class="mode-card ask">
+        <h3>Ask / Chat mode</h3>
+        <ul class="mode-list">
+          <li><span class="mode-mark yes">✓</span> Read &amp; explain code</li>
+          <li><span class="mode-mark yes">✓</span> Answer questions about the repo</li>
+          <li><span class="mode-mark no">✗</span> Edit files</li>
+          <li><span class="mode-mark no">✗</span> Run terminal commands</li>
+          <li><span class="mode-mark no">✗</span> Multi-file changes</li>
+        </ul>
+        <p class="mode-note">Zero blast radius — the worst outcome is a wrong sentence, not a wrong file.</p>
+      </div>
+      <div class="mode-card agent">
+        <h3>Agent mode</h3>
+        <ul class="mode-list">
+          <li><span class="mode-mark yes">✓</span> Read &amp; explain code</li>
+          <li><span class="mode-mark yes">✓</span> Propose multi-file edits</li>
+          <li><span class="mode-mark yes">✓</span> Run terminal commands (scoped)</li>
+          <li><span class="mode-mark yes">✓</span> Run a plan → act → verify loop</li>
+          <li><span class="mode-mark no">✗</span> Ship without your approval</li>
+        </ul>
+        <p class="mode-note">Real blast radius — which is exactly why every diff still waits for you to say yes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="reliability">
+  <div class="section-inner">
+    <p class="eyebrow">04 — The goldilocks curve</p>
+    <h2 class="section-title">More context isn't automatically better</h2>
+    <p class="lede">Too little context and the model guesses. Too much — an entire monorepo dumped in because @-mentioning felt like extra work — and the one relevant file gets buried in noise it has to sift through. Reliability peaks in the middle: specific, relevant, deliberately scoped.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 720 300" role="img" aria-label="A curve of answer reliability against amount of context included, peaking in the middle at targeted relevant context, and dropping off at both too little context and too much irrelevant context." style="min-width:520px">
+          <line x1="60" y1="260" x2="680" y2="260" class="arrow-thin" stroke="var(--ink-soft)"></line>
+          <line x1="60" y1="260" x2="60" y2="30" class="arrow-thin" stroke="var(--ink-soft)"></line>
+          <text class="lbl" x="360" y="286" text-anchor="middle" font-size="10.5">context included →</text>
+          <text class="lbl" x="22" y="150" text-anchor="middle" font-size="10.5" transform="rotate(-90 22 150)">answer reliability →</text>
+
+          <path d="M80,250 Q140,225 200,200 Q290,130 380,70 Q440,105 500,150 Q570,195 640,245" fill="none" stroke="var(--plum)" stroke-width="2.5"></path>
+
+          <circle cx="80" cy="250" r="6" class="fill-brick"></circle>
+          <text class="txt-brick" x="80" y="272" text-anchor="middle" font-size="10">too little context</text>
+          <text class="lbl" x="80" y="235" text-anchor="middle" font-size="9">no @-mentions, guesses</text>
+
+          <circle cx="380" cy="70" r="9" class="fill-teal"></circle>
+          <text class="txt-teal" x="380" y="52" text-anchor="middle" font-size="10.5">targeted, relevant context</text>
+
+          <circle cx="640" cy="245" r="6" class="fill-brick"></circle>
+          <text class="txt-brick" x="640" y="267" text-anchor="middle" font-size="10">too much / irrelevant</text>
+          <text class="lbl" x="640" y="130" text-anchor="middle" font-size="9">whole monorepo dumped in,</text>
+          <text class="lbl" x="640" y="143" text-anchor="middle" font-size="9">signal buried in noise</text>
+        </svg>
+      </div>
+      <figcaption>The same lesson as Module 1's context window, applied to a decision you make on every single question.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="history">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Maintenance</p>
+    <h2 class="section-title">A long chat is still bounded</h2>
+    <p class="lede">Every turn in a conversation stays in context for the next one — until the window fills, exactly as in Module 1. Two honest ways to keep going: start a new chat and lose the thread entirely, or summarize the old turns into a short block and carry the thread forward at a fraction of the cost.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 780 260" role="img" aria-label="A conversation history bar filling with turns, branching into two strategies: starting a new chat drops all old turns, while summarizing compresses old turns into a short block and continues with fresh space." style="min-width:600px">
+          <rect class="box" x="40" y="20" width="700" height="40" rx="6"></rect>
+          <rect class="dim" x="46" y="26" width="64" height="28" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <rect class="dim" x="116" y="26" width="64" height="28" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <rect class="dim" x="186" y="26" width="64" height="28" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <rect class="dim" x="256" y="26" width="64" height="28" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <rect class="dim" x="326" y="26" width="64" height="28" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <rect class="dim" x="396" y="26" width="64" height="28" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <rect class="dim" x="466" y="26" width="64" height="28" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <rect class="fill-brick" x="536" y="26" width="64" height="28" opacity="0.55"></rect>
+          <rect class="fill-brick" x="606" y="26" width="64" height="28" opacity="0.7"></rect>
+          <text class="lbl" x="390" y="14" text-anchor="middle" font-size="9.5">CONVERSATION HISTORY, FILLING THE WINDOW</text>
+
+          <line class="arrow" x1="390" y1="60" x2="390" y2="100" marker-end="url(#arrow)"></line>
+          <line class="arrow" x1="390" y1="100" x2="210" y2="130" marker-end="url(#arrow)"></line>
+          <line class="arrow" x1="390" y1="100" x2="570" y2="130" marker-end="url(#arrow)"></line>
+
+          <rect class="box" x="60" y="132" width="300" height="112" rx="10"></rect>
+          <text class="lbl-strong" x="210" y="158" text-anchor="middle" font-size="10.5">START A NEW CHAT</text>
+          <rect x="90" y="178" width="16" height="16" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <rect x="110" y="178" width="16" height="16" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <rect x="130" y="178" width="16" height="16" fill="var(--ink-soft)" opacity="0.3"></rect>
+          <line x1="86" y1="176" x2="150" y2="196" stroke="var(--brick)" stroke-width="1.5"></line>
+          <rect x="170" y="178" width="40" height="16" fill="none" stroke="var(--ink)" stroke-width="1.5"></rect>
+          <text class="lbl" x="210" y="222" text-anchor="middle" font-size="9.5">old context dropped —</text>
+          <text class="lbl" x="210" y="235" text-anchor="middle" font-size="9.5">fastest, loses continuity</text>
+
+          <rect class="box-teal" x="420" y="132" width="300" height="112" rx="10"></rect>
+          <text class="txt-teal" x="570" y="158" text-anchor="middle" font-size="10.5">SUMMARIZE &amp; CARRY FORWARD</text>
+          <rect x="450" y="178" width="50" height="18" fill="var(--teal)" rx="3"></rect>
+          <text class="lbl" x="475" y="191" text-anchor="middle" font-size="8" fill="var(--paper)">summary</text>
+          <rect x="512" y="178" width="16" height="18" fill="none" stroke="var(--ink)"></rect>
+          <rect x="534" y="178" width="16" height="18" fill="none" stroke="var(--ink)"></rect>
+          <rect x="556" y="178" width="16" height="18" fill="none" stroke="var(--ink)"></rect>
+          <text class="lbl" x="570" y="222" text-anchor="middle" font-size="9.5">old turns compressed —</text>
+          <text class="lbl" x="570" y="235" text-anchor="middle" font-size="9.5">keeps continuity, stays bounded</text>
+        </svg>
+      </div>
+      <figcaption>Neither strategy is wrong — but only one of them is a silent default you might not have chosen on purpose.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="promptcraft">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Subtopic: analysis prompts</p>
+    <h2 class="section-title">A reliable answer is a small equation</h2>
+    <p class="lede">For analysis tasks specifically — "explain this," "find the bug," "compare these approaches" — three ingredients combine into a first-try answer: one specific question, context sized to exactly what it needs via @-mentions, and a constraint on what shape the answer should take.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 780 220" role="img" aria-label="Three ingredients combining into a reliable analysis answer: a specific question, right-sized context via at-mentions, and an output format constraint." style="min-width:600px">
+          <rect class="box-copper" x="20" y="40" width="220" height="60" rx="10"></rect>
+          <text class="txt-copper" x="130" y="65" text-anchor="middle" font-size="11">SPECIFIC QUESTION</text>
+          <text class="lbl" x="130" y="82" text-anchor="middle" font-size="9">one thing, not three</text>
+
+          <text class="lbl-strong" x="255" y="76" text-anchor="middle" font-size="16">+</text>
+
+          <rect class="box-teal" x="270" y="40" width="240" height="60" rx="10"></rect>
+          <text class="txt-teal" x="390" y="65" text-anchor="middle" font-size="11">RIGHT-SIZED CONTEXT</text>
+          <text class="lbl" x="390" y="82" text-anchor="middle" font-size="9">@-mentions, not the monorepo</text>
+
+          <text class="lbl-strong" x="525" y="76" text-anchor="middle" font-size="16">+</text>
+
+          <rect class="box-plum" x="540" y="40" width="220" height="60" rx="10"></rect>
+          <text class="txt-plum" x="650" y="65" text-anchor="middle" font-size="11">OUTPUT FORMAT</text>
+          <text class="lbl" x="650" y="82" text-anchor="middle" font-size="9">table, steps, yes/no</text>
+
+          <line class="arrow" x1="390" y1="100" x2="390" y2="138" marker-end="url(#arrow)"></line>
+
+          <rect class="box" x="230" y="140" width="320" height="50" rx="10"></rect>
+          <text class="lbl-strong" x="390" y="170" text-anchor="middle">A RELIABLE ANSWER — FIRST TRY</text>
+        </svg>
+      </div>
+      <figcaption>Drop any one ingredient and you're back to guessing, re-asking, or re-reading a wall of text for the part that matters.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Hands-on</p>
+    <h2 class="section-title">Exercise, then a quick check</h2>
+    <p class="lede">Module 4 closes with practice, not a lecture: put scope and mentions to work, then confirm the concepts stuck before Day 1 moves into hands-on coding tomorrow.</p>
+    <div class="activity-grid">
+      <div class="activity-card">
+        <p class="activity-tag">Part 1 — Exercise</p>
+        <h3>Same question, three scopes</h3>
+        <p>Ask the identical question with File, then Folder, then Codebase scope, and compare the three answers side by side. Then repeat it once more using explicit @-mentions and see which answer it matches.</p>
+      </div>
+      <div class="activity-card">
+        <p class="activity-tag">Part 2 — Quiz</p>
+        <h3>Knowledge check</h3>
+        <p>Short quiz on Ask vs. Agent mode boundaries, @-mention syntax, and recognizing a context-limit warning before it silently truncates your history.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Before Day 2</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Scope — file, folder, or codebase — is the single biggest lever on chat answer quality.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>@-mentions turn a vague pointer into an exact file, symbol, or document before generation starts.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Ask mode reads and explains; Agent mode proposes and executes — know which one you're in.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Reliability peaks at targeted context and drops on both sides — too little, and too much.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 5 — Inline Code Generation, Tab &amp; Context</strong> opens Day 2, moving from asking questions to generating code directly in the editor.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 4 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

@@ -1,0 +1,278 @@
+Xebia — Cursor AI Training | AI-Assisted Software Engineering
+Post-Assessment (Module 21) — 25 Multiple Choice Questions
+Advanced Agentic Engineering Track
+
+Purpose: This post-assessment is administered on Day 8, after Module 21, to certify
+that participants can apply Cursor-native and agentic engineering practices across
+the full AI-assisted SDLC — not just recall terminology. Unlike the Module 0
+pre-assessment (GenAI/LLM fundamentals, Git, testing, SRS/SDS, ticketing), these
+questions are scenario-based and map directly to course modules, requiring
+participants to reason about correct workflow choices, failure handling, and
+tradeoffs.
+
+Instructions: Choose the single best answer (A, B, C, or D) for each question.
+Passing score: 20/25 (80%).
+
+--------------------------------------------------------------------------------
+Day 1–2: Cursor Core Mechanics (Modules 2–8)
+--------------------------------------------------------------------------------
+
+1. A developer needs Cursor to modify three related files (a service, its test,
+   and a config) to implement a small feature. Which mode is the most appropriate
+   starting point?
+   A. Tab/inline completion, applied file by file
+   B. Ask mode, since it only answers questions
+   C. Agent mode, since it can plan and apply coherent cross-file edits
+   D. Chat mode with no file context attached
+
+2. A team lead wants AI-assisted refactors to be safe on a large, unfamiliar
+   legacy module. What is the recommended first step before letting an agent
+   make sweeping changes?
+   A. Disable the test suite so the agent runs faster
+   B. Use Plan mode to explore the codebase and produce a reviewable plan before
+      implementation
+   C. Ask the agent to rewrite the entire module in one pass with no review
+   D. Skip context gathering and rely on the model's training data alone
+
+3. What is the key functional difference between Chat/Ask mode and Agent mode in
+   Cursor?
+   A. There is no functional difference, only a UI difference
+   B. Ask mode edits files directly; Agent mode only answers questions
+   C. Ask mode answers/queries using context without making changes; Agent mode
+      can plan and apply multi-file changes and invoke tools
+   D. Agent mode is limited to a single file, while Ask mode is codebase-wide
+
+4. Why does context window size directly constrain agent and tool design in
+   Cursor, especially for large codebases?
+   A. It doesn't — context windows only affect image generation
+   B. Larger context windows always eliminate the need for context engineering
+   C. Only the number of open tabs matters, not token count
+   D. All relevant code, docs, and instructions must fit within a finite token
+      budget, so context must be scoped/selected deliberately rather than
+      dumping the entire repository
+
+5. Where should a rule that must apply to every AI-assisted change across an
+   entire repository be defined?
+   A. In a one-off chat message, since rules don't persist
+   B. In Project Rules (.cursor/rules/) or AGENTS.md so it is persistent and
+      applies consistently across sessions and contributors
+   C. In the README only, since agents don't read configuration files
+   D. Nowhere — repository-wide standards cannot be enforced with Cursor
+
+6. During an agentic multi-file change, the diff Cursor proposes includes an
+   edit you did not expect and cannot justify from the stated task. What is the
+   correct action?
+   A. Approve it anyway since the agent is usually right
+   B. Reject/revise the change and require the agent to justify or scope the
+      edit before applying it, keeping changes reviewable and reversible
+   C. Delete the repository and start over
+   D. Disable all future review steps to save time
+
+7. What distinguishes a "skill" from a "rule" in the reusable engineering assets
+   taught in Module 8/10?
+   A. They are identical; the terms are interchangeable
+   B. A rule is always more powerful than a skill
+   C. A rule provides persistent instructions/constraints; a skill packages a
+      specialized, invocable capability (often with its own inputs/outputs)
+   D. Skills can only be used once and then must be deleted
+
+--------------------------------------------------------------------------------
+Day 3–4: Spec-Driven Development, Agent Architecture & Grounding (Modules 9–14)
+--------------------------------------------------------------------------------
+
+8. In Spec-Driven Development (SDD) as taught in Module 9, what is the durable
+   source of truth that an agent implements against?
+   A. The most recent chat message
+   B. An approved, versioned specification with testable acceptance criteria
+   C. Whatever the AI model was trained on
+   D. The developer's memory of the requirement
+
+9. Which best contrasts Spec-Driven Development with "vibe coding"?
+   A. They are the same approach with different names
+   B. Vibe coding always produces higher-quality code
+   C. SDD ties implementation to a reviewed, versioned spec with acceptance
+      criteria and spec-to-code/spec-to-test traceability; vibe coding relies on
+      ad hoc prompting without that durable contract
+   D. SDD does not require human approval at any stage
+
+10. A team needs a small, independently-scoped piece of work (e.g., generating
+    only the test sequence) delegated out of a larger agent's context. What is
+    the appropriate architecture pattern?
+    A. Duplicate the entire main agent's context into a second full agent
+    B. Delegate to a subagent with a focused role, isolated context, and a
+       defined result handoff
+    C. Put everything in a single rule file
+    D. Ask the human to do it manually, since delegation isn't supported
+
+11. What is the primary purpose of MCP (Model Context Protocol) connections in
+    this course's architecture?
+    A. To compress code files before committing
+    B. To connect agents to external resources/tools such as repositories,
+       documentation, ticketing systems, and enterprise knowledge sources
+    C. To replace Git entirely
+    D. To encrypt all local files automatically
+
+12. A knowledge-grounded agent (Module 13) is asked a question that falls
+    outside its connected repository, SRS/SDS docs, and approved knowledge
+    sources. What should a well-designed grounded agent do?
+    A. Invent a plausible-sounding answer to stay helpful
+    B. Decline or flag the answer as unsupported rather than fabricating a
+       fact, and cite sources when it does answer
+    C. Silently guess and never mention the limitation
+    D. Shut down and refuse all further questions permanently
+
+13. Which of the following is an appropriate control from Module 14
+    (Governance, Security & Observability) for an agent that can execute tools?
+    A. Give every agent unrestricted file/folder access by default
+    B. Skip audit logging to reduce noise
+    C. Scope access via approvals, permissions, sandboxing, and restrict
+       file/folder access based on need, while logging tool use for traceability
+    D. Store secrets directly in prompts so agents can use them freely
+
+--------------------------------------------------------------------------------
+Day 5–6: Multi-Agent Orchestration, Quality Gates & Deployment Readiness
+(Modules 15–19)
+--------------------------------------------------------------------------------
+
+14. In a sequential pipeline of Requirement Validator → Sequence Builder → Test
+    Generator → API Validator → Reviewer (Module 16), why is each stage handled
+    by a distinct agent role rather than one large agent doing everything?
+    A. It's purely cosmetic and has no engineering benefit
+    B. Separate roles enable focused context, clearer handoffs, independent
+       validation, and easier debugging/traceability at each stage
+    C. Cursor requires a minimum of five agents per workflow
+    D. Using multiple agents always reduces token cost
+
+15. What is a "correction loop" in the context of quality gates (Module 17)?
+    A. A pattern where a PASS/FAIL gate routes failing output with structured
+       feedback back to an earlier stage (e.g., the generator) for another
+       attempt, within bounded retries
+    B. A manual process where a human rewrites all failing code from scratch
+    C. An infinite retry with no bound, which is the recommended default
+    D. A step that deletes the failing output permanently with no reuse
+
+16. Why must correction loops be bounded (i.e., have a maximum retry count)?
+    A. Bounding retries is unnecessary; loops should run until they pass no
+       matter how long it takes
+    B. To prevent infinite/runaway correction cycles, control cost, and
+       guarantee the pipeline reaches a human checkpoint or fail-safe state
+    C. Because Cursor charges a flat fee regardless of retries
+    D. Bounded retries are only relevant to single-agent workflows, not
+       pipelines
+
+17. In the Module 18 self-correcting pipeline, what is the purpose of adding a
+    human approval checkpoint before final sign-off, even after automated gates
+    pass?
+    A. Automated gates make human review redundant, so this step is optional
+    B. It provides accountable human judgment for risk, correctness, and
+       context that automated PASS/FAIL criteria may not fully capture
+    C. It exists only to slow the team down
+    D. It replaces the need for gate logging
+
+18. When connecting Cursor/agents to Jira or Azure DevOps via MCP (Module 19)
+    to maintain traceability from ticket → plan/spec → test → report, what is
+    the primary engineering reason for this integration?
+    A. To automatically close tickets without any validation
+    B. To preserve an auditable chain linking the originating requirement to
+       every downstream artifact (plan, spec, tests, results, review)
+    C. To bypass Git entirely for all code changes
+    D. Ticketing integration has no relationship to traceability
+
+19. What is a key security consideration specific to delegated/background
+    (cloud) agent execution, as opposed to local agent execution?
+    A. None — delegated execution has identical risk to local execution
+    B. Background execution requires attention to environment setup, secrets
+       handling, network access, permissions, and human review before merging
+      its output
+    C. Delegated agents should always have production credentials by default
+    D. Background agents cannot produce pull requests, so review is
+       unnecessary
+
+--------------------------------------------------------------------------------
+Day 7–8: Capstone Integration, Best Practices & ROI (Modules 20–21)
+--------------------------------------------------------------------------------
+
+20. In the capstone's end-to-end ticket-to-report workflow, which sequence
+    correctly reflects the taught traceable order?
+    A. Tests → ticket → deployment → spec → plan
+    B. Deployment → ticket → spec → tests → plan
+    C. Ticket → requirement bundle → plan/spec (approved) → test sequence →
+       executed tests/validation → independent review → deployment-readiness
+       gate → final report
+    D. Final report → ticket → plan → tests (order does not matter)
+
+21. Why does the capstone route the validation report to an independent
+    reviewer agent/subagent rather than having the generating agent
+    self-certify its own output?
+    A. Self-certification is equally reliable and preferred for speed
+    B. Independent review reduces the risk of an agent's own blind spots or
+       errors going undetected, similar to human code review principles
+    C. It is only a formality with no verification value
+    D. Independent review is required solely for legal compliance, not quality
+
+22. A team is modeling token economics (Module 21) for grounding agents against
+    a very large codebase. What is the most accurate statement about cost and
+    context?
+    A. Context-window size and grounding scope have no bearing on cost
+    B. Broader/less-scoped context grounding generally increases token
+      consumption and cost-per-call, so context should be deliberately scoped
+    C. Token cost is fixed regardless of how much context is retrieved
+    D. Only image-generation tasks incur token costs
+
+23. When building an ROI case for enterprise rollout of AI-assisted engineering
+    practices, which factors does the course recommend weighing together?
+    A. Time saved only, ignoring quality or cost
+    B. Token/compute spend only, ignoring developer time
+    C. Time saved, token/compute spend, and defect reduction, considered
+       together rather than any single metric in isolation
+    D. ROI cannot be estimated for AI-assisted workflows
+
+24. Which of the following is explicitly called out as a "don't" / pitfall in
+    Module 21's best practices for AI-assisted and multi-agent development?
+    A. Verifying AI/agent output for correctness, security, and maintainability
+    B. Establishing ownership, versioning, and review for shared AI engineering
+       assets (rules/skills/agents)
+    C. Over-relying on agents/automation without appropriate verification,
+       review, or knowing when NOT to use an autonomous workflow
+    D. Using quality gates and human approval checkpoints where appropriate
+
+25. Historical defect logs and production feedback are referenced in Module 21
+    as inputs for maintaining AI engineering assets. What is their intended
+    purpose in this workflow?
+    A. They are archival only and are not intended to influence any agent or
+       grounding source
+    B. To feed back into updating grounding sources and improving agents over
+       time, treating maintenance as an ongoing lifecycle phase rather than a
+       one-time handoff
+    C. To justify skipping test generation on future tickets
+    D. To replace the need for a ticketing system
+
+--------------------------------------------------------------------------------
+
+ANSWER KEY (with module reference)
+
+ 1. C  (Module 6)
+ 2. B  (Module 7)
+ 3. C  (Module 4/6)
+ 4. D  (Module 1/12)
+ 5. B  (Module 8)
+ 6. B  (Module 6/17)
+ 7. C  (Module 8/10)
+ 8. B  (Module 9)
+ 9. C  (Module 9)
+10. B  (Module 10)
+11. B  (Module 12)
+12. B  (Module 13)
+13. C  (Module 14)
+14. B  (Module 15/16)
+15. A  (Module 17)
+16. B  (Module 17)
+17. B  (Module 17/18)
+18. B  (Module 19)
+19. B  (Module 19)
+20. C  (Module 20)
+21. B  (Module 20)
+22. B  (Module 21)
+23. C  (Module 21)
+24. C  (Module 21)
+25. B  (Module 21)

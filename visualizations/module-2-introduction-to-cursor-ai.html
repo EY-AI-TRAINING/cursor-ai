@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 2 — Introduction to Cursor AI</title>
+<meta name="description" content="Interactive walkthrough: what Cursor AI is, how it differs from traditional IDEs and Copilot, where it sits in the AI-assisted SDLC, and local vs. background agent execution.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%96%B1%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-2);font-weight:600;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);padding:5px 12px;border-radius:999px;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media (max-width:820px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+.tabbar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{cursor:pointer;}
+.tab-btn.active{background:var(--grad-1);border-color:transparent;color:#fff;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fadein .35s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:18px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.8px;font-weight:600;color:var(--text-faint);padding:8px 11px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:640px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Section 1: differs from IDE ===================== */
+.step-col{display:flex;flex-direction:column;gap:10px;}
+.step-item{display:flex;gap:12px;padding:12px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-soft);font-size:13.5px;align-items:flex-start;}
+.step-num-badge{flex:0 0 auto;width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;}
+.step-item.trad .step-num-badge{background:var(--surface-3);color:var(--text-dim);}
+.step-item.cursor .step-num-badge{background:var(--grad-1);color:#fff;}
+
+.acc-table{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:22px;}
+.acc-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:14px 18px;cursor:pointer;border-top:1px solid var(--border-soft);background:var(--surface);transition:background .15s;}
+.acc-row:first-child{border-top:none;}
+.acc-row:hover{background:var(--surface-2);}
+.acc-row .dim{font-weight:700;font-size:14px;}
+.acc-detail{display:none;padding:0 18px 16px;background:var(--surface);border-top:1px solid var(--border-soft);}
+.acc-detail.show{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding-top:14px;animation:fadein .3s ease;}
+.acc-detail .col{font-size:13px;color:var(--text-dim);background:var(--bg-2);border-radius:8px;padding:10px 12px;}
+.acc-detail .col b{display:block;color:var(--text);font-size:12px;font-family:var(--mono);margin-bottom:4px;}
+.acc-caret{color:var(--text-faint);transition:transform .2s;}
+.acc-row.open .acc-caret{transform:rotate(180deg);}
+@media (max-width:640px){.acc-detail.show{grid-template-columns:1fr;}}
+
+/* ===================== Comparison matrix ===================== */
+.matrix-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+table.matrix{border-collapse:collapse;width:100%;min-width:640px;font-size:13.3px;}
+table.matrix th, table.matrix td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--border-soft);vertical-align:top;}
+table.matrix thead th{background:var(--surface-3);font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);}
+table.matrix tbody th{color:var(--text);font-weight:700;background:var(--surface);white-space:nowrap;}
+table.matrix td{color:var(--text-dim);background:var(--surface);}
+table.matrix td.hl{color:var(--text);background:linear-gradient(160deg, rgba(168,85,247,0.1), var(--surface));}
+table.matrix tbody tr:last-child td, table.matrix tbody tr:last-child th{border-bottom:none;}
+
+/* ===================== SDLC stepper (shared) ===================== */
+.stepper{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+.step-btn{flex:1;min-width:150px;text-align:left;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;}
+.step-btn:hover{border-color:var(--accent-soft);}
+.step-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));box-shadow:0 0 0 1px rgba(168,85,247,0.3);}
+.step-num{font-family:var(--mono);color:var(--accent-2);font-size:12px;}
+.step-title{font-weight:700;margin-top:6px;font-size:14.5px;}
+.step-bar{height:5px;border-radius:3px;background:var(--surface-3);margin-top:12px;overflow:hidden;}
+.step-bar-fill{height:100%;background:var(--grad-1);}
+.step-detail{padding:22px;}
+.step-detail .example{margin-top:14px;padding:12px 14px;background:var(--bg-2);border-left:3px solid var(--accent-2);border-radius:8px;font-family:var(--mono);font-size:13px;color:var(--text-dim);}
+
+/* ===================== Local vs background ===================== */
+.flow-track{display:flex;flex-direction:column;gap:10px;}
+.flow-node{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-soft);}
+.flow-node .flow-icon{font-size:18px;flex:0 0 auto;}
+.flow-node .flow-text{font-size:13.8px;}
+.flow-node .flow-text b{display:block;font-size:12px;font-family:var(--mono);color:var(--accent-2);margin-bottom:2px;}
+.flow-connector{width:2px;height:14px;background:var(--border);margin-left:26px;}
+
+/* ===================== Hub & spokes ===================== */
+.hub-banner{text-align:center;padding:22px;border-radius:14px;background:var(--grad-1);color:#fff;font-weight:800;font-size:18px;margin-bottom:6px;box-shadow:0 12px 30px -12px rgba(168,85,247,0.55);}
+.hub-connector{width:2px;height:22px;background:var(--border);margin:0 auto;}
+.spoke-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+@media (max-width:900px){.spoke-grid{grid-template-columns:repeat(3,1fr);}}
+@media (max-width:520px){.spoke-grid{grid-template-columns:repeat(2,1fr);}}
+.spoke{padding:14px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--border);text-align:center;cursor:pointer;transition:all .15s;}
+.spoke:hover{border-color:var(--accent-soft);}
+.spoke.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.16), var(--surface));}
+.spoke .icon{font-size:19px;}
+.spoke .name{font-size:11.5px;font-weight:700;margin-top:6px;}
+.spoke-detail{margin-top:18px;padding:18px 20px;min-height:64px;}
+.spoke-detail b{color:var(--accent-2);font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
+
+/* ===================== IDE wireframe ===================== */
+.ide-window{border:1px solid var(--border);border-radius:12px;overflow:hidden;display:grid;grid-template-columns:130px 1fr 190px;grid-template-rows:38px 240px 32px;background:var(--bg-2);}
+.ide-zone{position:relative;border:1px solid transparent;cursor:pointer;padding:10px;font-family:var(--mono);font-size:11px;color:var(--text-faint);transition:all .15s;display:flex;align-items:flex-start;}
+.ide-zone:hover{background:rgba(168,85,247,0.06);}
+.ide-zone.active{border-color:var(--accent);background:rgba(168,85,247,0.12);color:var(--accent-soft);box-shadow:inset 0 0 0 1px rgba(168,85,247,0.3);}
+.ide-top{grid-column:1/4;grid-row:1;background:var(--surface-2);border-bottom:1px solid var(--border-soft);align-items:center;gap:8px;}
+.ide-side{grid-column:1;grid-row:2;background:var(--surface);border-right:1px solid var(--border-soft);flex-direction:column;gap:6px;}
+.ide-editor{grid-column:2;grid-row:2;background:var(--bg);flex-direction:column;gap:6px;}
+.ide-panel{grid-column:3;grid-row:2;background:var(--surface);border-left:1px solid var(--border-soft);flex-direction:column;gap:6px;}
+.ide-status{grid-column:1/4;grid-row:3;background:var(--surface-2);border-top:1px solid var(--border-soft);align-items:center;gap:8px;}
+.hotspot-dot{width:7px;height:7px;border-radius:50%;background:var(--accent-2);position:absolute;top:8px;right:8px;animation:pulse 1.8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(1.5);}}
+.ide-zone.active .hotspot-dot{display:none;}
+.ide-line{width:100%;height:6px;border-radius:3px;background:var(--surface-3);}
+.ide-desc{margin-top:18px;padding:18px 20px;}
+.ide-desc b{color:var(--accent-2);font-family:var(--mono);font-size:12px;text-transform:uppercase;}
+
+/* ===================== Checklist ===================== */
+.checklist{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);text-decoration:line-through;}
+.check-label{font-size:14px;}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Quiz (shared) ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){
+  .section{padding:60px 16px;}
+  .ide-window{grid-template-columns:90px 1fr 0;grid-template-rows:36px 220px 30px;}
+  .ide-panel{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="module-1-genai-llm-foundations.html" class="brand"><span class="brand-badge">🖱️</span> Module 2</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#differs">Vs. IDEs</a>
+      <a href="#vs-tools">Vs. Copilot</a>
+      <a href="#sdlc-role">SDLC role</a>
+      <a href="#execution">Local/Background</a>
+      <a href="#positioning">Big picture</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-1-genai-llm-foundations.html" class="prev-link">← Module 1</a>
+    <a href="module-3-cursor-interface-setup.html" class="prev-link">Module 3 →</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 1 · Module 2</div>
+    <h1>Introduction to<br>Cursor AI</h1>
+    <p class="hero-sub">Module 1 gave you the GenAI/LLM vocabulary. Now let's position the tool: what Cursor AI actually is, how it differs from a traditional IDE (and from Copilot), where it sits across the AI-assisted SDLC, and the local-vs-background way it can run.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 30 min</span>
+      <span class="pill pill-neutral">🧭 Conceptual — not a feature tour yet</span>
+      <span class="pill pill-neutral">🖱 Quick tour + license check</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. WHAT IS CURSOR AI / DIFFERS FROM TRADITIONAL IDEs -->
+<!-- ============================================================ -->
+<section class="section" id="differs">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / What is Cursor AI</span>
+      <h2>Not an IDE with AI bolted on — AI-native, end to end</h2>
+      <p>Cursor is a full code editor (a fork of VS Code) where chat, inline generation, and autonomous agents share one deep, continuously-updated view of your codebase — instead of AI living in a sidebar plugin that has to be told what to look at every time.</p>
+    </div>
+
+    <div class="card reveal" style="margin-bottom:20px;">
+      <h4 style="font-size:15px;margin-bottom:14px;">Same task, two workflows: "Add pagination to the users list endpoint"</h4>
+      <div class="grid-2">
+        <div>
+          <span class="pill pill-neutral">⌨️ Traditional IDE</span>
+          <div class="step-col" style="margin-top:12px;">
+            <div class="step-item trad"><span class="step-num-badge">1</span><span>Open the file manually and read through existing code to find the pattern to follow.</span></div>
+            <div class="step-item trad"><span class="step-num-badge">2</span><span>Search docs / Stack Overflow in a browser tab for a pagination approach.</span></div>
+            <div class="step-item trad"><span class="step-num-badge">3</span><span>Write the code by hand, tabbing between files to check conventions.</span></div>
+            <div class="step-item trad"><span class="step-num-badge">4</span><span>Write tests by hand, run them, fix what fails.</span></div>
+            <div class="step-item trad"><span class="step-num-badge">5</span><span>Re-read the diff yourself to check it matches team style.</span></div>
+          </div>
+        </div>
+        <div>
+          <span class="pill pill-good">🖱️ Cursor AI</span>
+          <div class="step-col" style="margin-top:12px;">
+            <div class="step-item cursor"><span class="step-num-badge">1</span><span>Ask "@UsersController how does list() work today, and how should pagination fit our style?"</span></div>
+            <div class="step-item cursor"><span class="step-num-badge">2</span><span>Agent mode reads related files and proposes a multi-file diff (controller + DTO + tests).</span></div>
+            <div class="step-item cursor"><span class="step-num-badge">3</span><span>Tab-completion fills in boilerplate as you review, context-aware to what's around it.</span></div>
+            <div class="step-item cursor"><span class="step-num-badge">4</span><span>Agent runs the test suite in the terminal itself and fixes a failing assertion.</span></div>
+            <div class="step-item cursor"><span class="step-num-badge">5</span><span>You review the diff, approve it — adjusting a rule in AGENTS.md if it should apply next time too.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card reveal">
+      <h4 style="font-size:15px;">Capability by capability</h4>
+      <p class="hint" style="margin:6px 0 0;">Click a row.</p>
+      <div class="acc-table" id="accTable"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. CURSOR VS COPILOT VS OTHER TOOLS -->
+<!-- ============================================================ -->
+<section class="section" id="vs-tools">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / Cursor vs. GitHub Copilot vs. other AI coding tools</span>
+      <h2>Different tools, different points on the same spectrum</h2>
+      <p>A high-level, illustrative comparison — tool capabilities evolve constantly, so treat this as a mental model, not a spec sheet.</p>
+    </div>
+    <div class="matrix-wrap reveal">
+      <table class="matrix" id="matrixTable"></table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. CURSOR'S ROLE ACROSS THE AI-ASSISTED SDLC -->
+<!-- ============================================================ -->
+<section class="section" id="sdlc-role">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / Cursor's role across the AI-assisted SDLC</span>
+      <h2>The same ladder from Module 1 — now with Cursor on every rung</h2>
+      <p>From coding assistance to agentic engineering workflows: here's exactly what Cursor gives you at each stage. Click through.</p>
+    </div>
+    <div class="card reveal">
+      <div class="stepper" id="sdlcStepper"></div>
+      <div class="card-soft step-detail" id="sdlcDetail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. LOCAL VS DELEGATED/BACKGROUND EXECUTION -->
+<!-- ============================================================ -->
+<section class="section" id="execution">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Local development vs. delegated/background agent execution</span>
+      <h2>Two ways to run the same agent</h2>
+      <p>A conceptual overview — the mechanics (Git, CI/CD, cloud agents, ticketing hand-offs) get a full day of their own later in this course.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tabbar">
+        <button class="btn tab-btn active" data-ex="local">🧑‍💻 Local (foreground)</button>
+        <button class="btn tab-btn" data-ex="background">☁️ Delegated (background)</button>
+      </div>
+      <div class="tab-panel active" id="ex-local">
+        <div class="flow-track">
+          <div class="flow-node"><span class="flow-icon">💬</span><span class="flow-text"><b>1 · You ask</b>You type a request directly in your open workspace.</span></div>
+          <div class="flow-connector"></div>
+          <div class="flow-node"><span class="flow-icon">👀</span><span class="flow-text"><b>2 · You watch</b>The agent works in view, step by step, inside the editor you're looking at.</span></div>
+          <div class="flow-connector"></div>
+          <div class="flow-node"><span class="flow-icon">✋</span><span class="flow-text"><b>3 · You steer</b>You can pause, redirect, or approve each step before it continues.</span></div>
+          <div class="flow-connector"></div>
+          <div class="flow-node"><span class="flow-icon">✅</span><span class="flow-text"><b>4 · Done, live</b>You're at your desk the entire time — tight feedback loop, good for exploratory work.</span></div>
+        </div>
+      </div>
+      <div class="tab-panel" id="ex-background">
+        <div class="flow-track">
+          <div class="flow-node"><span class="flow-icon">📨</span><span class="flow-text"><b>1 · You hand off</b>You describe a task and delegate it — no need to keep watching.</span></div>
+          <div class="flow-connector"></div>
+          <div class="flow-node"><span class="flow-icon">☁️</span><span class="flow-text"><b>2 · It runs remotely</b>The agent works in the background — a separate environment, not your open editor.</span></div>
+          <div class="flow-connector"></div>
+          <div class="flow-node"><span class="flow-icon">⚙️</span><span class="flow-text"><b>3 · You keep working</b>Meanwhile you're free to do something else — including delegate more tasks in parallel.</span></div>
+          <div class="flow-connector"></div>
+          <div class="flow-node"><span class="flow-icon">🔔</span><span class="flow-text"><b>4 · It reports back</b>You get notified at a checkpoint or completion, then review the finished diff/PR.</span></div>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:16px;">Same underlying agent, different trade-off: local favors a tight, interactive feedback loop; background favors throughput — freeing you up for longer-running or lower-priority tasks.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. POSITIONING WITHIN MODULE 1 THEME -->
+<!-- ============================================================ -->
+<section class="section" id="positioning">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Positioning Cursor within Module 1's theme</span>
+      <h2>Everything from Module 1, now made concrete</h2>
+      <p>Cursor isn't a new set of ideas — it's where Module 1's vocabulary becomes something you click on. Click each term.</p>
+    </div>
+    <div class="card reveal">
+      <div class="hub-banner">🖱️ Cursor AI</div>
+      <div class="hub-connector"></div>
+      <div class="spoke-grid" id="spokeGrid"></div>
+      <div class="card-soft spoke-detail" id="spokeDetail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. HANDS-ON: QUICK TOUR + LICENSE VERIFICATION -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / Hands-on — quick tour &amp; account/license verification</span>
+      <h2>Find your way around, then confirm you're set up</h2>
+      <p>Click each zone of the interface below, then work through the setup checklist.</p>
+    </div>
+
+    <div class="card reveal" style="margin-bottom:20px;">
+      <div class="ide-window" id="ideWindow">
+        <div class="ide-zone ide-top" data-zone="top"><span>▸ Command Palette</span><span class="hotspot-dot"></span></div>
+        <div class="ide-zone ide-side" data-zone="side"><span>Explorer</span><div class="ide-line"></div><div class="ide-line" style="width:70%;"></div><div class="ide-line" style="width:55%;"></div><span class="hotspot-dot"></span></div>
+        <div class="ide-zone ide-editor active" data-zone="editor"><span>Editor — Tab completion</span><div class="ide-line" style="width:90%;"></div><div class="ide-line" style="width:60%;"></div><div class="ide-line" style="width:75%;"></div><span class="hotspot-dot"></span></div>
+        <div class="ide-zone ide-panel" data-zone="panel"><span>Ask · Chat · Agent</span><div class="ide-line" style="width:80%;"></div><div class="ide-line" style="width:50%;"></div><span class="hotspot-dot"></span></div>
+        <div class="ide-zone ide-status" data-zone="status"><span>Model picker · Seat: Enterprise ✓</span><span class="hotspot-dot"></span></div>
+      </div>
+      <div class="card-soft ide-desc" id="ideDesc"></div>
+    </div>
+
+    <div class="card reveal">
+      <h4 style="font-size:15px;">Verify your setup</h4>
+      <div class="checklist" id="checklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0 / 5 verified</div>
+      <div class="setup-done" id="setupDone">✅ Setup verified — ready for Module 3: Cursor Interface &amp; Setup.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Knowledge check</span>
+      <h2>Quick check before Module 3</h2>
+      <p>Four questions from what you just walked through.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/4</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">What to carry into Module 3</h3>
+    <ul>
+      <li>Cursor is AI-native (a VS Code fork), not a plugin — chat, inline generation, and agents share deep codebase awareness.</li>
+      <li>Cursor, Copilot, and generic chat tools sit at different points on IDE-integration and agentic capability — the right choice depends on the job.</li>
+      <li>Cursor spans Module 1's whole SDLC ladder — from Tab completion up through multi-file agentic work.</li>
+      <li>Local (foreground) and delegated (background) execution are trade-offs, not different products — both live inside Cursor.</li>
+      <li>Every Module 1 term — LLM, context window, context engineering, agent, MCP, spec-driven development — has a concrete home inside Cursor.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-1-genai-llm-foundations.html" class="btn">← Module 1: GenAI/LLM Foundations</a>
+    <a href="#" class="btn">↑ Back to top</a>
+    <a href="module-3-cursor-interface-setup.html" class="btn">Module 3: Cursor Interface &amp; Setup →</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 2 — Introduction to Cursor AI · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["tab","agent","@-mention","chat","diff","codebase","rule","context","inline","review","terminal","apply","index","workspace","model"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ============================================================
+   1. ACCORDION TABLE — capability by capability
+   ============================================================ */
+(function(){
+  var rows = [
+    { dim:'Autocomplete', trad:'Single-line or basic snippet suggestions, limited to what a plugin can infer from the current file.', cursor:'Multi-line, context-aware Tab completion that predicts whole edits, not just the next word.' },
+    { dim:'Codebase awareness', trad:'Whatever you manually keep open in tabs — you are the context manager.', cursor:'@-mention any file, folder, symbol, or doc; agent search can also explore the repo on its own.' },
+    { dim:'Multi-file edits', trad:'Manual — one file at a time, you track what else needs to change.', cursor:'Agent mode plans and edits across multiple files as one coherent change.' },
+    { dim:'Terminal / tool execution', trad:'You run every command yourself and read the output.', cursor:'Agent can run terminal commands, read the output, and iterate based on it.' },
+    { dim:'Extending behavior', trad:'IDE settings and extensions you install and configure.', cursor:'Rules, AGENTS.md, reusable skills, and subagents — instructions the AI itself follows.' }
+  ];
+  var wrap = document.getElementById('accTable');
+  rows.forEach(function(r, i){
+    var row = document.createElement('div');
+    row.className = 'acc-row';
+    row.innerHTML = '<span class="dim">'+r.dim+'</span><span class="acc-caret">▾</span>';
+    var detail = document.createElement('div');
+    detail.className = 'acc-detail';
+    detail.innerHTML = '<div class="col"><b>⌨️ TRADITIONAL IDE</b>'+r.trad+'</div><div class="col"><b>🖱️ CURSOR AI</b>'+r.cursor+'</div>';
+    row.addEventListener('click', function(){
+      var isOpen = detail.classList.contains('show');
+      wrap.querySelectorAll('.acc-detail').forEach(function(d){ d.classList.remove('show'); });
+      wrap.querySelectorAll('.acc-row').forEach(function(rr){ rr.classList.remove('open'); });
+      if(!isOpen){ detail.classList.add('show'); row.classList.add('open'); }
+    });
+    wrap.appendChild(row);
+    wrap.appendChild(detail);
+  });
+  wrap.querySelectorAll('.acc-row')[0].click();
+})();
+
+/* ============================================================
+   2. COMPARISON MATRIX
+   ============================================================ */
+(function(){
+  var dims = [
+    { label:'IDE model', cursor:'Full IDE (VS Code fork) — AI is native to the whole editor.', copilot:'Extension layered inside your existing IDE (VS Code, JetBrains, etc.).', other:'Separate browser tab — you copy code in and paste results back.' },
+    { label:'Codebase context', cursor:'Deep, whole-repo context via @-mentions, indexing, and agent search.', copilot:'Open files plus workspace context; scope keeps expanding over releases.', other:'Only what you manually paste in — no live repo access by default.' },
+    { label:'Agentic task execution', cursor:'Agent mode plans, edits multiple files, runs terminal/tools, iterates.', copilot:'Agent-style features exist and are evolving quickly.', other:'Generally advice only — you execute every step yourself.' },
+    { label:'Team extensibility', cursor:'Rules, AGENTS.md, reusable skills, subagents, MCP connections.', copilot:'Custom instructions files, organization-level policies.', other:'Custom prompts/GPTs — nothing repo-native by default.' },
+    { label:'Best for', cursor:'End-to-end AI-assisted engineering inside one tool.', copilot:'Inline suggestions layered onto the IDE you already use.', other:'Quick reasoning or explanations outside your normal workflow.' }
+  ];
+  var table = document.getElementById('matrixTable');
+  var thead = '<thead><tr><th>Dimension</th><th>🖱️ Cursor</th><th>🐙 GitHub Copilot</th><th>💬 Other chat tools</th></tr></thead>';
+  var tbody = '<tbody>';
+  dims.forEach(function(d){
+    tbody += '<tr><th>'+d.label+'</th><td class="hl">'+d.cursor+'</td><td>'+d.copilot+'</td><td>'+d.other+'</td></tr>';
+  });
+  tbody += '</tbody>';
+  table.innerHTML = thead + tbody;
+})();
+
+/* ============================================================
+   3. SDLC STEPPER (Cursor's role at each stage)
+   ============================================================ */
+(function(){
+  var stages = [
+    { title:'Prompt-driven coding', pct:25, icon:'💬',
+      desc:'Inline Chat and Tab completion — ask a question, get a suggestion, accept or reject it yourself.',
+      example:'Ask Chat "explain this function", or accept a Tab suggestion inline.' },
+    { title:'Context engineering', pct:50, icon:'🧩',
+      desc:'@-mention files, folders, and docs; scope Ask mode to real context — Cursor grounds answers in your actual repo instead of guessing.',
+      example:'"@PaymentService.ts @SRS.md — does this match the spec?"' },
+    { title:'Agents', pct:75, icon:'🤖',
+      desc:'Agent mode reads and edits across files, runs the terminal, and iterates toward a goal inside your workspace, with you reviewing the diff.',
+      example:'Agent implements a ticket, runs tests, fixes a failure, reports back.' },
+    { title:'Multi-agent workflows', pct:100, icon:'🕸️',
+      desc:'Background/cloud agents, subagents, and orchestrated workflows — the deep focus of Days 3 onward in this course.',
+      example:'Test-writer agent → implementer agent → reviewer agent → your approval.' }
+  ];
+  var stepperEl = document.getElementById('sdlcStepper');
+  var detailEl = document.getElementById('sdlcDetail');
+  var active = 0;
+  function renderDetail(){
+    var s = stages[active];
+    detailEl.innerHTML = '<div style="font-size:22px;">'+s.icon+'</div>'+
+      '<h4 style="margin-top:10px;font-size:16px;">'+s.title+'</h4>'+
+      '<p style="margin-top:8px;font-size:14px;color:var(--text-dim);">'+s.desc+'</p>'+
+      '<div class="example">'+s.example+'</div>';
+  }
+  stages.forEach(function(s, i){
+    var btn = document.createElement('div');
+    btn.className = 'step-btn' + (i===0 ? ' active' : '');
+    btn.innerHTML = '<div class="step-num">STAGE '+(i+1)+'</div><div class="step-title">'+s.icon+' '+s.title+'</div>'+
+      '<div class="step-bar"><div class="step-bar-fill" style="width:'+s.pct+'%"></div></div>';
+    btn.addEventListener('click', function(){
+      active = i;
+      stepperEl.querySelectorAll('.step-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderDetail();
+    });
+    stepperEl.appendChild(btn);
+  });
+  renderDetail();
+})();
+
+/* ============================================================
+   4. LOCAL VS BACKGROUND TABS
+   ============================================================ */
+(function(){
+  var btns = document.querySelectorAll('[data-ex]');
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      btns.forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      document.getElementById('ex-local').classList.toggle('active', b.dataset.ex === 'local');
+      document.getElementById('ex-background').classList.toggle('active', b.dataset.ex === 'background');
+    });
+  });
+})();
+
+/* ============================================================
+   5. HUB & SPOKES
+   ============================================================ */
+(function(){
+  var spokes = [
+    { icon:'🧠', name:'LLM', detail:'The reasoning engine under Chat, Tab, and Agent mode — you can pick which model powers it.' },
+    { icon:'📏', name:'Context Window', detail:'Why Cursor is selective about what it auto-includes, and why @-mentioning matters instead of dumping the whole repo in.' },
+    { icon:'🧩', name:'Context Engineering', detail:'What @-mentions, repo indexing, and Ask-mode scoping actually do: curate the right context, not all of it.' },
+    { icon:'🤖', name:'Agent', detail:"Cursor's Agent mode — plans, edits across files, runs tools, and iterates toward your goal." },
+    { icon:'🔌', name:'MCP', detail:"How Cursor connects to your repo, docs, ticketing, and APIs beyond the local workspace — a full deep dive on Day 4." },
+    { icon:'📋', name:'Spec-Driven Dev', detail:'How a versioned spec becomes the source of truth an agent implements against inside Cursor — a full deep dive on Day 3.' }
+  ];
+  var grid = document.getElementById('spokeGrid');
+  var detail = document.getElementById('spokeDetail');
+  var active = 0;
+  function renderDetail(){
+    var s = spokes[active];
+    detail.innerHTML = '<b>'+s.icon+' '+s.name+'</b><p style="margin-top:8px;font-size:14px;color:var(--text-dim);">'+s.detail+'</p>';
+  }
+  spokes.forEach(function(s, i){
+    var el = document.createElement('div');
+    el.className = 'spoke' + (i===0 ? ' active' : '');
+    el.innerHTML = '<div class="icon">'+s.icon+'</div><div class="name">'+s.name+'</div>';
+    el.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.spoke').forEach(function(x){ x.classList.remove('active'); });
+      el.classList.add('active');
+      renderDetail();
+    });
+    grid.appendChild(el);
+  });
+  renderDetail();
+})();
+
+/* ============================================================
+   6a. IDE WIREFRAME HOTSPOTS
+   ============================================================ */
+(function(){
+  var zones = {
+    top: 'Cmd/Ctrl+Shift+P — quick access to every Cursor and VS Code command, including account and license actions.',
+    side: 'Your familiar file tree, search, and extensions — imported straight from your existing VS Code setup.',
+    editor: 'Where Tab completions appear inline as you type, context-aware to the surrounding code.',
+    panel: 'Switch between Ask, Chat, and Agent modes here — this is where @-mentions and multi-step agent runs happen.',
+    status: 'Choose which model powers your requests, and confirm your Team/Enterprise seat and license status.'
+  };
+  var labels = { top:'▸ Command Palette', side:'📁 Sidebar / Explorer', editor:'📝 Editor', panel:'💬 Chat / Agent Panel', status:'⚙️ Model Picker & Status Bar' };
+  var win = document.getElementById('ideWindow');
+  var desc = document.getElementById('ideDesc');
+  function setActive(zone){
+    win.querySelectorAll('.ide-zone').forEach(function(z){ z.classList.toggle('active', z.dataset.zone === zone); });
+    desc.innerHTML = '<b>'+labels[zone]+'</b><p style="margin-top:8px;font-size:14px;color:var(--text-dim);">'+zones[zone]+'</p>';
+  }
+  win.querySelectorAll('.ide-zone').forEach(function(z){
+    z.addEventListener('click', function(){ setActive(z.dataset.zone); });
+  });
+  setActive('editor');
+})();
+
+/* ============================================================
+   6b. CHECKLIST
+   ============================================================ */
+(function(){
+  var items = [
+    'Signed in with your enterprise SSO / account',
+    'Seat shows Team or Enterprise plan (not free/trial)',
+    'Agent mode is enabled in settings',
+    'A model is selected in the model picker',
+    'Command Palette responds (try "Cursor: Report Issue")'
+  ];
+  var list = document.getElementById('checklist');
+  var fill = document.getElementById('progressFill');
+  var label = document.getElementById('progressLabel');
+  var done = document.getElementById('setupDone');
+  var checked = new Array(items.length).fill(false);
+
+  items.forEach(function(text, i){
+    var row = document.createElement('div');
+    row.className = 'check-item';
+    row.innerHTML = '<span class="check-box">✓</span><span class="check-label">'+text+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+      update();
+    });
+    list.appendChild(row);
+  });
+
+  function update(){
+    var count = checked.filter(Boolean).length;
+    fill.style.width = (count / items.length * 100) + '%';
+    label.textContent = count + ' / ' + items.length + ' verified';
+    done.classList.toggle('show', count === items.length);
+  }
+  update();
+})();
+
+/* ============================================================
+   7. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:'What most fundamentally distinguishes Cursor from a traditional IDE with an AI plugin bolted on?', options:[
+        'It is free to use',
+        'AI (chat, inline generation, agents) is native to the whole editor, with deep codebase awareness',
+        'It only supports one programming language',
+        'It uses a different keyboard shortcut scheme'
+      ], correct:1, explain:'Cursor is built AI-native from the ground up — chat, Tab, and Agent all share one deep view of your codebase (Section 01).' },
+    { q:"Which capability is generally associated with Cursor's Agent mode rather than basic autocomplete?", options:[
+        'Multi-file edits, terminal execution, and iterating toward a goal',
+        'Only single-line suggestions',
+        'Only explaining code, never editing it',
+        'Compiling code faster'
+      ], correct:0, explain:'Agent mode plans, edits across files, runs tools, and iterates — well beyond single-line completion (Section 01 &amp; 03).' },
+    { q:"What's the key conceptual difference between local (foreground) and delegated (background) agent execution?", options:[
+        'Local runs remotely while you watch',
+        'Background/delegated work happens off to the side while you continue other work, then reports back; local keeps you watching each step live',
+        'They are the same thing with different names',
+        'Background execution cannot happen inside Cursor'
+      ], correct:1, explain:'Same underlying agent — different trade-off between a tight interactive loop and freeing you up for other work (Section 04).' },
+    { q:"In the AI-assisted SDLC ladder from Module 1, where does Cursor's Agent mode sit?", options:[
+        'Stage 1 — prompt-driven coding only',
+        'Stage 3 — agents: plans, edits across files, runs tools, iterates',
+        'It does not map onto the ladder at all',
+        'Only stage 4, multi-agent workflows'
+      ], correct:1, explain:"Agent mode is the concrete Cursor feature that lives at the 'Agents' rung of the ladder (Section 03)." }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.innerHTML = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — you\'re ready for Module 3.'
+      : score >= questions.length - 1
+      ? 'Nice work — solid grasp of where Cursor fits.'
+      : 'Worth a re-skim of the sections above before Module 3.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>

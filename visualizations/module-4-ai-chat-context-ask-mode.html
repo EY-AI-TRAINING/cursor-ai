@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 4 — AI Chat, Context &amp; Ask Mode</title>
+<meta name="description" content="Interactive walkthrough: AI Chat and codebase context, @-mentions, Ask vs Chat vs Agent modes, context scoping, conversation history limits, and prompt writing for analysis tasks.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%AC%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+.tabbar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{cursor:pointer;}
+.tab-btn.active{background:var(--grad-1);border-color:transparent;color:#fff;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fadein .35s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.6px;font-weight:600;color:var(--text-faint);padding:8px 10px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:640px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Chat bubbles ===================== */
+.chatbubble{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:14px 16px;font-size:14px;position:relative;}
+.chatbubble.user{background:var(--surface-3);}
+.chatbubble .who{font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-bottom:6px;text-transform:uppercase;}
+.mention-inline{font-family:var(--mono);font-size:0.92em;padding:1px 6px;border-radius:5px;background:rgba(168,85,247,0.14);color:var(--accent-soft);border:1px solid rgba(168,85,247,0.3);}
+
+/* ===================== Signal bars ===================== */
+.signal-bars{display:inline-flex;gap:3px;align-items:flex-end;height:18px;vertical-align:middle;}
+.signal-bar{width:5px;border-radius:2px;background:var(--surface-3);}
+.signal-bar.on{background:var(--grad-2);}
+
+/* ===================== Mentions playground ===================== */
+.mention-types{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.mention-type-btn{flex:1;min-width:130px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;text-align:center;transition:all .15s;}
+.mention-type-btn:hover{border-color:var(--accent-soft);}
+.mention-type-btn .mt-icon{font-size:18px;}
+.mention-type-btn .mt-name{font-size:12.5px;font-weight:700;margin-top:4px;}
+.query-builder{margin-top:18px;padding:16px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;font-family:var(--mono);font-size:14px;min-height:52px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.query-builder .placeholder{color:var(--text-faint);font-style:italic;}
+.mention-detail{margin-top:14px;padding:12px 14px;min-height:20px;}
+
+/* ===================== Diff blocks ===================== */
+.diff-block{font-family:var(--mono);font-size:12.8px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;margin-top:10px;}
+.diff-line{padding:2px 6px;border-radius:3px;}
+.diff-add{background:rgba(52,211,153,0.12);color:var(--good);}
+.diff-del{background:rgba(251,113,133,0.12);color:var(--danger);text-decoration:line-through;}
+.apply-btn{margin-top:10px;}
+.apply-btn.applied{background:rgba(52,211,153,0.15);border-color:var(--good);color:var(--good);}
+
+/* ===================== Meter ===================== */
+.meter-labeled{margin-top:10px;}
+.meter-track2{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin-top:6px;}
+.meter-fill2{height:100%;border-radius:4px;}
+
+/* ===================== Context window (history) ===================== */
+.cw-bar-wrap{margin:18px 0;}
+.cw-bar-track{height:22px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:8px;overflow:hidden;}
+.cw-bar-fill{height:100%;background:var(--grad-2);transition:width .4s ease;}
+.cw-bar-fill.over{background:linear-gradient(90deg,var(--warn),var(--danger));}
+.cw-bar-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--text-faint);margin-top:6px;}
+.cw-log{display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto;padding-right:4px;margin-top:14px;}
+.cw-msg{padding:9px 12px;border-radius:9px;border:1px solid var(--border-soft);font-size:13px;display:flex;justify-content:space-between;gap:10px;}
+.cw-msg.user{background:var(--surface-2);}
+.cw-msg.assistant{background:var(--surface-3);}
+.cw-msg.dropped{opacity:0.35;text-decoration:line-through;}
+.cw-msg .cost{font-family:var(--mono);font-size:11px;color:var(--text-faint);white-space:nowrap;}
+.tip-box{margin-top:16px;padding:14px 16px;border-radius:10px;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);font-size:13.5px;}
+
+/* ===================== Prompt builder ===================== */
+.switch-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-soft);margin-bottom:8px;gap:14px;}
+.switch-row .label{font-size:13.8px;}
+.switch-row .label small{display:block;color:var(--text-faint);font-size:11.5px;margin-top:2px;}
+.switch{position:relative;width:42px;height:24px;flex:0 0 auto;}
+.switch input{opacity:0;width:0;height:0;position:absolute;}
+.switch .track{position:absolute;inset:0;background:var(--surface-3);border:1px solid var(--border);border-radius:12px;transition:all .2s;cursor:pointer;}
+.switch .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--text-faint);transition:all .2s;}
+.switch input:checked + .track{background:var(--grad-1);border-color:transparent;}
+.switch input:checked + .track .knob{transform:translateX(18px);background:#fff;}
+.assembled-prompt{margin-top:16px;padding:16px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;font-family:var(--mono);font-size:13.5px;color:var(--text-dim);min-height:70px;line-height:1.7;}
+.assembled-prompt .seg{transition:opacity .25s;}
+.assembled-prompt .seg.off{opacity:0.18;}
+.assembled-prompt .seg.on{color:var(--text);}
+
+/* ===================== Scenario / hands-on ===================== */
+.scenario-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;}
+.scenario-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
+.scenario-item:hover{background:var(--surface-2);}
+.scenario-item.checked{background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.25);}
+.scenario-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.scenario-item.checked .scenario-box{background:var(--accent);border-color:var(--accent);color:#fff;}
+.scenario-label{font-size:14px;font-family:var(--mono);}
+.scenario-item.fb-good .scenario-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.scenario-item.fb-bad .scenario-box{background:var(--danger);border-color:var(--danger);color:#3a0a10;}
+.scenario-fb-tag{margin-left:auto;font-size:11.5px;font-family:var(--mono);color:var(--text-faint);}
+.scenario-result{margin-top:16px;padding:14px 16px;border-radius:10px;display:none;}
+.scenario-result.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){ .section{padding:60px 16px;} }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="module-3-cursor-interface-setup.html" class="brand"><span class="brand-badge">💬</span> Module 4</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#chat-context">Context</a>
+      <a href="#mentions">@-mentions</a>
+      <a href="#modes">Modes</a>
+      <a href="#scoping">Scoping</a>
+      <a href="#history">History</a>
+      <a href="#prompt-writing">Prompting</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-3-cursor-interface-setup.html" class="prev-link">← Module 3</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 2 · Module 4</div>
+    <h1>AI Chat, Context<br>&amp; Ask Mode</h1>
+    <p class="hero-sub">Cursor is set up (Module 3). Now let's actually ask it things well: how context scope changes an answer, how @-mentions hand it exactly what you mean, when to reach for Ask vs. Chat vs. Agent, and how to keep long conversations from working against you.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 60 min</span>
+      <span class="pill pill-neutral">🎯 Reliable answers, not just any answer</span>
+      <span class="pill pill-neutral">📝 Hands-on exercise + quiz</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. AI CHAT FOR CODE QUERIES / CONTEXT SCOPE -->
+<!-- ============================================================ -->
+<section class="section" id="chat-context">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / AI Chat for code queries</span>
+      <h2>Same question, four widening scopes</h2>
+      <p>Chat answers questions about your code without changing anything. How good the answer is depends almost entirely on what it can see when you ask. Watch the same question get better — and more specific to your repo — as scope widens.</p>
+    </div>
+    <div class="card reveal">
+      <div class="chatbubble user" style="margin-bottom:14px;"><div class="who">You ask</div>How does token refresh work in our auth flow?</div>
+      <div class="tabbar" id="scopeTabbar"></div>
+      <div class="chatbubble" id="scopeAnswer"></div>
+      <div class="meter-labeled">
+        <span class="tag">CONTEXT BREADTH</span>
+        <div class="signal-bars" id="scopeBars"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. @-MENTIONS PLAYGROUND -->
+<!-- ============================================================ -->
+<section class="section" id="mentions">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / @-mentions</span>
+      <h2>Hand it exactly what you mean</h2>
+      <p>@-mentions reference files, folders, docs, or symbols directly — build a query below by clicking mention types.</p>
+    </div>
+    <div class="card reveal">
+      <div class="mention-types" id="mentionTypes"></div>
+      <div class="query-builder" id="queryBuilder"><span class="placeholder">Click a mention type above to start building a query…</span></div>
+      <div class="card-soft mention-detail" id="mentionDetail"></div>
+      <div style="margin-top:12px;"><button class="btn btn-sm" id="mentionClear">↺ Clear</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. ASK VS CHAT VS AGENT -->
+<!-- ============================================================ -->
+<section class="section" id="modes">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / Difference between Chat/Ask and Agent modes</span>
+      <h2>One request, three very different outcomes</h2>
+      <p>"Add input validation to the signup form" — watch what changes depending on which mode you're in.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tabbar" id="modeTabbar"></div>
+      <div id="modePanel"></div>
+    </div>
+    <div class="grid-3 reveal" style="margin-top:18px;">
+      <div class="card-soft" style="padding:16px;"><b style="font-size:13.5px;">🔒 Ask</b><p style="font-size:12.8px;color:var(--text-dim);margin-top:6px;">Exploring or understanding something without any risk of a change.</p></div>
+      <div class="card-soft" style="padding:16px;"><b style="font-size:13.5px;">✍️ Chat</b><p style="font-size:12.8px;color:var(--text-dim);margin-top:6px;">A focused, single change you want to review before it lands.</p></div>
+      <div class="card-soft" style="padding:16px;"><b style="font-size:13.5px;">🤖 Agent</b><p style="font-size:12.8px;color:var(--text-dim);margin-top:6px;">A well-scoped, multi-step task you're comfortable delegating.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. CONTEXT SELECTION & SCOPING -->
+<!-- ============================================================ -->
+<section class="section" id="scoping">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Context selection &amp; scoping for reliable answers</span>
+      <h2>More context isn't always better context</h2>
+      <p>"Why is the checkout flow slow?" — with too little, just-right, or too much attached.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tabbar" id="scopingTabbar"></div>
+      <div id="scopingPanel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. CONVERSATION HISTORY & CONTEXT LIMITS -->
+<!-- ============================================================ -->
+<section class="section" id="history">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Managing conversation history &amp; context limits</span>
+      <h2>Long threads eventually work against you</h2>
+      <p>Every turn — yours and the model's — shares the same token budget from Module 1. Keep adding turns and watch what happens.</p>
+    </div>
+    <div class="card reveal">
+      <div class="cw-bar-wrap">
+        <div class="cw-bar-track"><div class="cw-bar-fill" id="cwBarFill"></div></div>
+        <div class="cw-bar-label"><span id="cwUsed">0 tokens used</span><span id="cwBudget">/ 1400 token budget</span></div>
+      </div>
+      <div style="display:flex;gap:10px;margin:14px 0 0;">
+        <button class="btn btn-primary btn-sm" id="cwAdd">+ Continue the thread</button>
+        <button class="btn btn-sm" id="cwReset">✨ Start New Chat</button>
+      </div>
+      <div class="cw-log" id="cwLog"></div>
+      <div class="tip-box">💡 <b>Rule of thumb:</b> if answers start feeling inconsistent, repetitive, or slow, don't keep scrolling the same thread — start a fresh chat scoped to your current question. It costs you nothing and the model starts from a clean, focused context.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. PROMPT WRITING FOR ANALYSIS TASKS -->
+<!-- ============================================================ -->
+<section class="section" id="prompt-writing">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / Effective prompt writing &amp; context engineering for analysis tasks</span>
+      <h2>Build a good analysis prompt, piece by piece</h2>
+      <p>Toggle each ingredient on and watch the prompt take shape.</p>
+    </div>
+    <div class="card reveal">
+      <div id="promptToggles"></div>
+      <div class="assembled-prompt" id="assembledPrompt"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. HANDS-ON SCENARIO -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Hands-on exercise</span>
+      <h2>Scope this investigation yourself</h2>
+      <p>A teammate asks in Slack: <i>"Why does the <code>/reports</code> endpoint time out sometimes?"</i> You open Cursor to investigate. Pick which context you'd attach, then check your approach.</p>
+    </div>
+    <div class="card reveal">
+      <div class="scenario-list" id="scenarioList"></div>
+      <button class="btn btn-primary btn-sm" id="scenarioCheck" style="margin-top:16px;">Check my approach</button>
+      <div class="scenario-result" id="scenarioResult"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">08 / Knowledge check</span>
+      <h2>Quick check before Module 5</h2>
+      <p>Five questions from what you just walked through.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/5</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">What to carry into Module 5</h3>
+    <ul>
+      <li>Chat answers are only as good as the context behind them — scope matters more than which question you ask.</li>
+      <li>@-mentions (file, folder, docs, symbol) are how you hand Cursor exactly the right context, deliberately.</li>
+      <li>Ask, Chat, and Agent are three points on a risk/autonomy spectrum, not three unrelated tools.</li>
+      <li>Too little context gives a generic answer; too much dilutes signal and strains the context window from Module 1.</li>
+      <li>Long threads degrade — start a new chat scoped to the task instead of dragging an old one along.</li>
+      <li>A strong analysis prompt scopes with @-mentions, asks something specific, and states the output format/constraints you want.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-3-cursor-interface-setup.html" class="btn">← Module 3: Cursor Interface &amp; Setup</a>
+    <a href="#" class="btn">↑ Back to top</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 4 — AI Chat, Context &amp; Ask Mode · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["@mention","scope","ask","chat","agent","context","symbol","docs","thread","history","prompt","analyze","attach","codebase","query"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ============================================================
+   1. CHAT CONTEXT SCOPE
+   ============================================================ */
+(function(){
+  var scopes = [
+    { label:'No context', bars:1, answer:'Typically, a refresh token is exchanged for a new access token shortly before the old one expires. Implementations vary widely, so you\'d want to check your specific auth library\'s docs.' },
+    { label:'@AuthService.ts', bars:2, answer:'In <span class="mention-inline">AuthService.ts</span>, <code>refreshToken()</code> checks the token\'s <code>exp</code> claim and calls <code>/oauth/refresh</code> once fewer than 5 minutes remain.' },
+    { label:'@auth/ (folder)', bars:3, answer:'Same as above — plus <code>TokenStore.ts</code> persists the new token to secure storage, and <code>AuthGuard.ts</code> retries the original request automatically once refresh completes.' },
+    { label:'Whole codebase', bars:4, answer:'Same as above — plus: <code>PaymentClient.ts</code>, <code>NotificationClient.ts</code>, and <code>AdminPanel.tsx</code> all call <code>refreshToken()</code> directly instead of going through <code>AuthGuard</code>. Worth flagging as an inconsistency — that\'s a cross-file pattern only visible with full codebase awareness.' }
+  ];
+  var tabbar = document.getElementById('scopeTabbar');
+  var answerEl = document.getElementById('scopeAnswer');
+  var barsEl = document.getElementById('scopeBars');
+  var active = 0;
+
+  function render(){
+    var s = scopes[active];
+    answerEl.innerHTML = '<div class="who">Cursor answers</div>' + s.answer;
+    barsEl.innerHTML = '';
+    for(var i=0;i<4;i++){
+      var bar = document.createElement('div');
+      bar.className = 'signal-bar' + (i < s.bars ? ' on' : '');
+      bar.style.height = (6 + i*4) + 'px';
+      barsEl.appendChild(bar);
+    }
+  }
+  scopes.forEach(function(s, i){
+    var b = document.createElement('button');
+    b.className = 'btn tab-btn btn-sm' + (i === active ? ' active' : '');
+    b.textContent = s.label;
+    b.addEventListener('click', function(){
+      active = i;
+      tabbar.querySelectorAll('.tab-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    tabbar.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   2. MENTIONS PLAYGROUND
+   ============================================================ */
+(function(){
+  var types = [
+    { icon:'📄', name:'File', chip:'@AuthService.ts', detail:'Pulls the full content of that one file into context — precise and cheap.' },
+    { icon:'📁', name:'Folder', chip:'@src/auth/', detail:'Pulls the folder\'s structure and relevant files in it — broader, still scoped.' },
+    { icon:'📚', name:'Docs', chip:'@docs/auth-spec.md', detail:'Pulls a specific doc or spec so the answer is grounded in written requirements, not just code.' },
+    { icon:'🔤', name:'Symbol', chip:'@refreshToken()', detail:'Jumps straight to one function or class definition (and often its usages) without pulling the whole file.' }
+  ];
+  var wrap = document.getElementById('mentionTypes');
+  var builder = document.getElementById('queryBuilder');
+  var detail = document.getElementById('mentionDetail');
+  var chosen = [];
+
+  function renderBuilder(){
+    if(chosen.length === 0){
+      builder.innerHTML = '<span class="placeholder">Click a mention type above to start building a query…</span>';
+      return;
+    }
+    var html = chosen.map(function(c){ return '<span class="mention-inline">'+c+'</span>'; }).join(' ');
+    html += ' <span style="color:var(--text-dim);">How should token refresh work?</span>';
+    builder.innerHTML = html;
+  }
+  types.forEach(function(t){
+    var b = document.createElement('div');
+    b.className = 'mention-type-btn';
+    b.innerHTML = '<div class="mt-icon">'+t.icon+'</div><div class="mt-name">'+t.name+'</div>';
+    b.addEventListener('click', function(){
+      chosen.push(t.chip);
+      renderBuilder();
+      detail.innerHTML = '<b style="font-family:var(--mono);font-size:12px;color:var(--accent-2);text-transform:uppercase;">'+t.icon+' '+t.name+'</b><p style="margin-top:6px;font-size:13.5px;color:var(--text-dim);">'+t.detail+'</p>';
+    });
+    wrap.appendChild(b);
+  });
+  document.getElementById('mentionClear').addEventListener('click', function(){
+    chosen = [];
+    renderBuilder();
+    detail.innerHTML = '';
+  });
+  renderBuilder();
+})();
+
+/* ============================================================
+   3. ASK VS CHAT VS AGENT
+   ============================================================ */
+(function(){
+  var modes = [
+    { label:'🔒 Ask', pill:'Read-only — nothing changes until you write it', render:function(){
+      return '<div class="chatbubble"><div class="who">Cursor (Ask)</div>You\'d want to validate email format and password length (≥ 8 chars) client-side in <code>SignupForm.tsx</code>, and mirror those checks server-side in <code>signupController.ts</code> so validation can\'t be bypassed by calling the API directly.</div>';
+    }},
+    { label:'✍️ Chat', pill:'You review and apply each change', render:function(){
+      return '<div class="chatbubble"><div class="who">Cursor (Chat)</div>Here\'s a diff for <code>SignupForm.tsx</code>:'+
+        '<div class="diff-block"><div class="diff-line diff-del">- if (!email) return;</div><div class="diff-line diff-add">+ if (!isValidEmail(email)) return setError("Enter a valid email");</div><div class="diff-line diff-add">+ if (password.length &lt; 8) return setError("Password must be 8+ characters");</div></div>'+
+        '<button class="btn btn-sm apply-btn" id="applyBtn">Apply to file</button></div>';
+    }},
+    { label:'🤖 Agent', pill:'Multi-file, executed autonomously', render:function(){
+      return '<div class="chatbubble"><div class="who">Cursor (Agent)</div>Applied validation to <code>SignupForm.tsx</code> and <code>signupController.ts</code>, added 4 new tests, and ran the suite — all passing.<div class="diff-block"><span class="pill pill-good" style="margin-right:6px;">✓ 3 files changed</span><span class="pill pill-good">✓ 4 tests added</span></div></div>';
+    }}
+  ];
+  var tabbar = document.getElementById('modeTabbar');
+  var panel = document.getElementById('modePanel');
+  var active = 0;
+
+  function render(){
+    panel.innerHTML = '<span class="pill pill-neutral" style="margin-bottom:12px;display:inline-flex;">'+modes[active].pill+'</span>' + modes[active].render();
+    var applyBtn = document.getElementById('applyBtn');
+    if(applyBtn){
+      applyBtn.addEventListener('click', function(){
+        applyBtn.textContent = '✓ Applied';
+        applyBtn.classList.add('applied');
+        applyBtn.disabled = true;
+      });
+    }
+  }
+  modes.forEach(function(m, i){
+    var b = document.createElement('button');
+    b.className = 'btn tab-btn' + (i === active ? ' active' : '');
+    b.textContent = m.label;
+    b.addEventListener('click', function(){
+      active = i;
+      tabbar.querySelectorAll('.tab-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    tabbar.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   4. CONTEXT SCOPING TOO LITTLE / JUST RIGHT / TOO MUCH
+   ============================================================ */
+(function(){
+  var levels = [
+    { label:'Too little', accuracy:25, speed:'fast', color:'var(--danger)', answer:'Common causes of slow endpoints include unoptimized database queries, missing caching, or synchronous network calls. Consider profiling to narrow it down.', note:'⚠️ Generic — not wrong, but not actionable for your actual bottleneck.' },
+    { label:'Just right', accuracy:95, speed:'fast', color:'var(--good)', answer:'<span class="mention-inline">@CheckoutService.ts</span> <span class="mention-inline">@PerformanceLogs/checkout.log</span> — <code>calculateShipping()</code> is called synchronously inside a loop over cart items, an O(n²) pattern. Logs show 340ms avg latency, spiking with cart size.', note:'✅ Specific, actionable, and fast — scoped to exactly what\'s relevant.' },
+    { label:'Too much', accuracy:55, speed:'slow', color:'var(--warn)', answer:'The response is slower to generate, more generic, and may miss the specific bottleneck buried among hundreds of unrelated files — signal gets diluted.', note:'⚠️ Risks straining the context window (Module 1) and drowning the real signal in noise.' }
+  ];
+  var tabbar = document.getElementById('scopingTabbar');
+  var panel = document.getElementById('scopingPanel');
+  var active = 1;
+
+  function render(){
+    var l = levels[active];
+    panel.innerHTML =
+      '<div class="chatbubble">'+l.answer+'</div>'+
+      '<div class="meter-labeled"><span class="tag">RELEVANCE / SIGNAL</span><div class="meter-track2"><div class="meter-fill2" style="width:'+l.accuracy+'%;background:'+l.color+';"></div></div></div>'+
+      '<p class="hint" style="margin-top:12px;">'+l.note+' <span class="pill pill-neutral" style="margin-left:6px;">response: '+l.speed+'</span></p>';
+  }
+  levels.forEach(function(l, i){
+    var b = document.createElement('button');
+    b.className = 'btn tab-btn' + (i === active ? ' active' : '');
+    b.textContent = l.label;
+    b.addEventListener('click', function(){
+      active = i;
+      tabbar.querySelectorAll('.tab-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    tabbar.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   5. CONVERSATION HISTORY
+   ============================================================ */
+(function(){
+  var budget = 1400;
+  var demoTurns = [
+    {role:'user', text:'Why is the checkout flow slow?', tokens:60},
+    {role:'assistant', text:'calculateShipping() runs inside an O(n²) loop over cart items.', tokens:90},
+    {role:'user', text:'Show me the function.', tokens:40},
+    {role:'assistant', text:'Here is calculateShipping() from CheckoutService.ts, lines 88-104.', tokens:120},
+    {role:'user', text:'Now, unrelated — how do I add a new API route?', tokens:55},
+    {role:'assistant', text:'Add a handler in routes/, register it in router.ts, matching the existing pattern.', tokens:110},
+    {role:'user', text:'What was that shipping bug again?', tokens:50},
+    {role:'assistant', text:'(Re-explaining, thread has drifted across two unrelated topics by now.)', tokens:130}
+  ];
+  var conversation = [];
+  var turnCounter = 0;
+
+  function addTurn(){
+    var demo = demoTurns[turnCounter % demoTurns.length];
+    var repeatNum = Math.floor(turnCounter / demoTurns.length);
+    conversation.push({ role: demo.role, text: demo.text + (repeatNum > 0 ? ' (turn ' + (turnCounter+1) + ')' : ''), tokens: demo.tokens });
+    turnCounter++;
+    render();
+  }
+
+  function render(){
+    var log = document.getElementById('cwLog');
+    log.innerHTML = '';
+    var cumulative = 0;
+    var withActive = [];
+    for(var i = conversation.length - 1; i >= 0; i--){
+      cumulative += conversation[i].tokens;
+      withActive[i] = cumulative <= budget;
+    }
+    var usedTokens = 0, droppedCount = 0;
+    conversation.forEach(function(msg, idx){
+      var active = withActive[idx];
+      if(active) usedTokens += msg.tokens; else droppedCount++;
+      var row = document.createElement('div');
+      row.className = 'cw-msg ' + msg.role + (active ? '' : ' dropped');
+      row.innerHTML = '<div>'+(msg.role === 'user' ? '👤 ' : '🤖 ')+msg.text+(active ? '' : ' <span style="color:var(--danger);">· dropped</span>')+'</div><span class="cost">'+msg.tokens+' tok</span>';
+      log.appendChild(row);
+    });
+    var pct = Math.min(100, (usedTokens / budget) * 100);
+    var fill = document.getElementById('cwBarFill');
+    fill.style.width = pct + '%';
+    fill.classList.toggle('over', usedTokens >= budget && droppedCount > 0);
+    document.getElementById('cwUsed').textContent = usedTokens + ' tokens used' + (droppedCount ? ' · ' + droppedCount + ' turn(s) dropped from context' : '');
+    document.getElementById('cwBudget').textContent = '/ ' + budget + ' token budget';
+  }
+  document.getElementById('cwAdd').addEventListener('click', addTurn);
+  document.getElementById('cwReset').addEventListener('click', function(){ conversation = []; turnCounter = 0; render(); });
+  render();
+})();
+
+/* ============================================================
+   6. PROMPT BUILDER
+   ============================================================ */
+(function(){
+  var segs = [
+    { id:'seg1', on:false, label:'Scope with @-mentions', hint:'attach the right files/docs/symbols', text:'@CheckoutService.ts @PerformanceLogs/checkout.log — ' },
+    { id:'seg2', on:false, label:'Ask a specific question', hint:'not "look at this" — what exactly do you want to know', text:'walk through the checkout flow and identify the specific cause of slow responses. ' },
+    { id:'seg3', on:false, label:'State the output format', hint:'bullets, a table, cited line numbers, a one-paragraph summary', text:'Answer as a short bulleted list, citing file:line for each finding. ' },
+    { id:'seg4', on:false, label:'Name constraints / goals', hint:'scope what counts as relevant', text:'Only flag issues that affect the production hot path — ignore test/dev-only code.' }
+  ];
+  var base = 'Why is this slow?';
+  var wrap = document.getElementById('promptToggles');
+  var out = document.getElementById('assembledPrompt');
+
+  function render(){
+    var anyOn = segs.some(function(s){ return s.on; });
+    var html = anyOn ? '' : '<span class="seg on">'+base+'</span>';
+    segs.forEach(function(s){
+      html += '<span class="seg '+(s.on ? 'on' : 'off')+'">'+s.text+'</span>';
+    });
+    out.innerHTML = html;
+  }
+  segs.forEach(function(s){
+    var row = document.createElement('div');
+    row.className = 'switch-row';
+    row.innerHTML = '<span class="label">'+s.label+'<small>'+s.hint+'</small></span>'+
+      '<label class="switch"><input type="checkbox" id="'+s.id+'"><span class="track"><span class="knob"></span></span></label>';
+    wrap.appendChild(row);
+    row.querySelector('input').addEventListener('change', function(e){ s.on = e.target.checked; render(); });
+  });
+  render();
+})();
+
+/* ============================================================
+   7. HANDS-ON SCENARIO
+   ============================================================ */
+(function(){
+  var items = [
+    { label:'@ReportsController.ts', good:true },
+    { label:'@docs/architecture-overview.md (entire 40-page doc)', good:false },
+    { label:'@db/queries/reports.sql', good:true },
+    { label:'Whole codebase (no scoping)', good:false },
+    { label:'@PerformanceLogs/reports-timeout.log', good:true }
+  ];
+  var list = document.getElementById('scenarioList');
+  var checked = new Array(items.length).fill(false);
+  items.forEach(function(item, i){
+    var row = document.createElement('div');
+    row.className = 'scenario-item';
+    row.innerHTML = '<span class="scenario-box">✓</span><span class="scenario-label">'+item.label+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+    });
+    list.appendChild(row);
+    row._item = item;
+  });
+
+  document.getElementById('scenarioCheck').addEventListener('click', function(){
+    var rows = list.querySelectorAll('.scenario-item');
+    var score = 0, total = 0;
+    rows.forEach(function(row, i){
+      var item = row._item;
+      row.classList.remove('checked');
+      if(checked[i]){
+        total++;
+        if(item.good){ row.classList.add('fb-good'); score++; }
+        else { row.classList.add('fb-bad'); score--; }
+        var tag = document.createElement('span');
+        tag.className = 'scenario-fb-tag';
+        tag.textContent = item.good ? '👍 relevant & specific' : '⚠️ adds noise, not scoped';
+        row.appendChild(tag);
+      }
+    });
+    var result = document.getElementById('scenarioResult');
+    var missedGood = items.filter(function(it,i){ return it.good && !checked[i]; }).length;
+    var verdict, cls;
+    if(total === 0){ verdict = 'Pick at least one piece of context, then check again.'; cls = 'pill-warn'; }
+    else if(score === 3 && missedGood === 0){ verdict = '🟢 Well-scoped — specific, relevant, and analyzable. This is exactly the combination a focused timeout investigation needs.'; cls = 'pill-good'; }
+    else if(score >= 1){ verdict = '🟡 On the right track — but check the ⚠️ items above. The full doc and unscoped codebase add noise without much specific signal for a timeout question.'; cls = 'pill-warn'; }
+    else { verdict = '🔴 This mix leans heavy on noise (unscoped codebase, a 40-page doc) and light on specific signal (logs, the actual controller/query). Try again with the ⚠️-flagged items unchecked.'; cls = 'pill-bad'; }
+    result.innerHTML = '<span class="pill '+cls+'">score '+score+'</span><p style="margin-top:10px;font-size:13.8px;">'+verdict+'</p>';
+    result.classList.add('show');
+  });
+})();
+
+/* ============================================================
+   8. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:"What's the main difference between Ask mode and Chat mode?", options:[
+        'There is no difference — they are the same mode',
+        'Ask gives a read-only explanation; Chat proposes edits you review and apply',
+        'Ask only works on documentation files',
+        'Chat cannot see any code context'
+      ], correct:1, explain:'Ask never touches files; Chat proposes a diff you choose to apply (Section 03).' },
+    { q:'Which @-mention type would you use to ground an answer in a written requirements document rather than code?', options:[
+        'File','Folder','Docs','Symbol'
+      ], correct:2, explain:'Docs mentions pull in a specific spec/doc so the answer reflects written requirements, not just code (Section 02).' },
+    { q:'Why can attaching the entire codebase to a question sometimes produce a worse answer than a well-scoped one?', options:[
+        'It is technically impossible to attach more than one file',
+        'It dilutes signal, may strain the context window, and slows the response — precision beats volume',
+        'It automatically switches you to Agent mode',
+        'There is no real difference in answer quality'
+      ], correct:1, explain:'Too much context buries the relevant signal and can hit the limits covered in Module 1 (Section 04).' },
+    { q:'When should you start a new chat instead of continuing an existing thread?', options:[
+        'Never — always continue the same thread',
+        'When the conversation is long/inconsistent, or you are switching to an unrelated task',
+        'Only at the very start of the workday',
+        'New chats are not supported in Cursor'
+      ], correct:1, explain:'Long or drifting threads degrade answer quality — a fresh, scoped chat resets that (Section 05).' },
+    { q:'What makes a prompt effective for an analysis task, per this module?', options:[
+        'Being as short as possible with zero context attached',
+        'Scoping with @-mentions, asking a specific question, and stating the output format/constraints you want',
+        'Always switching to Agent mode regardless of the task',
+        'Avoiding any reference to specific files'
+      ], correct:1, explain:'The prompt-builder ingredients — scope, specificity, format, constraints — are exactly what turns a vague ask into a reliable one (Section 06).' }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.innerHTML = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — you\'re ready for Module 5.'
+      : score >= questions.length - 1
+      ? 'Nice work — solid grasp of context and modes.'
+      : 'Worth a re-skim of the sections above before Module 5.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>
