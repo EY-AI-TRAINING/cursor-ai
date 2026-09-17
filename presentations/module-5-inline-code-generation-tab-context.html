@@ -1,0 +1,499 @@
+<title>Tab &amp; Inline Generation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:13px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#tabflow" data-target="tabflow"><span class="dot"></span><span class="rail-label">01 · Tab, not autocomplete</span></a>
+  <a href="#scale" data-target="scale"><span class="dot"></span><span class="rail-label">02 · Generation scale</span></a>
+  <a href="#decide" data-target="decide"><span class="dot"></span><span class="rail-label">03 · Accept / reject</span></a>
+  <a href="#context" data-target="context"><span class="dot"></span><span class="rail-label">04 · What Tab sees</span></a>
+  <a href="#dial" data-target="dial"><span class="dot"></span><span class="rail-label">05 · Dial it in</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">06 · Hands-on</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">07 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#tabflow" data-target="tabflow">01</a>
+  <a href="#scale" data-target="scale">02</a>
+  <a href="#decide" data-target="decide">03</a>
+  <a href="#context" data-target="context">04</a>
+  <a href="#dial" data-target="dial">05</a>
+  <a href="#handson" data-target="handson">06</a>
+  <a href="#recap" data-target="recap">07</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 2 · Cursor Power User &amp; AI-Assisted Coding — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Inline Code Generation, Tab &amp; Context</h1>
+    <p class="lede hero-lede">Module 5 — 45 minutes, and the moment Day 2 turns from asking questions into generating code directly in the editor. Tab is the most-used feature in Cursor and the easiest to use carelessly — this module is about reading what it's actually offering before your finger hits the key.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">4</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">subtopic</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">hands-on exercise</span></li>
+      <li class="stat-tile"><span class="stat-num">45</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#tabflow"><span class="agenda-index">01</span><span>AI-powered autocomplete (Tab-to-complete) &amp; inline generation via natural-language prompts</span></a></li>
+      <li><a href="#scale"><span class="agenda-index">02</span><span>Generating functions, classes, boilerplate &amp; targeted code changes</span></a></li>
+      <li><a href="#decide"><span class="agenda-index">03</span><span>Accepting, rejecting, editing &amp; validating suggestions</span></a></li>
+      <li><a href="#context"><span class="agenda-index">04</span><span>Using surrounding code &amp; open-file context effectively</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="tabflow">
+  <div class="section-inner">
+    <p class="eyebrow">01 — The mechanism</p>
+    <h2 class="section-title">Tab predicts the next block, not the next token</h2>
+    <p class="lede">Classic autocomplete finishes the word you're typing. Cursor Tab reads the surrounding code and your intent, predicts a whole edit — often several lines, sometimes a new function — and after you accept it, jumps your cursor straight to the next place that needs a matching change.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 340" role="img" aria-label="Comparison: traditional autocomplete predicts one token at the cursor and stops, while Cursor Tab predicts a full multi-line suggestion and then jumps the cursor to the next related edit location." style="min-width:660px">
+          <text class="lbl-strong txt-brick" x="220" y="34" text-anchor="middle" font-size="12">TRADITIONAL AUTOCOMPLETE</text>
+          <rect class="box" x="30" y="50" width="380" height="260" rx="12"></rect>
+          <text x="55" y="90" font-size="12" fill="var(--ink)">function total(items) {</text>
+          <text x="55" y="112" font-size="12" fill="var(--ink)">&#160;&#160;return items.</text>
+          <rect x="205" y="99" width="150" height="22" rx="4" fill="var(--brick)" fill-opacity="0.1" stroke="var(--brick)" stroke-width="1.2" stroke-dasharray="3 3"></rect>
+          <text class="txt-brick" x="280" y="114" text-anchor="middle" font-size="10.5">reduce(fn)</text>
+          <text x="55" y="136" font-size="12" fill="var(--ink)">}</text>
+          <text class="txt-brick" x="55" y="266" font-size="12">predicts ONE token</text>
+          <text class="lbl" x="55" y="284" font-size="10.5">at the cursor, then stops</text>
+
+          <text class="lbl-strong txt-teal" x="640" y="34" text-anchor="middle" font-size="12">CURSOR TAB</text>
+          <rect class="box" x="450" y="50" width="380" height="260" rx="12"></rect>
+          <text x="475" y="90" font-size="12" fill="var(--ink)">function total(items) {</text>
+          <text x="475" y="112" font-size="12" fill="var(--ink)">&#160;&#160;return items.reduce(...);</text>
+          <text x="475" y="134" font-size="12" fill="var(--ink)">}</text>
+          <rect x="470" y="150" width="345" height="66" rx="8" fill="var(--teal)" fill-opacity="0.08" stroke="var(--teal)" stroke-width="1.2" stroke-dasharray="4 3"></rect>
+          <text class="txt-teal" x="490" y="171" font-size="11.5">function totalTax(items) {</text>
+          <text class="txt-teal" x="490" y="190" font-size="11.5">&#160;&#160;return total(items) * TAX;</text>
+          <text class="txt-teal" x="490" y="209" font-size="11.5">}</text>
+          <path class="arrow arrow-thin stroke-teal" d="M660,220 Q705,245 730,262" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="640" y="264" width="175" height="38" rx="8"></rect>
+          <text class="txt-teal" x="727" y="279" text-anchor="middle" font-size="9.5">TAB AGAIN →</text>
+          <text class="txt-teal" x="727" y="293" text-anchor="middle" font-size="9.5">jumps to next call site</text>
+        </svg>
+      </div>
+      <figcaption>The ghost text is a proposal, not a fact — it's generated from the natural-language shape of your code and comments, and every word of it is still yours to accept, edit, or wave off.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="scale">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Range</p>
+    <h2 class="section-title">One mechanism, four sizes of output</h2>
+    <p class="lede">The same inline generation scales from a single line to an entire scaffolded file — driven by how much you ask for in the surrounding comment or prompt. It also runs in reverse: a targeted change to one existing line, without touching anything around it.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 820 440" role="img" aria-label="A single prompt fans out to four increasingly large generated outputs — a snippet, a function, a class, and a full boilerplate file — plus a separate example of a targeted one-line change to existing code." style="min-width:640px">
+          <rect class="box-plum" x="250" y="20" width="320" height="44" rx="10"></rect>
+          <text class="txt-plum" x="410" y="47" text-anchor="middle" font-size="11">// prompt: add order validation with retries</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M410,64 L115,250" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M410,64 L295,200" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M410,64 L475,130" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M410,64 L655,60" marker-end="url(#arrow)"></path>
+
+          <line x1="20" y1="300" x2="800" y2="300" stroke="var(--ink-soft)" stroke-opacity="0.4"></line>
+
+          <rect class="box" x="40" y="260" width="150" height="40" rx="6"></rect>
+          <text class="lbl-strong" x="115" y="252" text-anchor="middle" font-size="11">SNIPPET</text>
+          <text class="lbl" x="115" y="330" text-anchor="middle" font-size="10.5">one line</text>
+
+          <rect class="box-copper" x="220" y="210" width="150" height="90" rx="6"></rect>
+          <text class="lbl-strong" x="295" y="202" text-anchor="middle" font-size="11">FUNCTION</text>
+          <text class="lbl" x="295" y="330" text-anchor="middle" font-size="10.5">one function</text>
+
+          <rect class="box-teal" x="400" y="140" width="150" height="160" rx="6"></rect>
+          <text class="lbl-strong" x="475" y="132" text-anchor="middle" font-size="11">CLASS</text>
+          <text class="lbl" x="475" y="330" text-anchor="middle" font-size="10.5">one class</text>
+
+          <rect class="box-brick" x="580" y="70" width="150" height="230" rx="6"></rect>
+          <text class="lbl-strong" x="655" y="62" text-anchor="middle" font-size="11">BOILERPLATE FILE</text>
+          <text class="lbl" x="655" y="330" text-anchor="middle" font-size="10.5">whole file scaffold</text>
+
+          <rect class="box" x="40" y="355" width="740" height="70" rx="10"></rect>
+          <text class="txt-plum" x="60" y="376" font-size="10.5">TARGETED CHANGE — existing code, untouched around it</text>
+          <text x="60" y="398" font-size="11" fill="var(--brick)" text-decoration="line-through">- if (order.total &lt; 0) return false;</text>
+          <text x="60" y="416" font-size="11" fill="var(--teal)">+ if (order.total &lt; 0 || !order.total) return false;</text>
+        </svg>
+      </div>
+      <figcaption>Same underlying model, four different asks — scope the prompt to the size of the change you actually want.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="decide">
+  <div class="section-inner">
+    <p class="eyebrow">03 — The gate</p>
+    <h2 class="section-title">Every suggestion is a decision, not an event</h2>
+    <p class="lede">Nothing a Tab suggestion generates lands until you act on it. Four outcomes are available for every single suggestion — and validating with a test run is as legitimate a response as accepting outright.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 840 400" role="img" aria-label="A ghost suggestion reaches a decision point with four outcomes: accept, edit first, reject, or validate — with validation looping back to editing when it fails." style="min-width:640px">
+          <rect class="box" x="320" y="20" width="200" height="44" rx="10"></rect>
+          <text class="lbl-strong" x="420" y="47" text-anchor="middle" font-size="11">GHOST SUGGESTION APPEARS</text>
+          <line class="arrow" x1="420" y1="64" x2="420" y2="98" marker-end="url(#arrow)"></line>
+
+          <polygon class="box" points="420,100 480,150 420,200 360,150"></polygon>
+          <text class="lbl-strong" x="420" y="147" text-anchor="middle" font-size="10">YOU</text>
+          <text class="lbl-strong" x="420" y="160" text-anchor="middle" font-size="10">DECIDE</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M420,200 L115,250" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M420,200 L305,250" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M420,200 L495,250" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M420,200 L685,250" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="40" y="250" width="150" height="80" rx="10"></rect>
+          <text class="txt-teal" x="115" y="275" text-anchor="middle" font-size="12">ACCEPT</text>
+          <text class="lbl" x="115" y="291" text-anchor="middle" font-size="9.5">(Tab)</text>
+          <text class="lbl" x="115" y="312" text-anchor="middle" font-size="9.5">shipped as-is</text>
+
+          <rect class="box-copper" x="230" y="250" width="150" height="80" rx="10"></rect>
+          <text class="txt-copper" x="305" y="275" text-anchor="middle" font-size="12">EDIT FIRST</text>
+          <text class="lbl" x="305" y="291" text-anchor="middle" font-size="9.5">(keep typing)</text>
+          <text class="lbl" x="305" y="312" text-anchor="middle" font-size="9.5">refine, then accept</text>
+
+          <rect class="box-brick" x="420" y="250" width="150" height="80" rx="10"></rect>
+          <text class="txt-brick" x="495" y="275" text-anchor="middle" font-size="12">REJECT</text>
+          <text class="lbl" x="495" y="291" text-anchor="middle" font-size="9.5">(Esc)</text>
+          <text class="lbl" x="495" y="312" text-anchor="middle" font-size="9.5">discarded, no trace</text>
+
+          <rect class="box-plum" x="610" y="250" width="150" height="80" rx="10"></rect>
+          <text class="txt-plum" x="685" y="275" text-anchor="middle" font-size="12">VALIDATE</text>
+          <text class="lbl" x="685" y="291" text-anchor="middle" font-size="9.5">(run tests)</text>
+          <text class="lbl" x="685" y="312" text-anchor="middle" font-size="9.5">confirms it's correct</text>
+
+          <path class="arrow-thin stroke-plum" stroke="var(--plum)" d="M655,330 C 560,385 330,385 395,208" marker-end="url(#arrow)"></path>
+          <text class="txt-plum" x="500" y="378" text-anchor="middle" font-size="10">fails → back to editing</text>
+        </svg>
+      </div>
+      <figcaption>The same verification habit from Module 1's trust gate, applied one keystroke at a time.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="context">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Ambient vs. explicit</p>
+    <h2 class="section-title">Tab reads the room; Chat reads what you point at</h2>
+    <p class="lede">Tab's context is ambient and proximity-weighted — it leans hardest on the line you're on, then the surrounding code, then your other open tabs, then recently touched files. Chat, from Module 4, is the opposite: nothing is in scope unless you explicitly @-mentioned it.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 320" role="img" aria-label="Comparison of context sources: Tab draws on ambient, proximity-weighted signals of decreasing strength, while Chat only ever sees files that were explicitly at-mentioned." style="min-width:660px">
+          <text class="txt-teal" x="210" y="36" text-anchor="middle" font-size="12">WHAT TAB SEES — ambient</text>
+          <rect x="40" y="56" width="320" height="28" fill="var(--teal)" opacity="1" rx="4"></rect>
+          <text class="lbl" x="40" y="98" font-size="10.5">cursor line · strongest signal</text>
+
+          <rect x="40" y="116" width="260" height="28" fill="var(--teal)" opacity="0.7" rx="4"></rect>
+          <text class="lbl" x="40" y="158" font-size="10.5">surrounding ~50 lines</text>
+
+          <rect x="40" y="176" width="190" height="28" fill="var(--teal)" opacity="0.45" rx="4"></rect>
+          <text class="lbl" x="40" y="218" font-size="10.5">other open tabs</text>
+
+          <rect x="40" y="236" width="110" height="28" fill="var(--teal)" opacity="0.22" rx="4"></rect>
+          <text class="lbl" x="40" y="278" font-size="10.5">recently edited files · weakest</text>
+
+          <line x1="420" y1="20" x2="420" y2="300" stroke="var(--line-strong)" stroke-dasharray="2 4"></line>
+
+          <text class="txt-plum" x="640" y="36" text-anchor="middle" font-size="12">WHAT CHAT SEES — explicit</text>
+          <rect x="460" y="56" width="340" height="28" fill="var(--plum)" opacity="1" rx="4"></rect>
+          <text class="lbl" x="460" y="98" font-size="10.5">whatever you @-mention</text>
+
+          <rect x="460" y="130" width="340" height="110" rx="8" fill="none" stroke="var(--line-strong)" stroke-dasharray="4 4"></rect>
+          <text class="lbl" x="630" y="180" text-anchor="middle" font-size="10.5">nothing else — no ambient files,</text>
+          <text class="lbl" x="630" y="196" text-anchor="middle" font-size="10.5">no proximity weighting</text>
+        </svg>
+      </div>
+      <figcaption>Two different trust models for two different jobs — Tab optimizes for speed inside the file you're already in; Chat optimizes for precision across files you name.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="dial">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Subtopic: fit the tool to the task</p>
+    <h2 class="section-title">Dial the interaction to the size of the job</h2>
+    <p class="lede">Autocomplete settings are tunable — how eagerly Tab fires, whether it predicts multi-line blocks. But the bigger lever is judgment: small, local edits stay inline with Tab; anything that touches multiple files earns a more structured, reviewed workflow.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 380" role="img" aria-label="A settings panel for Tab autocomplete on the left, and on the right a decision guide: small tasks stay inline with Tab, while larger multi-file tasks move to a structured, reviewed workflow." style="min-width:660px">
+          <text class="lbl-strong" x="210" y="36" text-anchor="middle" font-size="12">AUTOCOMPLETE SETTINGS</text>
+          <rect class="box" x="40" y="50" width="340" height="250" rx="12"></rect>
+
+          <text x="60" y="92" font-size="12" fill="var(--ink)">Tab suggestions</text>
+          <rect x="300" y="79" width="44" height="22" rx="11" fill="var(--teal)"></rect>
+          <circle cx="332" cy="90" r="8" fill="var(--paper-raised)"></circle>
+
+          <text x="60" y="142" font-size="12" fill="var(--ink)">Multi-line predictions</text>
+          <rect x="300" y="129" width="44" height="22" rx="11" fill="var(--teal)"></rect>
+          <circle cx="332" cy="140" r="8" fill="var(--paper-raised)"></circle>
+
+          <text x="60" y="192" font-size="12" fill="var(--ink)">Suggestion delay</text>
+          <line x1="200" y1="197" x2="350" y2="197" stroke="var(--line-strong)" stroke-width="3"></line>
+          <circle cx="245" cy="197" r="7" fill="var(--copper)"></circle>
+          <text class="lbl" x="275" y="220" text-anchor="middle" font-size="9.5">fast &#8596; careful</text>
+
+          <line x1="60" y1="245" x2="360" y2="245" stroke="var(--line)"></line>
+          <text class="lbl" x="60" y="268" font-size="10">Bigger tasks need more</text>
+          <text class="lbl" x="60" y="282" font-size="10">than a settings tweak →</text>
+
+          <text class="lbl-strong" x="640" y="36" text-anchor="middle" font-size="12">CHOOSE YOUR INTERACTION</text>
+
+          <rect class="box-teal" x="460" y="50" width="340" height="66" rx="10"></rect>
+          <text class="txt-teal" x="480" y="76" font-size="12">SMALL TASK</text>
+          <text class="lbl" x="480" y="96" font-size="10.5">rename, one-line fix, local edit</text>
+          <line class="arrow" x1="630" y1="116" x2="630" y2="144" marker-end="url(#arrow)"></line>
+          <rect class="box" x="460" y="146" width="340" height="48" rx="8"></rect>
+          <text class="lbl-strong" x="630" y="175" text-anchor="middle" font-size="11">Tab it inline — fast, low ceremony</text>
+
+          <rect class="box-copper" x="460" y="218" width="340" height="66" rx="10"></rect>
+          <text class="txt-copper" x="480" y="244" font-size="12">LARGER TASK</text>
+          <text class="lbl" x="480" y="264" font-size="10.5">new feature, multi-file, needs review</text>
+          <line class="arrow" x1="630" y1="284" x2="630" y2="312" marker-end="url(#arrow)"></line>
+          <rect class="box" x="460" y="314" width="340" height="56" rx="8"></rect>
+          <text class="lbl-strong" x="630" y="337" text-anchor="middle" font-size="11">Structured: Agent / Plan mode</text>
+          <text class="txt-copper" x="630" y="354" text-anchor="middle" font-size="9.5">→ Module 6 &amp; Module 7</text>
+        </svg>
+      </div>
+      <figcaption>Same editor, two deliberate gears — Tab for the ninety percent of edits that are small, a structured mode for the ones that aren't.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Hands-on</p>
+    <h2 class="section-title">Practice reading the ghost text</h2>
+    <p class="lede">Module 5 closes with a single hands-on exercise — no quiz this time, just editor time.</p>
+    <div class="activity-grid" style="grid-template-columns:1fr; max-width:560px;">
+      <div class="activity-card">
+        <p class="activity-tag">Exercise</p>
+        <h3>Accept, edit, reject, validate</h3>
+        <p>Work through a small set of functions using Tab alone: accept one suggestion outright, edit a second before accepting, reject a third that goes the wrong direction, and run the tests on a fourth to validate it before committing. Then adjust the autocomplete settings and notice how the suggestions change.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Before Module 6</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Tab predicts multi-line ghost text and jumps between edit sites — it's not single-token autocomplete.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>The same mechanism scales from a one-line targeted diff up to a whole boilerplate file.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Every suggestion is a decision — accept, edit, reject, or validate — nothing lands silently.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Tab draws on ambient, proximity-weighted context; bigger tasks deserve a more structured mode.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 6 — Codebase-Aware Editing &amp; Agent Mode</strong> takes the same trust and the same gate, and scales it up to changes across multiple files.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 5 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

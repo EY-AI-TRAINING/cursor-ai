@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 6 — Codebase-Aware Editing &amp; Agent Mode</title>
+<meta name="description" content="Interactive walkthrough: Agent mode for multi-file changes, codebase indexing and search, reviewing cross-file diffs, safe terminal/tool execution, scoping edits in large projects, context window limits, task decomposition, and reversibility.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+.tabbar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{cursor:pointer;}
+.tab-btn.active{background:var(--grad-1);border-color:transparent;color:#fff;}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.6px;font-weight:600;color:var(--text-faint);padding:8px 10px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:640px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Chat bubbles ===================== */
+.chatbubble{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:14px 16px;font-size:14px;position:relative;}
+.chatbubble.user{background:var(--surface-3);}
+.chatbubble .who{font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-bottom:6px;text-transform:uppercase;}
+
+/* ===================== Signal bars ===================== */
+.signal-bars{display:inline-flex;gap:3px;align-items:flex-end;height:18px;vertical-align:middle;}
+.signal-bar{width:5px;border-radius:2px;background:var(--surface-3);}
+.signal-bar.on{background:var(--grad-2);}
+
+/* ===================== Diff blocks ===================== */
+.diff-block{font-family:var(--mono);font-size:12.8px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;margin-top:10px;}
+.diff-line{padding:2px 6px;border-radius:3px;}
+.diff-add{background:rgba(52,211,153,0.12);color:var(--good);}
+.diff-del{background:rgba(251,113,133,0.12);color:var(--danger);text-decoration:line-through;}
+.diff-ctx{color:var(--text-faint);}
+
+/* ===================== Stepper (shared pattern) ===================== */
+.stepper{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+.step-btn{flex:1;min-width:150px;text-align:left;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;}
+.step-btn:hover{border-color:var(--accent-soft);}
+.step-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));box-shadow:0 0 0 1px rgba(168,85,247,0.3);}
+.step-num{font-family:var(--mono);color:var(--accent-2);font-size:12px;}
+.step-title{font-weight:700;margin-top:6px;font-size:14.5px;}
+.step-bar{height:5px;border-radius:3px;background:var(--surface-3);margin-top:12px;overflow:hidden;}
+.step-bar-fill{height:100%;background:var(--grad-1);}
+.step-detail{padding:22px;}
+.step-detail .example{margin-top:14px;padding:12px 14px;background:var(--bg-2);border-left:3px solid var(--accent-2);border-radius:8px;font-family:var(--mono);font-size:13px;color:var(--text-dim);}
+
+/* ===================== Accordion table ===================== */
+.acc-table{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:6px;}
+.acc-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:14px 18px;cursor:pointer;border-top:1px solid var(--border-soft);background:var(--surface);transition:background .15s;}
+.acc-row:first-child{border-top:none;}
+.acc-row:hover{background:var(--surface-2);}
+.acc-row .dim{font-weight:700;font-size:14px;font-family:var(--mono);}
+.acc-detail{display:none;padding:0 18px 16px;background:var(--surface);border-top:1px solid var(--border-soft);}
+.acc-detail.single.show{display:block;padding-top:14px;animation:fadein .3s ease;}
+.acc-caret{color:var(--text-faint);transition:transform .2s;}
+.acc-row.open .acc-caret{transform:rotate(180deg);}
+
+/* ===================== Permission dialog ===================== */
+.permission-dialog{max-width:520px;margin:20px auto 0;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);padding:18px;}
+.permission-dialog .ptitle{font-weight:700;font-size:14px;display:flex;gap:8px;align-items:center;}
+.permission-dialog .pcmd{margin-top:10px;font-family:var(--mono);font-size:13px;background:var(--bg-2);border-radius:8px;padding:10px 12px;color:var(--warn);}
+.permission-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.permission-result{margin-top:14px;padding:10px 12px;border-radius:8px;font-size:13px;display:none;}
+.permission-result.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Command list ===================== */
+.cmd-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+.cmd-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-soft);font-family:var(--mono);font-size:12.6px;}
+
+/* ===================== Checkpoint timeline ===================== */
+.checkpoint-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;}
+.checkpoint-item{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:10px;border:1px solid transparent;}
+.checkpoint-item.active{background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.3);}
+.checkpoint-dot{width:10px;height:10px;border-radius:50%;background:var(--surface-3);border:2px solid var(--border);flex:0 0 auto;}
+.checkpoint-item.active .checkpoint-dot{background:var(--good);border-color:var(--good);}
+.checkpoint-label{flex:1;font-size:13.8px;}
+.checkpoint-label small{display:block;color:var(--text-faint);font-size:11.5px;margin-top:2px;}
+
+/* ===================== Scenario / hands-on ===================== */
+.scenario-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;}
+.scenario-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
+.scenario-item:hover{background:var(--surface-2);}
+.scenario-item.checked{background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.25);}
+.scenario-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.scenario-item.checked .scenario-box{background:var(--accent);border-color:var(--accent);color:#fff;}
+.scenario-label{font-size:14px;font-family:var(--mono);}
+.scenario-item.fb-good .scenario-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.scenario-item.fb-bad .scenario-box{background:var(--danger);border-color:var(--danger);color:#3a0a10;}
+.scenario-fb-tag{margin-left:auto;font-size:11.5px;font-family:var(--mono);color:var(--text-faint);}
+.scenario-result{margin-top:16px;padding:14px 16px;border-radius:10px;display:none;}
+.scenario-result.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Checklist ===================== */
+.checklist{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);text-decoration:line-through;}
+.check-label{font-size:14px;}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){ .section{padding:60px 16px;} .acc-row{grid-template-columns:1fr auto;} }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="module-5-inline-code-generation-tab-context.html" class="brand"><span class="brand-badge">🤖</span> Module 6</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#agent-mode">Agent mode</a>
+      <a href="#indexing">Indexing</a>
+      <a href="#cross-file">Cross-file review</a>
+      <a href="#terminal">Terminal safety</a>
+      <a href="#scoping">Scoping</a>
+      <a href="#limits">Limits &amp; reversibility</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-5-inline-code-generation-tab-context.html" class="prev-link">← Module 5</a>
+    <a href="module-7-plan-debug-refactoring-testing.html" class="prev-link">Module 7 →</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 2 · Module 6</div>
+    <h1>Codebase-Aware Editing<br>&amp; Agent Mode</h1>
+    <p class="hero-sub">Module 5 was one completion, one file. Agent mode reads across your repository, edits multiple files, runs commands, and hands you back a change set — reviewable and reversible, not just a suggestion you have to trust blindly.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 60 min</span>
+      <span class="pill pill-neutral">🎯 Multi-file changes, safely</span>
+      <span class="pill pill-neutral">📝 Hands-on: a feature across multiple files</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. AGENT MODE FOR MULTI-FILE CHANGES -->
+<!-- ============================================================ -->
+<section class="section" id="agent-mode">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / Using Agent mode for multi-file changes and feature implementation</span>
+      <h2>One instruction, a whole feature</h2>
+      <p>"Add a 'remove item' button to the cart, wire it through state, and add a test." Walk through what Agent actually does with that, step by step.</p>
+    </div>
+    <div class="card reveal">
+      <div class="stepper" id="agentStepper"></div>
+      <div class="card-soft step-detail" id="agentStepDetail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. CODEBASE INDEXING & SEARCH -->
+<!-- ============================================================ -->
+<section class="section" id="indexing">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / Understanding codebase indexing/search and repository context</span>
+      <h2>Finding the right code before touching any of it</h2>
+      <p>Query: <code>where do we calculate the cart total</code> — same repo, two ways of searching it.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tabbar" id="idxTabbar"></div>
+      <div id="idxPanel"></div>
+      <div class="card-soft" style="padding:12px 14px;margin-top:16px;font-family:var(--mono);font-size:12.5px;color:var(--text-dim);">🗂 Repository index: 1,204 files <span class="pill pill-good" style="margin-left:6px;">✓ up to date</span> <span style="margin-left:6px;">— refreshes automatically as files change</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. CROSS-FILE EDITS & REVIEWING DIFFS -->
+<!-- ============================================================ -->
+<section class="section" id="cross-file">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / Making cross-file edits and reviewing/approving diffs</span>
+      <h2>Review the whole change set, not one diff at a time</h2>
+      <p>Agent proposed edits across 3 files for the cart feature above. Click a file to review its diff before approving anything.</p>
+    </div>
+    <div class="card reveal">
+      <div class="acc-table" id="fileAccTable"></div>
+      <div class="suggestion-actions" style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" data-xfile="approve">✅ Approve all 3 files</button>
+        <button class="btn btn-sm" data-xfile="reject">❌ Reject all</button>
+      </div>
+      <div class="action-result" id="crossFileResult" style="margin-top:14px;padding:12px 14px;border-radius:10px;font-size:13.3px;display:none;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. TERMINAL / TOOL EXECUTION SAFETY -->
+<!-- ============================================================ -->
+<section class="section" id="terminal">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Using terminal/tool execution safely during agentic changes</span>
+      <h2>Agent can run commands too — you decide which ones</h2>
+      <p>Not every command carries the same risk. Cursor treats them differently.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card reveal">
+        <b style="font-size:13.5px;">🟢 Typically safe to auto-run</b>
+        <div class="cmd-list">
+          <div class="cmd-item">npm test</div>
+          <div class="cmd-item">git diff</div>
+          <div class="cmd-item">tsc --noEmit</div>
+          <div class="cmd-item">eslint .</div>
+        </div>
+      </div>
+      <div class="card reveal">
+        <b style="font-size:13.5px;">🟠 Worth a manual check</b>
+        <div class="cmd-list">
+          <div class="cmd-item">rm -rf dist/</div>
+          <div class="cmd-item">git push --force</div>
+          <div class="cmd-item">npm install &lt;new dependency&gt;</div>
+          <div class="cmd-item">anything touching .env / secrets</div>
+        </div>
+      </div>
+    </div>
+    <div class="card reveal" style="margin-top:18px;">
+      <p class="hint">Try the permission prompt Agent would actually show you mid-task:</p>
+      <div class="permission-dialog">
+        <div class="ptitle">🛑 Permission requested</div>
+        <div class="pcmd">Agent wants to run: <code>rm -rf dist/ && npm run build</code></div>
+        <div class="permission-actions">
+          <button class="btn btn-sm" data-perm="deny">Deny</button>
+          <button class="btn btn-sm" data-perm="once">Allow once</button>
+          <button class="btn btn-sm btn-primary" data-perm="always">Always allow this command</button>
+        </div>
+        <div class="permission-result" id="permResult"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. SCOPING AI EDITS SAFELY -->
+<!-- ============================================================ -->
+<section class="section" id="scoping">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Scoping AI edits safely in large projects</span>
+      <h2>In a large repo, scope controls the blast radius</h2>
+      <p>Same feature request, three different scopes to let Agent work within.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tabbar" id="blastTabbar"></div>
+      <div id="blastPanel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. SUBTOPIC: CONTEXT LIMITS, DECOMPOSITION, REVERSIBILITY -->
+<!-- ============================================================ -->
+<section class="section" id="limits">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / Subtopic: context window limitations; task decomposition; keeping changes reviewable and reversible</span>
+      <h2>Big tasks get smaller before Agent starts</h2>
+      <p>"Migrate our REST API to GraphQL" is too big for one context window (Module 1) and too big to review as one diff. Break it down first.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card reveal">
+        <b style="font-size:14px;">How Agent would decompose it</b>
+        <div class="checklist" id="decompChecklist"></div>
+        <div class="progress-track"><div class="progress-fill" id="decompFill"></div></div>
+        <div class="progress-label" id="decompLabel">0 / 5 steps</div>
+        <div class="setup-done" id="decompDone">✅ Each step is its own reviewable, revertible change — not one giant, unreviewable migration.</div>
+      </div>
+      <div class="card reveal">
+        <b style="font-size:14px;">Every step is a checkpoint</b>
+        <p class="hint" style="margin-top:6px;">Agent's changes are ordinary commits. You can always step back.</p>
+        <div class="checkpoint-list" id="checkpointList"></div>
+        <div class="action-result" id="checkpointResult" style="margin-top:12px;padding:10px 12px;border-radius:8px;font-size:13px;display:none;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. HANDS-ON EXERCISE -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Hands-on exercise: implementing a small feature across multiple files</span>
+      <h2>Scope it, then ship it</h2>
+      <p>Feature: add a favorite/heart toggle to product cards. It needs a UI button, a state update, and persistence so it survives a page reload. Pick what belongs in Agent's scope.</p>
+    </div>
+    <div class="card reveal">
+      <div class="scenario-list" id="featScenarioList"></div>
+      <button class="btn btn-primary btn-sm" id="featScenarioCheck" style="margin-top:16px;">Check my scope</button>
+      <div class="scenario-result" id="featScenarioResult"></div>
+    </div>
+    <div class="card reveal" style="margin-top:18px;">
+      <b style="font-size:14.5px;">Before you merge Agent's change set:</b>
+      <div class="checklist" id="mergeChecklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="mergeFill"></div></div>
+      <div class="progress-label" id="mergeLabel">0 / 4 checked</div>
+      <div class="setup-done" id="mergeDone">✅ Exercise complete — scoped it, reviewed it, verified it's reversible. Ready for Module 7.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">08 / Knowledge check</span>
+      <h2>Quick check before Module 7</h2>
+      <p>Five questions from what you just walked through.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/5</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">What to carry into Module 7</h3>
+    <ul>
+      <li>Agent mode reads across your repo and proposes coordinated, multi-file changes — not single completions.</li>
+      <li>Cursor's codebase index lets it find relevant code by meaning, not just literal keyword matches.</li>
+      <li>A multi-file change set deserves the same scrutiny as any PR — review every file's diff before approving.</li>
+      <li>Commands Agent runs are gated by risk: safe, inspectable ones can auto-run; destructive ones should ask first.</li>
+      <li>Scope matters — a narrower edit means a smaller blast radius and a change set you can actually review.</li>
+      <li>Big tasks get decomposed into context-window-sized, reversible steps — that discipline is what makes Agent mode trustworthy.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-5-inline-code-generation-tab-context.html" class="btn">← Module 5: Inline Code Generation, Tab &amp; Context</a>
+    <a href="#" class="btn">↑ Back to top</a>
+    <a href="module-7-plan-debug-refactoring-testing.html" class="btn">Module 7: Plan, Debug, Refactoring &amp; Testing →</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 6 — Codebase-Aware Editing &amp; Agent Mode · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["agent","multi-file","index","search","diff","approve","scope","terminal","checkpoint","revert","reviewable","reversible","blast radius","decompose","repository"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ---------- Shared: checklist factory ---------- */
+function initChecklist(items, listId, fillId, labelId, doneId, labelSuffix){
+  var list = document.getElementById(listId);
+  var fill = document.getElementById(fillId);
+  var label = document.getElementById(labelId);
+  var done = document.getElementById(doneId);
+  var checked = new Array(items.length).fill(false);
+  list.innerHTML = '';
+  items.forEach(function(text, i){
+    var row = document.createElement('div');
+    row.className = 'check-item';
+    row.innerHTML = '<span class="check-box">✓</span><span class="check-label">'+text+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+      update();
+    });
+    list.appendChild(row);
+  });
+  function update(){
+    var count = checked.filter(Boolean).length;
+    fill.style.width = (count / items.length * 100) + '%';
+    label.textContent = count + ' / ' + items.length + ' ' + (labelSuffix || 'checked');
+    done.classList.toggle('show', count === items.length);
+  }
+  update();
+}
+
+/* ============================================================
+   1. AGENT MODE STEPPER
+   ============================================================ */
+(function(){
+  var steps = [
+    { title:'Understand the request', icon:'🧭',
+      desc:'Agent reads the ask and figures out which parts of the codebase are involved before writing anything.',
+      example:'"Remove item button" → touches UI, cart state, and needs a test.' },
+    { title:'Search the codebase', icon:'🔎',
+      desc:'Uses codebase indexing (Section 02) to locate the relevant files — not just the ones you happened to have open.',
+      example:'Finds: CartItem.tsx, cartSlice.ts, CartItem.test.tsx' },
+    { title:'Propose edits', icon:'✍️',
+      desc:'Drafts changes across all relevant files as one coordinated change set, not three unrelated edits.',
+      example:'3 files staged: 2 modified, 1 created — nothing applied yet.' },
+    { title:'Run checks', icon:'🧪',
+      desc:'Executes tests or linters it has permission to run, and iterates if something fails.',
+      example:'Runs `npm test` → 1 failure → fixes the assertion → reruns → passes.' },
+    { title:'Hand back for review', icon:'📋',
+      desc:'Nothing is final until you review and approve the diffs (Section 03) — Agent proposes, you decide.',
+      example:'Change set ready: 3 files, 1 test added, awaiting your approval.' }
+  ];
+  var stepperEl = document.getElementById('agentStepper');
+  var detailEl = document.getElementById('agentStepDetail');
+  var active = 0;
+  function renderDetail(){
+    var s = steps[active];
+    detailEl.innerHTML = '<div style="font-size:22px;">'+s.icon+'</div>'+
+      '<h4 style="margin-top:10px;font-size:16px;">'+s.title+'</h4>'+
+      '<p style="margin-top:8px;font-size:14px;color:var(--text-dim);">'+s.desc+'</p>'+
+      '<div class="example">'+s.example+'</div>';
+  }
+  steps.forEach(function(s, i){
+    var btn = document.createElement('div');
+    btn.className = 'step-btn' + (i===0 ? ' active' : '');
+    btn.innerHTML = '<div class="step-num">STEP '+(i+1)+'</div><div class="step-title">'+s.icon+' '+s.title+'</div>'+
+      '<div class="step-bar"><div class="step-bar-fill" style="width:'+((i+1)/steps.length*100)+'%"></div></div>';
+    btn.addEventListener('click', function(){
+      active = i;
+      stepperEl.querySelectorAll('.step-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderDetail();
+    });
+    stepperEl.appendChild(btn);
+  });
+  renderDetail();
+})();
+
+/* ============================================================
+   2. INDEXING: KEYWORD VS CODEBASE-AWARE SEARCH
+   ============================================================ */
+(function(){
+  var modes = [
+    { label:'🔤 Keyword search', render: function(){
+      return '<div class="chatbubble"><div class="who">Search: "total"</div>'+
+        '0 strong matches near cart logic. Literal keyword search only finds code that spells out the word "total" — it misses <code>getCartSubtotal()</code> and <code>calculateOrderAmount()</code> entirely.'+
+        '<div style="margin-top:10px;"><span class="pill pill-bad">⚠️ misses relevant code</span></div></div>';
+    }},
+    { label:'🧠 Codebase-aware (indexed) search', render: function(){
+      return '<div class="chatbubble"><div class="who">Search: "where do we calculate the cart total"</div>'+
+        '<div class="diff-block">'+
+        '<div class="diff-line diff-ctx">getCartSubtotal()  — pricing/cart.ts        <span class="pill pill-good" style="margin-left:6px;">96% match</span></div>'+
+        '<div class="diff-line diff-ctx">calculateOrderAmount() — orders/summary.ts <span class="pill pill-good" style="margin-left:6px;">81% match</span></div>'+
+        '<div class="diff-line diff-ctx">CartTotalDisplay.tsx  — components/cart/   <span class="pill pill-neutral" style="margin-left:6px;">54% match</span></div>'+
+        '</div>'+
+        '<p class="hint" style="margin-top:10px;">Ranked by meaning, not literal wording — none of these contain the literal phrase "cart total."</p></div>';
+    }}
+  ];
+  var tabbar = document.getElementById('idxTabbar');
+  var panel = document.getElementById('idxPanel');
+  var active = 1;
+  function render(){
+    panel.innerHTML = modes[active].render();
+  }
+  modes.forEach(function(m, i){
+    var b = document.createElement('button');
+    b.className = 'btn tab-btn' + (i === active ? ' active' : '');
+    b.textContent = m.label;
+    b.addEventListener('click', function(){
+      active = i;
+      tabbar.querySelectorAll('.tab-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    tabbar.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   3. CROSS-FILE DIFF REVIEW
+   ============================================================ */
+(function(){
+  var files = [
+    { name:'CartItem.tsx', status:'Modified', cls:'pill-warn', diff:[
+      { t:'ctx', text:'export function CartItem({ item }) {' },
+      { t:'ctx', text:'  return (' },
+      { t:'add', text:'    <button onClick={() => removeItem(item.id)}>Remove</button>' },
+      { t:'ctx', text:'  );' },
+      { t:'ctx', text:'}' }
+    ]},
+    { name:'cartSlice.ts', status:'Modified', cls:'pill-warn', diff:[
+      { t:'ctx', text:'const cartSlice = createSlice({' },
+      { t:'ctx', text:'  reducers: {' },
+      { t:'add', text:'    removeItem(state, action) { delete state.items[action.payload]; }' },
+      { t:'ctx', text:'  }' },
+      { t:'ctx', text:'});' }
+    ]},
+    { name:'CartItem.test.tsx', status:'Created', cls:'pill-good', diff:[
+      { t:'add', text:'test("remove button dispatches removeItem", () => {' },
+      { t:'add', text:'  fireEvent.click(screen.getByText("Remove"));' },
+      { t:'add', text:'  expect(mockDispatch).toHaveBeenCalledWith(removeItem(1));' },
+      { t:'add', text:'});' }
+    ]}
+  ];
+  var wrap = document.getElementById('fileAccTable');
+  files.forEach(function(f){
+    var row = document.createElement('div');
+    row.className = 'acc-row';
+    row.innerHTML = '<span class="dim">'+f.name+'</span><span class="pill '+f.cls+'">'+f.status+'</span><span class="acc-caret">▾</span>';
+    var detail = document.createElement('div');
+    detail.className = 'acc-detail single';
+    var diffHtml = '<div class="diff-block">';
+    f.diff.forEach(function(d){
+      var cls = d.t === 'add' ? 'diff-add' : d.t === 'del' ? 'diff-del' : 'diff-ctx';
+      var prefix = d.t === 'add' ? '+ ' : d.t === 'del' ? '- ' : '  ';
+      diffHtml += '<div class="diff-line '+cls+'">'+prefix+d.text+'</div>';
+    });
+    diffHtml += '</div>';
+    detail.innerHTML = diffHtml;
+    row.addEventListener('click', function(){
+      var isOpen = detail.classList.contains('show');
+      wrap.querySelectorAll('.acc-detail').forEach(function(d){ d.classList.remove('show'); });
+      wrap.querySelectorAll('.acc-row').forEach(function(rr){ rr.classList.remove('open'); });
+      if(!isOpen){ detail.classList.add('show'); row.classList.add('open'); }
+    });
+    wrap.appendChild(row);
+    wrap.appendChild(detail);
+  });
+  wrap.querySelectorAll('.acc-row')[0].click();
+
+  var result = document.getElementById('crossFileResult');
+  document.querySelectorAll('[data-xfile]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var act = btn.getAttribute('data-xfile');
+      if(act === 'approve'){
+        result.innerHTML = '✅ <b>Applied</b> — all 3 files changed, working tree updated. This is now an ordinary commit you can review again or revert (Section 06).';
+        result.style.background = 'rgba(52,211,153,0.1)'; result.style.border = '1px solid rgba(52,211,153,0.3)';
+      } else {
+        result.innerHTML = '❌ <b>Discarded</b> — nothing was applied. Agent can retry with different files or a narrower scope.';
+        result.style.background = 'rgba(251,113,133,0.1)'; result.style.border = '1px solid rgba(251,113,133,0.3)';
+      }
+      result.style.display = 'block';
+    });
+  });
+})();
+
+/* ============================================================
+   4. PERMISSION DIALOG
+   ============================================================ */
+(function(){
+  var resultEl = document.getElementById('permResult');
+  var msgs = {
+    deny: { text:'🚫 Denied — Agent will not run this command, and will suggest an alternative or ask what to do instead.' },
+    once: { text:'✅ Allowed once — the command runs this time only. You\'ll be asked again next time it comes up.' },
+    always: { text:'⚠️ Always allowed — this exact command runs without asking from now on, in this workspace. Reserve this for commands you\'ve actually reviewed, not destructive ones like this.' }
+  };
+  document.querySelectorAll('[data-perm]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var m = msgs[btn.dataset.perm];
+      resultEl.innerHTML = m.text;
+      resultEl.className = 'permission-result show';
+      resultEl.style.background = 'var(--surface-3)';
+      resultEl.style.border = '1px solid var(--border)';
+    });
+  });
+})();
+
+/* ============================================================
+   5. SCOPING / BLAST RADIUS
+   ============================================================ */
+(function(){
+  var levels = [
+    { label:'Narrow (single file)', files:'1', burden:'low', burdenCls:'pill-good', risk:'may miss related files', riskCls:'pill-warn',
+      note:'Fast to review, but Agent might not catch that cartSlice.ts also needs updating — you may end up doing a second pass yourself.' },
+    { label:'Feature-scoped (folder)', files:'~4', burden:'moderate', burdenCls:'pill-good', risk:'low', riskCls:'pill-good',
+      note:'The sweet spot for most feature work — wide enough to catch related files, narrow enough to actually review every diff.' },
+    { label:'Whole repo (unscoped)', files:'unbounded', burden:'high', burdenCls:'pill-bad', risk:'high', riskCls:'pill-bad',
+      note:'Fastest to type, slowest and riskiest to review — Agent may touch files far outside the actual feature.' }
+  ];
+  var tabbar = document.getElementById('blastTabbar');
+  var panel = document.getElementById('blastPanel');
+  var active = 1;
+  function render(){
+    var l = levels[active];
+    panel.innerHTML =
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+      '<span class="pill pill-neutral">📁 files touched: '+l.files+'</span>'+
+      '<span class="pill '+l.burdenCls+'">review burden: '+l.burden+'</span>'+
+      '<span class="pill '+l.riskCls+'">risk: '+l.risk+'</span>'+
+      '</div>'+
+      '<p class="hint" style="margin-top:14px;">'+l.note+'</p>';
+  }
+  levels.forEach(function(l, i){
+    var b = document.createElement('button');
+    b.className = 'btn tab-btn' + (i === active ? ' active' : '');
+    b.textContent = l.label;
+    b.addEventListener('click', function(){
+      active = i;
+      tabbar.querySelectorAll('.tab-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    tabbar.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   6. TASK DECOMPOSITION + CHECKPOINTS
+   ============================================================ */
+(function(){
+  initChecklist([
+    'Audit existing REST endpoints and group by resource',
+    'Stand up a GraphQL schema for the first resource only',
+    'Migrate one resource end-to-end, keep the REST route as fallback',
+    'Repeat per resource, each as its own reviewable change set',
+    'Remove REST routes once all consumers have migrated'
+  ], 'decompChecklist', 'decompFill', 'decompLabel', 'decompDone', 'steps');
+
+  var checkpoints = [
+    { label:'Before Agent started', sub:'Clean working tree, no changes yet' },
+    { label:'After step 2', sub:'GraphQL schema added for one resource' },
+    { label:'After step 4', sub:'First resource fully migrated, tests passing' },
+    { label:'Current', sub:'Latest change set, awaiting your review' }
+  ];
+  var list = document.getElementById('checkpointList');
+  var result = document.getElementById('checkpointResult');
+  var activeCp = checkpoints.length - 1;
+  function render(){
+    list.innerHTML = '';
+    checkpoints.forEach(function(c, i){
+      var row = document.createElement('div');
+      row.className = 'checkpoint-item' + (i === activeCp ? ' active' : '');
+      row.innerHTML = '<span class="checkpoint-dot"></span><span class="checkpoint-label">'+c.label+'<small>'+c.sub+'</small></span>'+
+        (i === checkpoints.length - 1 ? '' : '<button class="btn btn-sm" data-cp="'+i+'">↺ Revert to here</button>');
+      list.appendChild(row);
+    });
+    list.querySelectorAll('[data-cp]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        activeCp = parseInt(btn.getAttribute('data-cp'), 10);
+        result.innerHTML = '↺ Reverted — working tree now matches "'+checkpoints[activeCp].label+'". Nothing is lost; you can move forward again whenever you\'re ready.';
+        result.style.display = 'block';
+        render();
+      });
+    });
+  }
+  render();
+})();
+
+/* ============================================================
+   7. HANDS-ON SCENARIO
+   ============================================================ */
+(function(){
+  var items = [
+    { label:'@ProductCard.tsx', good:true },
+    { label:'@productsSlice.ts', good:true },
+    { label:'@utils/storage.ts', good:true },
+    { label:'@AdminDashboard.tsx', good:false },
+    { label:'Entire src/ folder, unscoped', good:false }
+  ];
+  var list = document.getElementById('featScenarioList');
+  var checked = new Array(items.length).fill(false);
+  items.forEach(function(item, i){
+    var row = document.createElement('div');
+    row.className = 'scenario-item';
+    row.innerHTML = '<span class="scenario-box">✓</span><span class="scenario-label">'+item.label+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+    });
+    list.appendChild(row);
+    row._item = item;
+  });
+
+  document.getElementById('featScenarioCheck').addEventListener('click', function(){
+    var rows = list.querySelectorAll('.scenario-item');
+    var score = 0, total = 0;
+    rows.forEach(function(row, i){
+      var item = row._item;
+      row.classList.remove('checked');
+      if(checked[i]){
+        total++;
+        if(item.good){ row.classList.add('fb-good'); score++; }
+        else { row.classList.add('fb-bad'); score--; }
+        var tag = document.createElement('span');
+        tag.className = 'scenario-fb-tag';
+        tag.textContent = item.good ? '👍 needed for this feature' : '⚠️ unrelated or too broad';
+        row.appendChild(tag);
+      }
+    });
+    var result = document.getElementById('featScenarioResult');
+    var missedGood = items.filter(function(it,i){ return it.good && !checked[i]; }).length;
+    var verdict, cls;
+    if(total === 0){ verdict = 'Pick at least one file, then check again.'; cls = 'pill-warn'; }
+    else if(score === 3 && missedGood === 0){ verdict = '🟢 Well-scoped — exactly the 3 files this feature touches, nothing more. Agent can implement this as one small, reviewable change set.'; cls = 'pill-good'; }
+    else if(score >= 1){ verdict = '🟡 On the right track — check the ⚠️ items above. AdminDashboard.tsx is unrelated, and unscoped src/ trades a bigger blast radius for no real benefit here.'; cls = 'pill-warn'; }
+    else { verdict = '🔴 This scope is missing the files the feature actually needs (ProductCard.tsx, productsSlice.ts, utils/storage.ts) and/or leans on unscoped or unrelated files instead. Try again.'; cls = 'pill-bad'; }
+    result.innerHTML = '<span class="pill '+cls+'">score '+score+'</span><p style="margin-top:10px;font-size:13.8px;">'+verdict+'</p>';
+    result.classList.add('show');
+  });
+
+  initChecklist([
+    'Reviewed every file\'s diff individually, not just the summary',
+    'Confirmed the test suite runs and passes',
+    'Checked nothing outside the intended scope was touched',
+    'Confirmed the change set is one clean, revertible commit'
+  ], 'mergeChecklist', 'mergeFill', 'mergeLabel', 'mergeDone');
+})();
+
+/* ============================================================
+   8. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:'What can Agent mode do that Tab-complete and inline generation (Module 5) alone cannot?', options:[
+        'Nothing — they are functionally identical',
+        'Read across multiple files, propose a coordinated multi-file change set, and run commands',
+        'Only work inside comments',
+        'Generate code without ever being reviewed'
+      ], correct:1, explain:'Agent operates at the level of a whole change set across files and can execute tools, not just complete one line (Section 01).' },
+    { q:'Why can a codebase-aware, indexed search find relevant code that a literal keyword search misses?', options:[
+        'It can\'t — both return identical results',
+        'It matches by meaning/similarity, so differently-named but relevant code still surfaces',
+        'It only searches file names, never contents',
+        'It requires you to know the exact function name in advance'
+      ], correct:1, explain:'The index found getCartSubtotal() and calculateOrderAmount() with zero literal keyword overlap with the query (Section 02).' },
+    { q:'What\'s the right way to review a multi-file Agent change set before approving it?', options:[
+        'Skim the file count and approve if it looks reasonable',
+        'Review each file\'s diff individually, the same scrutiny you\'d give any pull request',
+        'Never review it — Agent changes are always correct',
+        'Only review the largest file'
+      ], correct:1, explain:'Each file in the change set deserves its own diff review, not just a summary glance (Section 03).' },
+    { q:'Why does Cursor ask permission before running a command like `rm -rf` but not `npm test`?', options:[
+        'It asks about every command equally, with no distinction',
+        'Commands with irreversible or destructive effects deserve a manual check; safe, inspectable ones don\'t need to interrupt you',
+        'It never asks permission for any command',
+        '`npm test` is always slower, which is why it needs no approval'
+      ], correct:1, explain:'Risk, not arbitrary rules, decides what needs a prompt — destructive commands get a permission dialog (Section 04).' },
+    { q:'Why does Agent break a large task like "migrate REST to GraphQL" into smaller sub-tasks instead of one giant change?', options:[
+        'It\'s arbitrary and has no real benefit',
+        'Smaller sub-tasks fit within context window limits and stay independently reviewable and reversible',
+        'Agent is only physically capable of editing one file per session',
+        'Smaller tasks always run faster, which is the only reason'
+      ], correct:1, explain:'Task decomposition keeps each step inside a manageable context window and as its own checkpoint you can review or revert (Section 06).' }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.innerHTML = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — you\'re ready for Module 7.'
+      : score >= questions.length - 1
+      ? 'Nice work — solid grasp of Agent mode and review discipline.'
+      : 'Worth a re-skim of the sections above before Module 7.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>

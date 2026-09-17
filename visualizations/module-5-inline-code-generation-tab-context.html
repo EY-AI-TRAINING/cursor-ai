@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 5 — Inline Code Generation, Tab &amp; Context</title>
+<meta name="description" content="Interactive walkthrough: Tab-complete and inline generation, generating functions/classes/boilerplate/targeted changes, accepting/rejecting/validating suggestions, using surrounding context effectively, and tuning autocomplete for task size.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+.tabbar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{cursor:pointer;}
+.tab-btn.active{background:var(--grad-1);border-color:transparent;color:#fff;}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.6px;font-weight:600;color:var(--text-faint);padding:8px 10px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:640px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Chat bubbles ===================== */
+.chatbubble{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:14px 16px;font-size:14px;position:relative;}
+.chatbubble.user{background:var(--surface-3);}
+.chatbubble .who{font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-bottom:6px;text-transform:uppercase;}
+
+/* ===================== Signal bars ===================== */
+.signal-bars{display:inline-flex;gap:3px;align-items:flex-end;height:18px;vertical-align:middle;}
+.signal-bar{width:5px;border-radius:2px;background:var(--surface-3);}
+.signal-bar.on{background:var(--grad-2);}
+
+/* ===================== Diff blocks ===================== */
+.diff-block{font-family:var(--mono);font-size:12.8px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;margin-top:10px;}
+.diff-line{padding:2px 6px;border-radius:3px;}
+.diff-add{background:rgba(52,211,153,0.12);color:var(--good);}
+.diff-del{background:rgba(251,113,133,0.12);color:var(--danger);text-decoration:line-through;}
+.diff-ctx{color:var(--text-faint);}
+
+/* ===================== Code editor mockup ===================== */
+.code-editor{background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:16px 18px;font-family:var(--mono);font-size:13px;line-height:1.85;overflow-x:auto;}
+.code-line{display:flex;white-space:pre;}
+.line-num{color:var(--text-faint);width:22px;flex:0 0 auto;text-align:right;margin-right:16px;user-select:none;}
+.code-text{color:var(--text);}
+.code-kw{color:var(--accent-soft);}
+.code-str{color:var(--good);}
+.code-ghost{color:var(--text-faint) !important;opacity:0.6;font-style:italic;}
+.code-accepted{color:var(--good) !important;}
+.code-caret{display:inline-block;width:2px;height:14px;background:var(--accent-2);margin-left:1px;vertical-align:-2px;animation:caretblink 1s step-end infinite;}
+@keyframes caretblink{50%{opacity:0;}}
+
+/* ===================== Cmd+K bar ===================== */
+.cmdk-bar{display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap;}
+.cmdk-kbd{font-family:var(--mono);font-size:11px;background:var(--surface-3);border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--text-dim);}
+.cmdk-text{flex:1;font-family:var(--mono);font-size:13.5px;color:var(--text);min-width:200px;}
+
+/* ===================== Suggestion actions ===================== */
+.suggestion-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.action-result{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:13.3px;display:none;}
+.action-result.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Size / pace pickers ===================== */
+.size-picker{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+.size-btn{flex:1;min-width:170px;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;text-align:left;transition:all .15s;}
+.size-btn:hover{border-color:var(--accent-soft);}
+.size-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));}
+.size-btn .sz-icon{font-size:20px;}
+.size-btn .sz-name{font-weight:700;font-size:14px;margin-top:6px;}
+.size-btn .sz-ex{font-size:12px;color:var(--text-faint);margin-top:2px;}
+.pace-picker{display:flex;gap:8px;margin-top:8px;}
+.pace-btn{flex:1;padding:9px;border-radius:9px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:12.5px;font-weight:600;text-align:center;transition:all .15s;}
+.pace-btn.active{background:var(--grad-1);border-color:transparent;color:#fff;}
+
+/* ===================== Switches ===================== */
+.switch-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-soft);margin-bottom:8px;gap:14px;}
+.switch-row .label{font-size:13.8px;}
+.switch-row .label small{display:block;color:var(--text-faint);font-size:11.5px;margin-top:2px;}
+.switch{position:relative;width:42px;height:24px;flex:0 0 auto;}
+.switch input{opacity:0;width:0;height:0;position:absolute;}
+.switch .track{position:absolute;inset:0;background:var(--surface-3);border:1px solid var(--border);border-radius:12px;transition:all .2s;cursor:pointer;}
+.switch .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--text-faint);transition:all .2s;}
+.switch input:checked + .track{background:var(--grad-1);border-color:transparent;}
+.switch input:checked + .track .knob{transform:translateX(18px);background:#fff;}
+
+.tip-box{margin-top:16px;padding:14px 16px;border-radius:10px;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);font-size:13.5px;}
+
+/* ===================== Checklist ===================== */
+.checklist{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);text-decoration:line-through;}
+.check-label{font-size:14px;}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){ .section{padding:60px 16px;} }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="module-4-ai-chat-context-ask-mode.html" class="brand"><span class="brand-badge">⚡</span> Module 5</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#tab-complete">Tab &amp; ⌘K</a>
+      <a href="#generate">Generate</a>
+      <a href="#review">Accept/Reject</a>
+      <a href="#context">Context</a>
+      <a href="#settings">Settings</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-4-ai-chat-context-ask-mode.html" class="prev-link">← Module 4</a>
+    <a href="module-6-codebase-aware-editing-agent-mode.html" class="prev-link">Module 6 →</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 2 · Module 5</div>
+    <h1>Inline Code Generation,<br>Tab &amp; Context</h1>
+    <p class="hero-sub">Day 1 covered how Cursor thinks and how it's set up. Day 2 starts where you'll actually spend your time: writing code with Tab-complete and inline generation — and building the judgment to know when a suggestion deserves a Tab, an edit, or a reject.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 60 min</span>
+      <span class="pill pill-neutral">🎯 Faster code, same standards</span>
+      <span class="pill pill-neutral">📝 Hands-on exercise</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. TAB-TO-COMPLETE & INLINE GENERATION -->
+<!-- ============================================================ -->
+<section class="section" id="tab-complete">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / AI-powered autocomplete (Tab-to-complete); inline generation via natural-language prompts</span>
+      <h2>Two ways to generate code inline</h2>
+      <p>Tab-complete predicts what you're about to write as you type it. Inline generation (⌘K) turns a natural-language instruction, typed right in the editor, into code. Try both.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tabbar" id="genModeTabbar"></div>
+      <div id="genModePanel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. GENERATING FUNCTIONS, CLASSES, BOILERPLATE, TARGETED CHANGES -->
+<!-- ============================================================ -->
+<section class="section" id="generate">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / Generating functions, classes, boilerplate, and targeted code changes</span>
+      <h2>Same tool, four very different jobs</h2>
+      <p>From a brand-new function to a single-line fix — the request shapes how much Cursor generates.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tabbar" id="genExTabbar"></div>
+      <div id="genExPanel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. ACCEPTING, REJECTING, EDITING, VALIDATING SUGGESTIONS -->
+<!-- ============================================================ -->
+<section class="section" id="review">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / Accepting, rejecting, editing, and validating suggestions</span>
+      <h2>Every suggestion is a decision, not a formality</h2>
+      <p>A suggested edit lands on <code>SignupForm.tsx</code>. What do you do with it?</p>
+    </div>
+    <div class="card reveal">
+      <div class="chatbubble" style="margin-bottom:4px;">
+        <div class="who">Suggested edit — SignupForm.tsx</div>
+        <div class="diff-block">
+          <div class="diff-line diff-ctx">  function handleSubmit(e) {</div>
+          <div class="diff-line diff-del">-   e.preventDefault();</div>
+          <div class="diff-line diff-add">+   e.preventDefault();</div>
+          <div class="diff-line diff-add">+   if (!isValidEmail(email)) return setError("Enter a valid email");</div>
+          <div class="diff-line diff-ctx">    submitSignup(email);</div>
+          <div class="diff-line diff-ctx">  }</div>
+        </div>
+      </div>
+      <div class="suggestion-actions" id="reviewActions">
+        <button class="btn btn-primary btn-sm" data-act="accept">✅ Accept as-is</button>
+        <button class="btn btn-sm" data-act="edit">✍️ Edit, then accept</button>
+        <button class="btn btn-sm" data-act="reject">❌ Reject</button>
+        <button class="btn btn-sm" data-act="read">🔍 Read fully first</button>
+      </div>
+      <div class="action-result" id="reviewResult"></div>
+    </div>
+    <div class="card reveal" style="margin-top:18px;">
+      <b style="font-size:14.5px;">Before you trust it, validate:</b>
+      <div class="checklist" id="validateChecklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="validateFill"></div></div>
+      <div class="progress-label" id="validateLabel">0 / 5 checked</div>
+      <div class="setup-done" id="validateDone">✅ That's the full loop — read, accept/edit/reject, then verify. Do this every time, not just for big changes.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. SURROUNDING CODE & OPEN-FILE CONTEXT -->
+<!-- ============================================================ -->
+<section class="section" id="context">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Using surrounding code and open-file context effectively</span>
+      <h2>Cursor reads more than the current line</h2>
+      <p>Same request — <code>Add a formatPrice method to this class</code> — with a different set of open tabs.</p>
+    </div>
+    <div class="card reveal">
+      <div class="tabbar" id="ctxTabbar"></div>
+      <div id="ctxPanel"></div>
+    </div>
+    <div class="grid-4 reveal" style="margin-top:18px;">
+      <div class="card-soft" style="padding:14px;text-align:center;"><div style="font-size:18px;">🗂</div><p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">Other open tabs</p></div>
+      <div class="card-soft" style="padding:14px;text-align:center;"><div style="font-size:18px;">📍</div><p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">Cursor position &amp; nearby lines</p></div>
+      <div class="card-soft" style="padding:14px;text-align:center;"><div style="font-size:18px;">🕒</div><p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">Recently edited files</p></div>
+      <div class="card-soft" style="padding:14px;text-align:center;"><div style="font-size:18px;">⚠️</div><p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">Linter/type errors in view</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. AUTOCOMPLETE SETTINGS & TASK SIZE -->
+<!-- ============================================================ -->
+<section class="section" id="settings">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Subtopic: customizing autocomplete settings and choosing the right interaction for small vs. larger tasks</span>
+      <h2>Tune it, then pick the right tool for the job</h2>
+      <p>Autocomplete has a few knobs worth knowing — and the biggest "setting" is just picking the right interaction for how big the task actually is.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card reveal">
+        <b style="font-size:14px;">Autocomplete settings</b>
+        <div style="margin-top:14px;">
+          <div class="switch-row">
+            <div class="label">Tab autocomplete<small>Inline ghost-text suggestions as you type</small></div>
+            <label class="switch"><input type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
+          </div>
+          <div class="switch-row">
+            <div class="label">Multi-line suggestions<small>Allow whole blocks, not just single lines</small></div>
+            <label class="switch"><input type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
+          </div>
+          <div class="switch-row">
+            <div class="label">Suggest inside comments/strings<small>Off by default for most teams</small></div>
+            <label class="switch"><input type="checkbox"><span class="track"><span class="knob"></span></span></label>
+          </div>
+        </div>
+        <div style="margin-top:6px;">
+          <span class="tag">SUGGESTION PACE</span>
+          <div class="pace-picker" id="pacePicker"></div>
+          <p class="hint" id="paceHint" style="margin-top:10px;"></p>
+        </div>
+      </div>
+      <div class="card reveal">
+        <b style="font-size:14px;">Match the tool to the task size</b>
+        <div class="size-picker" id="sizePicker" style="margin-top:14px;"></div>
+        <div class="card-soft" id="sizeRec" style="padding:14px 16px;margin-top:14px;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. HANDS-ON EXERCISE -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / Hands-on exercise</span>
+      <h2>Accept it, then prove it's right</h2>
+      <p>Trigger a suggestion for a real TODO, decide what to do with it, then work through the same validation habit from Section 03.</p>
+    </div>
+    <div class="card reveal">
+      <div class="code-editor" id="handsEditor"></div>
+      <div class="suggestion-actions" id="handsActions"></div>
+      <div class="action-result" id="handsResult"></div>
+    </div>
+    <div class="card reveal" id="handsChecklistCard" style="margin-top:18px;display:none;">
+      <b style="font-size:14.5px;">Validate before you ship it:</b>
+      <div class="checklist" id="handsChecklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="handsFill"></div></div>
+      <div class="progress-label" id="handsLabel">0 / 5 checked</div>
+      <div class="setup-done" id="handsDone">✅ Exercise complete — you accepted a suggestion, then validated it before trusting it. That loop is the whole game. Ready for Module 6.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Knowledge check</span>
+      <h2>Quick check before Module 6</h2>
+      <p>Five questions from what you just walked through.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/5</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">What to carry into Module 6</h3>
+    <ul>
+      <li>Tab-complete predicts as you type; inline generation (⌘K) turns an instruction into code — pick based on whether you're mid-thought or starting fresh.</li>
+      <li>Cursor can generate a function, a class, whole boilerplate, or one targeted line — precision beats "rewrite everything."</li>
+      <li>Every suggestion is a decision: accept, edit-then-accept, or reject — and validate it before you trust it.</li>
+      <li>Suggestions are only as good as what Cursor can see — open related files and keep the cursor near relevant code.</li>
+      <li>Tune autocomplete to your pace, and match the interaction to task size: Tab/⌘K for small, Chat/Agent for larger changes.</li>
+      <li>Small, reviewable diffs compound into trustworthy AI-assisted coding — the same discipline scales into Agent mode.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-4-ai-chat-context-ask-mode.html" class="btn">← Module 4: AI Chat, Context &amp; Ask Mode</a>
+    <a href="#" class="btn">↑ Back to top</a>
+    <a href="module-6-codebase-aware-editing-agent-mode.html" class="btn">Module 6: Codebase-Aware Editing &amp; Agent Mode →</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 5 — Inline Code Generation, Tab &amp; Context · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["tab","⌘K","suggest","accept","reject","diff","boilerplate","scaffold","context","autocomplete","inline","generate","validate","ghost text","targeted edit"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ---------- Shared: Tab-complete ghost-text demo factory ---------- */
+function initTabDemo(cfg){
+  var editor = document.getElementById(cfg.editorId);
+  var actions = document.getElementById(cfg.actionsId);
+  var result = document.getElementById(cfg.resultId);
+  editor.innerHTML = cfg.base;
+  actions.innerHTML = '<button class="btn btn-primary btn-sm" data-act="sim">▶ '+cfg.simLabel+'</button>';
+  result.classList.remove('show');
+
+  actions.addEventListener('click', function(e){
+    var act = e.target.getAttribute('data-act');
+    if(!act) return;
+    if(act === 'sim'){
+      actions.innerHTML = '<span class="hint">thinking…</span>';
+      setTimeout(function(){
+        editor.innerHTML = cfg.ghost;
+        actions.innerHTML = '<button class="btn btn-primary btn-sm" data-act="accept">⇥ Tab to accept</button><button class="btn btn-sm" data-act="reject">Esc to reject</button>';
+      }, 650);
+    } else if(act === 'accept'){
+      editor.innerHTML = cfg.accepted;
+      actions.innerHTML = '<button class="btn btn-sm" data-act="reset">↺ Replay</button>';
+      result.innerHTML = '✅ <b>Accepted</b> — ' + cfg.acceptMsg;
+      result.style.background = 'rgba(52,211,153,0.1)'; result.style.border = '1px solid rgba(52,211,153,0.3)';
+      result.classList.add('show');
+      if(cfg.onAccept) cfg.onAccept();
+    } else if(act === 'reject'){
+      editor.innerHTML = cfg.base;
+      actions.innerHTML = '<button class="btn btn-sm" data-act="reset">↺ Replay</button>';
+      result.innerHTML = '❌ <b>Rejected</b> — ' + cfg.rejectMsg;
+      result.style.background = 'rgba(251,113,133,0.1)'; result.style.border = '1px solid rgba(251,113,133,0.3)';
+      result.classList.add('show');
+    } else if(act === 'reset'){
+      editor.innerHTML = cfg.base;
+      actions.innerHTML = '<button class="btn btn-primary btn-sm" data-act="sim">▶ '+cfg.simLabel+'</button>';
+      result.classList.remove('show');
+    }
+  });
+}
+
+/* ---------- Shared: checklist factory ---------- */
+function initChecklist(items, listId, fillId, labelId, doneId){
+  var list = document.getElementById(listId);
+  var fill = document.getElementById(fillId);
+  var label = document.getElementById(labelId);
+  var done = document.getElementById(doneId);
+  var checked = new Array(items.length).fill(false);
+  list.innerHTML = '';
+  items.forEach(function(text, i){
+    var row = document.createElement('div');
+    row.className = 'check-item';
+    row.innerHTML = '<span class="check-box">✓</span><span class="check-label">'+text+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+      update();
+    });
+    list.appendChild(row);
+  });
+  function update(){
+    var count = checked.filter(Boolean).length;
+    fill.style.width = (count / items.length * 100) + '%';
+    label.textContent = count + ' / ' + items.length + ' checked';
+    done.classList.toggle('show', count === items.length);
+  }
+  update();
+}
+
+/* ============================================================
+   1. TAB-COMPLETE VS INLINE GENERATION
+   ============================================================ */
+(function(){
+  var tabBase =
+    '<div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="code-kw">function</span> calculateDiscount(price, customer) {</span></div>'+
+    '<div class="code-line"><span class="line-num">2</span><span class="code-text">&nbsp;&nbsp;<span class="code-kw">if</span> (customer.type === <span class="code-str">\'vip\'</span>) {</span></div>'+
+    '<div class="code-line"><span class="line-num">3</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-caret"></span></span></div>';
+  var tabGhost =
+    '<div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="code-kw">function</span> calculateDiscount(price, customer) {</span></div>'+
+    '<div class="code-line"><span class="line-num">2</span><span class="code-text">&nbsp;&nbsp;<span class="code-kw">if</span> (customer.type === <span class="code-str">\'vip\'</span>) {</span></div>'+
+    '<div class="code-line"><span class="line-num">3</span><span class="code-ghost">&nbsp;&nbsp;&nbsp;&nbsp;return price * 0.8;</span></div>'+
+    '<div class="code-line"><span class="line-num">4</span><span class="code-ghost">&nbsp;&nbsp;}</span></div>'+
+    '<div class="code-line"><span class="line-num">5</span><span class="code-ghost">&nbsp;&nbsp;return price;</span></div>'+
+    '<div class="code-line"><span class="line-num">6</span><span class="code-ghost">}</span></div>';
+  var tabAccepted =
+    '<div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="code-kw">function</span> calculateDiscount(price, customer) {</span></div>'+
+    '<div class="code-line"><span class="line-num">2</span><span class="code-text">&nbsp;&nbsp;<span class="code-kw">if</span> (customer.type === <span class="code-str">\'vip\'</span>) {</span></div>'+
+    '<div class="code-line"><span class="line-num">3</span><span class="code-accepted">&nbsp;&nbsp;&nbsp;&nbsp;return price * 0.8;</span></div>'+
+    '<div class="code-line"><span class="line-num">4</span><span class="code-accepted">&nbsp;&nbsp;}</span></div>'+
+    '<div class="code-line"><span class="line-num">5</span><span class="code-accepted">&nbsp;&nbsp;return price;</span></div>'+
+    '<div class="code-line"><span class="line-num">6</span><span class="code-accepted">}</span></div>';
+
+  var cmdkLines = [
+    "function sortCartItems(items) {",
+    "  return [...items].sort((a, b) => {",
+    "    if (b.price !== a.price) return b.price - a.price;",
+    "    return a.name.localeCompare(b.name);",
+    "  });",
+    "}"
+  ];
+
+  function renderTabPanel(){
+    return '<p class="hint" style="margin-bottom:10px;">Typing inside a function Cursor recognizes the shape of.</p>'+
+      '<div class="code-editor" id="tabEditor"></div>'+
+      '<div class="suggestion-actions" id="tabActions"></div>'+
+      '<div class="action-result" id="tabResult"></div>';
+  }
+  function renderCmdkPanel(){
+    return '<div class="cmdk-bar"><span class="cmdk-kbd">⌘K</span><span class="cmdk-text">sort the cart items by price descending, then by name</span><button class="btn btn-primary btn-sm" id="cmdkGenerate">✨ Generate</button></div>'+
+      '<div class="code-editor" id="cmdkEditor"><span class="hint">Press Generate to see the code appear…</span></div>';
+  }
+
+  var modes = [
+    { label:'⇥ Tab-complete', render: renderTabPanel, init: function(){
+      initTabDemo({
+        editorId:'tabEditor', actionsId:'tabActions', resultId:'tabResult', simLabel:'Simulate typing',
+        base:tabBase, ghost:tabGhost, accepted:tabAccepted,
+        acceptMsg:'three lines completed with one keystroke. Fastest path when you already trust the completion.',
+        rejectMsg:'the suggestion didn\'t match what you wanted, so you keep typing it yourself.'
+      });
+    }},
+    { label:'⌘K Inline generation', render: renderCmdkPanel, init: function(){
+      var btn = document.getElementById('cmdkGenerate');
+      btn.addEventListener('click', function(){
+        btn.disabled = true;
+        btn.textContent = 'Generating…';
+        var editor = document.getElementById('cmdkEditor');
+        editor.innerHTML = '';
+        var i = 0;
+        var timer = setInterval(function(){
+          var row = document.createElement('div');
+          row.className = 'code-line';
+          row.innerHTML = '<span class="line-num">'+(i+1)+'</span><span class="code-text">'+cmdkLines[i]+'</span>';
+          editor.appendChild(row);
+          i++;
+          if(i >= cmdkLines.length){
+            clearInterval(timer);
+            btn.textContent = '✓ Generated';
+          }
+        }, 220);
+      });
+    }}
+  ];
+  var tabbar = document.getElementById('genModeTabbar');
+  var panel = document.getElementById('genModePanel');
+  var active = 0;
+  function render(){
+    panel.innerHTML = modes[active].render();
+    modes[active].init();
+  }
+  modes.forEach(function(m, i){
+    var b = document.createElement('button');
+    b.className = 'btn tab-btn' + (i === active ? ' active' : '');
+    b.textContent = m.label;
+    b.addEventListener('click', function(){
+      active = i;
+      tabbar.querySelectorAll('.tab-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    tabbar.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   2. FUNCTION / CLASS / BOILERPLATE / TARGETED CHANGE
+   ============================================================ */
+(function(){
+  function codeEditorHTML(lines){
+    var html = '<div class="code-editor">';
+    lines.forEach(function(l, i){ html += '<div class="code-line"><span class="line-num">'+(i+1)+'</span><span class="code-text">'+l+'</span></div>'; });
+    html += '</div>';
+    return html;
+  }
+  function diffHTML(diffLines){
+    var html = '<div class="diff-block">';
+    diffLines.forEach(function(d){
+      var cls = d.t === 'add' ? 'diff-add' : d.t === 'del' ? 'diff-del' : 'diff-ctx';
+      var prefix = d.t === 'add' ? '+ ' : d.t === 'del' ? '- ' : '  ';
+      html += '<div class="diff-line '+cls+'">'+prefix+d.text+'</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+  var examples = [
+    { label:'Function', prompt:'Write a function that validates an email address', kind:'code', lines:[
+      "function isValidEmail(email) {",
+      "  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);",
+      "}"
+    ]},
+    { label:'Class', prompt:'Create a UserRepository class with CRUD methods backed by our db client', kind:'code', lines:[
+      "class UserRepository {",
+      "  constructor(db) { this.db = db; }",
+      "  create(user) { return this.db.insert('users', user); }",
+      "  findById(id) { return this.db.findOne('users', { id }); }",
+      "  update(id, patch) { return this.db.update('users', { id }, patch); }",
+      "  delete(id) { return this.db.remove('users', { id }); }",
+      "}"
+    ]},
+    { label:'Boilerplate', prompt:'Scaffold a new React component called PriceTag with props: amount, currency', kind:'code', lines:[
+      "import React from 'react';",
+      "",
+      "export function PriceTag({ amount, currency }) {",
+      "  return <span className=\"price-tag\">{amount} {currency}</span>;",
+      "}",
+      "",
+      "export default PriceTag;"
+    ]},
+    { label:'Targeted change', prompt:'Only change the error message on line 3 to be more specific', kind:'diff', diff:[
+      { t:'ctx', text:'function chargeCard(token, amount) {' },
+      { t:'ctx', text:'  if (!token) {' },
+      { t:'del', text:'    throw new Error("Invalid input");' },
+      { t:'add', text:'    throw new Error("chargeCard: token is required");' },
+      { t:'ctx', text:'  }' },
+      { t:'ctx', text:'  return gateway.charge(token, amount);' },
+      { t:'ctx', text:'}' }
+    ]}
+  ];
+  var tabbar = document.getElementById('genExTabbar');
+  var panel = document.getElementById('genExPanel');
+  var active = 0;
+  function render(){
+    var ex = examples[active];
+    var body = ex.kind === 'code' ? codeEditorHTML(ex.lines) : diffHTML(ex.diff);
+    var note = ex.kind === 'diff'
+      ? '<p class="hint" style="margin-top:10px;">Only the requested line changes — Cursor doesn\'t regenerate the rest of the function.</p>'
+      : '';
+    panel.innerHTML = '<div class="chatbubble user" style="margin-bottom:14px;"><div class="who">You ask</div>'+ex.prompt+'</div>' + body + note;
+  }
+  examples.forEach(function(ex, i){
+    var b = document.createElement('button');
+    b.className = 'btn tab-btn btn-sm' + (i === active ? ' active' : '');
+    b.textContent = ex.label;
+    b.addEventListener('click', function(){
+      active = i;
+      tabbar.querySelectorAll('.tab-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    tabbar.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   3. ACCEPT / REJECT / EDIT / VALIDATE
+   ============================================================ */
+(function(){
+  var actions = document.getElementById('reviewActions');
+  var result = document.getElementById('reviewResult');
+  var messages = {
+    accept: { icon:'✅', title:'Accepted as-is', text:'Applied immediately. Fine for small, obviously-correct suggestions — risky for anything you haven\'t actually read.', color:'good' },
+    edit: { icon:'✍️', title:'Edited, then accepted', text:'You tweak the suggested code before it lands. The most common path for anything non-trivial.', color:'good' },
+    reject: { icon:'❌', title:'Rejected', text:'Discarded. Useful when the suggestion solves the wrong problem or doesn\'t match your codebase\'s conventions.', color:'danger' },
+    read: { icon:'🔍', title:'Read fully first', text:'You review line by line before deciding anything. The recommended default, especially for multi-line suggestions.', color:'good' }
+  };
+  actions.addEventListener('click', function(e){
+    var act = e.target.getAttribute('data-act');
+    if(!act || !messages[act]) return;
+    var m = messages[act];
+    result.innerHTML = m.icon+' <b>'+m.title+'</b> — '+m.text;
+    if(m.color === 'good'){ result.style.background = 'rgba(52,211,153,0.1)'; result.style.border = '1px solid rgba(52,211,153,0.3)'; }
+    else { result.style.background = 'rgba(251,113,133,0.1)'; result.style.border = '1px solid rgba(251,113,133,0.3)'; }
+    result.classList.add('show');
+  });
+
+  initChecklist([
+    'Read every changed line, not just skimmed it',
+    'Confirmed types/imports still compile',
+    'Ran the relevant tests',
+    'Checked it matches existing naming/style conventions',
+    'Looked for side effects outside the highlighted diff'
+  ], 'validateChecklist', 'validateFill', 'validateLabel', 'validateDone');
+})();
+
+/* ============================================================
+   4. SURROUNDING CODE & OPEN-FILE CONTEXT
+   ============================================================ */
+(function(){
+  var levels = [
+    { label:'Only this file open', quality:2, badge:'pill-warn', badgeText:'⚠️ Generic — guesses at conventions', lines:[
+      "formatPrice(p) {",
+      "  return '$' + p.toFixed(2);",
+      "}"
+    ]},
+    { label:'Related files open too', quality:4, badge:'pill-good', badgeText:'✅ Matches your codebase', lines:[
+      "formatPrice(amount) {",
+      "  return new Intl.NumberFormat(this.locale, {",
+      "    style: 'currency', currency: this.currency",
+      "  }).format(amount);",
+      "}"
+    ]}
+  ];
+  var tabbar = document.getElementById('ctxTabbar');
+  var panel = document.getElementById('ctxPanel');
+  var active = 1;
+  function render(){
+    var l = levels[active];
+    var codeHtml = '<div class="code-editor">';
+    l.lines.forEach(function(ln, i){ codeHtml += '<div class="code-line"><span class="line-num">'+(i+1)+'</span><span class="code-text">'+ln+'</span></div>'; });
+    codeHtml += '</div>';
+    var barsHtml = '';
+    for(var i=0;i<4;i++){ barsHtml += '<div class="signal-bar'+(i<l.quality?' on':'')+'" style="height:'+(6+i*4)+'px;"></div>'; }
+    panel.innerHTML = '<span class="pill '+l.badge+'" style="margin-bottom:12px;display:inline-flex;">'+l.badgeText+'</span>'+
+      codeHtml +
+      '<div style="margin-top:12px;"><span class="tag">SUGGESTION QUALITY</span> <span class="signal-bars">'+barsHtml+'</span></div>';
+  }
+  levels.forEach(function(l, i){
+    var b = document.createElement('button');
+    b.className = 'btn tab-btn' + (i === active ? ' active' : '');
+    b.textContent = l.label;
+    b.addEventListener('click', function(){
+      active = i;
+      tabbar.querySelectorAll('.tab-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    tabbar.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   5. SETTINGS: PACE PICKER + TASK-SIZE PICKER
+   ============================================================ */
+(function(){
+  var paces = [
+    { label:'Fast & frequent', hint:'Suggestions appear almost immediately — best when you trust Cursor and want minimal friction.' },
+    { label:'Balanced', hint:'A short pause before suggesting — the default most teams land on.' },
+    { label:'Minimal interruptions', hint:'Suggestions only on clear pauses — best if ghost text breaks your flow while thinking.' }
+  ];
+  var pacePicker = document.getElementById('pacePicker');
+  var paceHint = document.getElementById('paceHint');
+  var paceActive = 1;
+  function renderPace(){
+    paceHint.textContent = paces[paceActive].hint;
+  }
+  paces.forEach(function(p, i){
+    var b = document.createElement('button');
+    b.className = 'pace-btn' + (i === paceActive ? ' active' : '');
+    b.textContent = p.label;
+    b.addEventListener('click', function(){
+      paceActive = i;
+      pacePicker.querySelectorAll('.pace-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      renderPace();
+    });
+    pacePicker.appendChild(b);
+  });
+  renderPace();
+
+  var sizes = [
+    { icon:'🔹', name:'Tiny edit', ex:'rename a variable, tweak one line, fix a typo', rec:'Tab-complete or a quick inline ⌘K edit. Reaching for Chat/Agent here is overhead you don\'t need.' },
+    { icon:'🔸', name:'Single function or file', ex:'write one function, add a method, fix a bug in a file you have open', rec:'Inline generation (⌘K) or a short, scoped Chat request — enough context, low ceremony.' },
+    { icon:'🔶', name:'Multi-file feature', ex:'a new feature touching several files, a refactor, a new integration', rec:'Step up to Agent mode, or a deliberately-scoped Chat request (Module 4). Inline generation isn\'t built for changes this wide.' }
+  ];
+  var sizePicker = document.getElementById('sizePicker');
+  var sizeRec = document.getElementById('sizeRec');
+  var sizeActive = 1;
+  function renderSize(){
+    var s = sizes[sizeActive];
+    sizeRec.innerHTML = '<b style="font-size:13.5px;">'+s.icon+' Recommended: </b><span style="font-size:13.3px;color:var(--text-dim);">'+s.rec+'</span>';
+  }
+  sizes.forEach(function(s, i){
+    var b = document.createElement('div');
+    b.className = 'size-btn' + (i === sizeActive ? ' active' : '');
+    b.innerHTML = '<div class="sz-icon">'+s.icon+'</div><div class="sz-name">'+s.name+'</div><div class="sz-ex">'+s.ex+'</div>';
+    b.addEventListener('click', function(){
+      sizeActive = i;
+      sizePicker.querySelectorAll('.size-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      renderSize();
+    });
+    sizePicker.appendChild(b);
+  });
+  renderSize();
+})();
+
+/* ============================================================
+   6. HANDS-ON EXERCISE
+   ============================================================ */
+(function(){
+  var base =
+    '<div class="code-line"><span class="line-num">1</span><span class="code-text" style="color:var(--text-faint);">// TODO: implement isValidEmail(email) — return true/false using a regex check</span></div>'+
+    '<div class="code-line"><span class="line-num">2</span><span class="code-text"><span class="code-kw">function</span> isValidEmail(email) {</span></div>'+
+    '<div class="code-line"><span class="line-num">3</span><span class="code-text">&nbsp;&nbsp;<span class="code-caret"></span></span></div>'+
+    '<div class="code-line"><span class="line-num">4</span><span class="code-text">}</span></div>';
+  var ghost =
+    '<div class="code-line"><span class="line-num">1</span><span class="code-text" style="color:var(--text-faint);">// TODO: implement isValidEmail(email) — return true/false using a regex check</span></div>'+
+    '<div class="code-line"><span class="line-num">2</span><span class="code-text"><span class="code-kw">function</span> isValidEmail(email) {</span></div>'+
+    '<div class="code-line"><span class="line-num">3</span><span class="code-ghost">&nbsp;&nbsp;const re = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;</span></div>'+
+    '<div class="code-line"><span class="line-num">4</span><span class="code-ghost">&nbsp;&nbsp;return re.test(email);</span></div>'+
+    '<div class="code-line"><span class="line-num">5</span><span class="code-text">}</span></div>';
+  var accepted =
+    '<div class="code-line"><span class="line-num">1</span><span class="code-text" style="color:var(--text-faint);">// TODO: implement isValidEmail(email) — return true/false using a regex check</span></div>'+
+    '<div class="code-line"><span class="line-num">2</span><span class="code-text"><span class="code-kw">function</span> isValidEmail(email) {</span></div>'+
+    '<div class="code-line"><span class="line-num">3</span><span class="code-accepted">&nbsp;&nbsp;const re = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;</span></div>'+
+    '<div class="code-line"><span class="line-num">4</span><span class="code-accepted">&nbsp;&nbsp;return re.test(email);</span></div>'+
+    '<div class="code-line"><span class="line-num">5</span><span class="code-text">}</span></div>';
+
+  initTabDemo({
+    editorId:'handsEditor', actionsId:'handsActions', resultId:'handsResult', simLabel:'Trigger Tab suggestion',
+    base:base, ghost:ghost, accepted:accepted,
+    acceptMsg:'the regex check is in. It looks reasonable — but "looks reasonable" isn\'t the same as verified. Validate it below.',
+    rejectMsg:'you decided to write the check yourself instead. That\'s a legitimate call too.',
+    onAccept: function(){
+      var card = document.getElementById('handsChecklistCard');
+      card.style.display = 'block';
+      card.classList.add('reveal', 'in-view');
+    }
+  });
+
+  initChecklist([
+    'Read the generated regex, didn\'t just trust it',
+    'Confirmed it handles a missing "@" and a missing domain',
+    'Ran the function against a couple of real test emails',
+    'Matches the naming/style already used in this file',
+    'Checked edge cases (leading/trailing spaces) before shipping'
+  ], 'handsChecklist', 'handsFill', 'handsLabel', 'handsDone');
+})();
+
+/* ============================================================
+   7. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:'What is the key difference between Tab-complete and inline generation (⌘K)?', options:[
+        'There is no difference — they are the same feature',
+        'Tab-complete predicts the next bit of code as you type; ⌘K generates code from an explicit natural-language instruction',
+        'Tab-complete only works inside comments',
+        '⌘K can only be used on completely empty files'
+      ], correct:1, explain:'Tab reacts to what you\'re already typing; ⌘K starts from an instruction you write (Section 01).' },
+    { q:'Why does "only change the error message on line 3" produce a much smaller diff than "rewrite this function"?', options:[
+        'It doesn\'t — the diffs are always the same size',
+        'A targeted request asks for one specific edit, so Cursor generates a minimal diff instead of regenerating unrelated code',
+        'Targeted changes disable the rest of the file automatically',
+        'Cursor cannot generate diffs, only full files'
+      ], correct:1, explain:'Precision in the request produces precision in the output — the rest of the function stays untouched (Section 02).' },
+    { q:'What\'s the recommended default when a multi-line suggestion appears?', options:[
+        'Always press Tab immediately without reading it',
+        'Read it fully before deciding to accept, edit, or reject — don\'t rubber-stamp it',
+        'Always reject multi-line suggestions on principle',
+        'Suggestions never need to be reviewed'
+      ], correct:1, explain:'Every suggestion is a decision — reading first is the safe default, especially for anything more than a line or two (Section 03).' },
+    { q:'Why does opening related files improve suggestion quality?', options:[
+        'It doesn\'t — Cursor only ever looks at the current line',
+        'Cursor uses open tabs and surrounding files as context, so suggestions better match your codebase\'s existing conventions',
+        'It forces Cursor to use a larger, slower model',
+        'Related files must be manually pasted into the suggestion for this to work'
+      ], correct:1, explain:'More relevant open context is exactly why the "related files open" suggestion matched the codebase\'s real conventions (Section 04).' },
+    { q:'Per this module, which interaction fits a multi-file feature better than inline generation?', options:[
+        'Nothing — inline generation should handle every task regardless of size',
+        'Agent mode, or a deliberately-scoped Chat request',
+        'Turning autocomplete off entirely',
+        'Increasing the suggestion pace setting'
+      ], correct:1, explain:'Inline generation and Tab-complete are built for small, local edits — wider changes call for Agent mode or a scoped Chat request (Section 05).' }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.innerHTML = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — you\'re ready for Module 6.'
+      : score >= questions.length - 1
+      ? 'Nice work — solid grasp of Tab, generation, and review discipline.'
+      : 'Worth a re-skim of the sections above before Module 6.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>

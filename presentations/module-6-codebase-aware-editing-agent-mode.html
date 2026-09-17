@@ -1,0 +1,554 @@
+<title>Codebase-Aware Agent Mode</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:13px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#agentmode" data-target="agentmode"><span class="dot"></span><span class="rail-label">01 · One request, many files</span></a>
+  <a href="#indexing" data-target="indexing"><span class="dot"></span><span class="rail-label">02 · The index</span></a>
+  <a href="#diffreview" data-target="diffreview"><span class="dot"></span><span class="rail-label">03 · Reviewing diffs</span></a>
+  <a href="#termsafety" data-target="termsafety"><span class="dot"></span><span class="rail-label">04 · Terminal risk</span></a>
+  <a href="#scoping" data-target="scoping"><span class="dot"></span><span class="rail-label">05 · Scoping edits</span></a>
+  <a href="#decomposition" data-target="decomposition"><span class="dot"></span><span class="rail-label">06 · Decompose &amp; checkpoint</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">07 · Hands-on</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">08 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#agentmode" data-target="agentmode">01</a>
+  <a href="#indexing" data-target="indexing">02</a>
+  <a href="#diffreview" data-target="diffreview">03</a>
+  <a href="#termsafety" data-target="termsafety">04</a>
+  <a href="#scoping" data-target="scoping">05</a>
+  <a href="#decomposition" data-target="decomposition">06</a>
+  <a href="#handson" data-target="handson">07</a>
+  <a href="#recap" data-target="recap">08</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 2 · Cursor Power User &amp; AI-Assisted Coding — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Codebase-Aware Editing &amp; Agent Mode</h1>
+    <p class="lede hero-lede">Module 6 — 60 minutes. Module 5 was Tab, working near the cursor in one file. This module is the same trust model scaled up: one request, edits proposed across several files at once, grounded in a searchable index of the whole repository — with the review gate getting correspondingly more careful.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">subtopic</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">hands-on exercise</span></li>
+      <li class="stat-tile"><span class="stat-num">60</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#agentmode"><span class="agenda-index">01</span><span>Using Agent mode for multi-file changes and feature implementation</span></a></li>
+      <li><a href="#indexing"><span class="agenda-index">02</span><span>Understanding codebase indexing/search and repository context</span></a></li>
+      <li><a href="#diffreview"><span class="agenda-index">03</span><span>Making cross-file edits and reviewing/approving diffs</span></a></li>
+      <li><a href="#termsafety"><span class="agenda-index">04</span><span>Using terminal/tool execution safely during agentic changes</span></a></li>
+      <li><a href="#scoping"><span class="agenda-index">05</span><span>Scoping AI edits safely in large projects</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="agentmode">
+  <div class="section-inner">
+    <p class="eyebrow">01 — Scale-up</p>
+    <h2 class="section-title">One request, many files at once</h2>
+    <p class="lede">Agent mode takes a single instruction and turns it into a coordinated set of edits across every file the feature touches — not one file extended into the next, but all of them planned together. Nothing ships until each one is reviewed.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 310" role="img" aria-label="Comparison: Module 5's Tab edits one file near the cursor, while Agent mode fans a single request out into simultaneous, individually reviewable edits across four files." style="min-width:700px">
+          <rect class="box dim" x="30" y="24" width="190" height="64" rx="10"></rect>
+          <text class="lbl-strong" x="125" y="42" text-anchor="middle" font-size="9.5">MODULE 5 · TAB</text>
+          <rect class="box dim" x="55" y="50" width="40" height="26" rx="3"></rect>
+          <line class="arrow-thin dim" stroke="var(--ink-soft)" x1="100" y1="63" x2="150" y2="63" marker-end="url(#arrow)"></line>
+          <text class="lbl dim" x="125" y="82" text-anchor="middle" font-size="8.5">one file, cursor-local</text>
+
+          <rect class="box-plum" x="410" y="40" width="200" height="54" rx="10"></rect>
+          <text class="txt-plum" x="510" y="62" text-anchor="middle" font-size="10.5">AGENT REQUEST:</text>
+          <text class="txt-plum" x="510" y="80" text-anchor="middle" font-size="10.5">"add CSV export"</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M510,94 L100,150" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M510,94 L290,150" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M510,94 L480,150" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M510,94 L670,150" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="30" y="150" width="140" height="110" rx="8"></rect>
+          <circle cx="160" cy="162" r="5" fill="var(--copper)"></circle>
+          <text class="lbl-strong" x="100" y="172" text-anchor="middle" font-size="10">routes.ts</text>
+          <rect x="40" y="188" width="30" height="8" fill="var(--teal)"></rect>
+          <rect x="70" y="188" width="10" height="8" fill="var(--brick)"></rect>
+          <text class="lbl" x="100" y="212" text-anchor="middle" font-size="9">+3 -1</text>
+          <text class="txt-copper" x="100" y="240" text-anchor="middle" font-size="9">awaiting review</text>
+
+          <rect class="box" x="220" y="150" width="140" height="110" rx="8"></rect>
+          <circle cx="350" cy="162" r="5" fill="var(--copper)"></circle>
+          <text class="lbl-strong" x="290" y="172" text-anchor="middle" font-size="10">exporter.ts</text>
+          <rect x="230" y="188" width="90" height="8" fill="var(--teal)"></rect>
+          <text class="lbl" x="290" y="212" text-anchor="middle" font-size="9">+42 -0</text>
+          <text class="txt-copper" x="290" y="240" text-anchor="middle" font-size="9">awaiting review</text>
+
+          <rect class="box" x="410" y="150" width="140" height="110" rx="8"></rect>
+          <circle cx="540" cy="162" r="5" fill="var(--copper)"></circle>
+          <text class="lbl-strong" x="480" y="172" text-anchor="middle" font-size="10">exporter.test.ts</text>
+          <rect x="420" y="188" width="70" height="8" fill="var(--teal)"></rect>
+          <text class="lbl" x="480" y="212" text-anchor="middle" font-size="9">+28 -0</text>
+          <text class="txt-copper" x="480" y="240" text-anchor="middle" font-size="9">awaiting review</text>
+
+          <rect class="box" x="600" y="150" width="140" height="110" rx="8"></rect>
+          <circle cx="730" cy="162" r="5" fill="var(--copper)"></circle>
+          <text class="lbl-strong" x="670" y="172" text-anchor="middle" font-size="10">README.md</text>
+          <rect x="610" y="188" width="15" height="8" fill="var(--teal)"></rect>
+          <text class="lbl" x="670" y="212" text-anchor="middle" font-size="9">+2 -0</text>
+          <text class="txt-copper" x="670" y="240" text-anchor="middle" font-size="9">awaiting review</text>
+
+          <text class="lbl" x="430" y="292" text-anchor="middle" font-size="10.5">4 files touched by ONE request — each still waits for your review, exactly like Module 5's gate</text>
+        </svg>
+      </div>
+      <figcaption>Agent mode plans across the feature, not just the file — the coordination is new, the review discipline isn't.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="indexing">
+  <div class="section-inner">
+    <p class="eyebrow">02 — The retrieval layer</p>
+    <h2 class="section-title">The index Agent mode searches before it edits</h2>
+    <p class="lede">Before any edit happens, the repository has already been chunked and embedded into a searchable index. Every task starts with a query against that index — which is how the agent finds "where auth is handled" without you telling it the filename.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 260" role="img" aria-label="A pipeline showing repository files chunked and embedded into a vector index, which is searched whenever the agent's task requires it, returning relevant chunks as context." style="min-width:700px">
+          <rect class="box" x="20" y="60" width="120" height="60" rx="8"></rect>
+          <text class="lbl-strong" x="80" y="94" text-anchor="middle" font-size="10">REPO FILES</text>
+          <line class="arrow" x1="140" y1="90" x2="158" y2="90" marker-end="url(#arrow)"></line>
+
+          <rect class="box-copper" x="160" y="60" width="130" height="60" rx="8"></rect>
+          <text class="txt-copper" x="225" y="94" text-anchor="middle" font-size="10">CHUNK &amp; EMBED</text>
+          <line class="arrow" x1="290" y1="90" x2="308" y2="90" marker-end="url(#arrow)"></line>
+
+          <rect class="box-teal" x="310" y="60" width="130" height="60" rx="8"></rect>
+          <text class="txt-teal" x="375" y="94" text-anchor="middle" font-size="10">VECTOR INDEX</text>
+          <line class="arrow" x1="440" y1="90" x2="458" y2="90" marker-end="url(#arrow)"></line>
+
+          <rect class="box-plum" x="460" y="60" width="130" height="60" rx="8"></rect>
+          <text class="txt-plum" x="525" y="88" text-anchor="middle" font-size="10">QUERY</text>
+          <text class="txt-plum" x="525" y="103" text-anchor="middle" font-size="10">MATCH</text>
+          <line class="arrow" x1="590" y1="90" x2="608" y2="90" marker-end="url(#arrow)"></line>
+
+          <rect class="box" x="610" y="60" width="130" height="60" rx="8"></rect>
+          <text class="lbl-strong" x="675" y="88" text-anchor="middle" font-size="10">RELEVANT</text>
+          <text class="lbl-strong" x="675" y="103" text-anchor="middle" font-size="10">CHUNKS</text>
+          <line class="arrow" x1="740" y1="90" x2="758" y2="90" marker-end="url(#arrow)"></line>
+
+          <rect class="box" x="760" y="60" width="80" height="60" rx="8"></rect>
+          <text class="lbl-strong" x="800" y="88" text-anchor="middle" font-size="9">AGENT</text>
+          <text class="lbl-strong" x="800" y="103" text-anchor="middle" font-size="9">CONTEXT</text>
+
+          <line class="arrow" x1="525" y1="180" x2="525" y2="122" marker-end="url(#arrow)"></line>
+          <rect class="box-plum" x="360" y="180" width="330" height="50" rx="8"></rect>
+          <text class="txt-plum" x="525" y="200" text-anchor="middle" font-size="10">AGENT TASK: "where is auth handled?"</text>
+          <text class="lbl" x="525" y="216" text-anchor="middle" font-size="9">triggers a fresh search, every task</text>
+        </svg>
+      </div>
+      <figcaption>Indexing happens once per repo state; searching happens per task — so the context the agent starts with is always tied to what you actually asked.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="diffreview">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Approval</p>
+    <h2 class="section-title">Reviewing a multi-file diff is still one hunk at a time</h2>
+    <p class="lede">Cross-file changes are still granular: expand any file to see its exact hunk, accept or reject that hunk alone, or move faster with accept-all once you've spot-checked the shape of the change.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 320" role="img" aria-label="A diff review panel: a sidebar lists four changed files with checkboxes and stats, one file is expanded showing its added lines, and accept or reject controls exist per hunk and for the whole change set." style="min-width:700px">
+          <text class="lbl-strong" x="140" y="30" text-anchor="middle" font-size="11">CHANGED FILES (4)</text>
+          <rect class="box" x="30" y="40" width="220" height="240" rx="10"></rect>
+
+          <rect x="46" y="56" width="16" height="16" rx="3" fill="var(--teal)"></rect>
+          <path d="M50,64 L54,68 L60,60" stroke="var(--paper-raised)" stroke-width="2" fill="none"></path>
+          <text x="70" y="68" font-size="10.5" fill="var(--ink)">routes.ts</text>
+          <text class="lbl" x="70" y="82" font-size="9">+3 -1</text>
+
+          <rect class="box-teal" x="36" y="100" width="208" height="56" rx="6"></rect>
+          <rect x="46" y="116" width="16" height="16" rx="3" fill="var(--teal)"></rect>
+          <path d="M50,124 L54,128 L60,120" stroke="var(--paper-raised)" stroke-width="2" fill="none"></path>
+          <text x="70" y="128" font-size="10.5" fill="var(--ink)">exporter.ts</text>
+          <text class="lbl" x="70" y="142" font-size="9">+42 -0 · open</text>
+
+          <rect x="46" y="176" width="16" height="16" rx="3" fill="var(--teal)"></rect>
+          <path d="M50,184 L54,188 L60,180" stroke="var(--paper-raised)" stroke-width="2" fill="none"></path>
+          <text x="70" y="188" font-size="10.5" fill="var(--ink)">exporter.test.ts</text>
+          <text class="lbl" x="70" y="202" font-size="9">+28 -0</text>
+
+          <rect x="46" y="236" width="16" height="16" rx="3" fill="var(--teal)"></rect>
+          <path d="M50,244 L54,248 L60,240" stroke="var(--paper-raised)" stroke-width="2" fill="none"></path>
+          <text x="70" y="248" font-size="10.5" fill="var(--ink)">README.md</text>
+          <text class="lbl" x="70" y="262" font-size="9">+2 -0</text>
+
+          <text class="lbl-strong" x="565" y="30" text-anchor="middle" font-size="11">exporter.ts — hunk 1 of 1</text>
+          <rect class="box" x="270" y="40" width="560" height="240" rx="10"></rect>
+          <text x="288" y="66" font-size="11" fill="var(--teal)">+ export function exportCsv(rows) {</text>
+          <text x="288" y="86" font-size="11" fill="var(--teal)">+&#160;&#160;const header = Object.keys(rows[0]);</text>
+          <text x="288" y="106" font-size="11" fill="var(--teal)">+&#160;&#160;const lines = rows.map(toCsvLine);</text>
+          <text x="288" y="126" font-size="11" fill="var(--teal)">+&#160;&#160;return [header, ...lines].join("\n");</text>
+          <text x="288" y="146" font-size="11" fill="var(--teal)">+ }</text>
+
+          <rect class="box-teal" x="288" y="200" width="140" height="36" rx="18"></rect>
+          <text class="txt-teal" x="358" y="223" text-anchor="middle" font-size="10">Accept hunk</text>
+          <rect class="box-brick" x="440" y="200" width="140" height="36" rx="18"></rect>
+          <text class="txt-brick" x="510" y="223" text-anchor="middle" font-size="10">Reject hunk</text>
+
+          <rect class="box-plum" x="600" y="200" width="210" height="36" rx="18"></rect>
+          <text class="txt-plum" x="705" y="223" text-anchor="middle" font-size="10">Accept all 4 files</text>
+        </svg>
+      </div>
+      <figcaption>"Multi-file" describes the plan, not the review — you still see every line before it lands.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="termsafety">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Tool execution</p>
+    <h2 class="section-title">Not every command gets the same trust</h2>
+    <p class="lede">Agent mode can run terminal commands to build, test, and inspect the repo — but it classifies each one first. Read-only commands run on their own; reversible changes ask you first; anything destructive is blocked until you explicitly allow it.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 320" role="img" aria-label="Three risk tiers for terminal commands: low-risk read-only commands run automatically, medium-risk reversible commands ask for confirmation first, and high-risk destructive commands are blocked without explicit permission." style="min-width:700px">
+          <rect class="box-teal" x="40" y="30" width="780" height="70" rx="10"></rect>
+          <text class="txt-teal" x="60" y="55" font-size="11">LOW RISK — read-only</text>
+          <text class="lbl" x="60" y="75" font-size="10">ls · cat · grep · git status · git diff</text>
+          <rect class="box-teal" x="640" y="45" width="160" height="36" rx="8"></rect>
+          <text class="txt-teal" x="720" y="67" text-anchor="middle" font-size="9.5">RUNS AUTOMATICALLY</text>
+
+          <rect class="box-copper" x="40" y="115" width="780" height="70" rx="10"></rect>
+          <text class="txt-copper" x="60" y="140" font-size="11">MEDIUM RISK — reversible changes</text>
+          <text class="lbl" x="60" y="160" font-size="10">npm install · run tests · git commit</text>
+          <rect class="box-copper" x="640" y="130" width="160" height="36" rx="8"></rect>
+          <text class="txt-copper" x="720" y="152" text-anchor="middle" font-size="9.5">ASKS YOU TO CONFIRM</text>
+
+          <rect class="box-brick" x="40" y="200" width="780" height="70" rx="10"></rect>
+          <text class="txt-brick" x="60" y="225" font-size="11">HIGH RISK — destructive or irreversible</text>
+          <text class="lbl" x="60" y="245" font-size="10">rm -rf · git push --force · DROP TABLE</text>
+          <rect class="box-brick" x="640" y="215" width="160" height="36" rx="8"></rect>
+          <text class="txt-brick" x="720" y="237" text-anchor="middle" font-size="9.5">BLOCKED — explicit allow</text>
+
+          <text class="lbl" x="430" y="300" text-anchor="middle" font-size="10.5">The agent classifies before it proposes — the riskier the command, the more friction between proposal and execution.</text>
+        </svg>
+      </div>
+      <figcaption>The same command an experienced engineer would double-check by hand is the one the agent double-checks with you.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="scoping">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Blast radius</p>
+    <h2 class="section-title">Contain the blast radius before you start</h2>
+    <p class="lede">In a large repository, "edit the codebase" is too wide a mandate. Scoping a task to a folder, and excluding sensitive or generated paths with <code>.cursorignore</code>, keeps both reads and writes fenced to where the feature actually lives.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="A large repository with a dashed boundary scoping the agent to the csv-export feature folder, while node_modules, dot-env, and dist are marked excluded via cursorignore." style="min-width:700px">
+          <rect class="box dim" x="30" y="40" width="800" height="220" rx="14"></rect>
+          <text class="lbl dim" x="50" y="64" font-size="10.5">WHOLE REPO — thousands of files</text>
+
+          <rect x="90" y="90" width="380" height="130" rx="10" fill="var(--teal)" fill-opacity="0.12" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="6 4"></rect>
+          <text class="txt-teal" x="280" y="112" text-anchor="middle" font-size="10.5">SCOPED TO: /features/csv-export/**</text>
+          <rect class="fill-teal" x="115" y="130" width="100" height="26" rx="4"></rect>
+          <text x="165" y="147" text-anchor="middle" font-size="9" fill="var(--paper-raised)">routes.ts</text>
+          <rect class="fill-teal" x="225" y="130" width="110" height="26" rx="4"></rect>
+          <text x="280" y="147" text-anchor="middle" font-size="9" fill="var(--paper-raised)">exporter.ts</text>
+          <rect class="fill-teal" x="115" y="166" width="220" height="26" rx="4"></rect>
+          <text x="225" y="183" text-anchor="middle" font-size="9" fill="var(--paper-raised)">exporter.test.ts</text>
+
+          <rect class="box-brick" x="530" y="95" width="220" height="34" rx="8"></rect>
+          <text class="txt-brick" x="640" y="117" text-anchor="middle" font-size="10">node_modules/ — excluded</text>
+          <rect class="box-brick" x="530" y="140" width="220" height="34" rx="8"></rect>
+          <text class="txt-brick" x="640" y="162" text-anchor="middle" font-size="10">.env — excluded</text>
+          <rect class="box-brick" x="530" y="185" width="220" height="34" rx="8"></rect>
+          <text class="txt-brick" x="640" y="207" text-anchor="middle" font-size="10">dist/ — excluded</text>
+
+          <text class="lbl" x="430" y="282" text-anchor="middle" font-size="10.5">A .cursorignore entry or an explicit folder scope keeps edits — and reads — inside the fence you drew</text>
+        </svg>
+      </div>
+      <figcaption>The same fence works both directions: it's what the agent can touch, and what it's allowed to read while deciding.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="decomposition">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Subtopic: staying within budget</p>
+    <h2 class="section-title">Break the task before it breaks the context budget</h2>
+    <p class="lede">A large task doesn't fit in one context window any better than a large file does. Splitting it into smaller, sequential steps keeps each one fully reviewable — and each checkpoint between them is a point you can safely roll back to.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="A large migration task split into four sequential subtasks, each sized to fit in the context window, with checkpoints between them and a revert path back to an earlier checkpoint if a later step fails." style="min-width:700px">
+          <rect class="box-plum" x="40" y="20" width="780" height="40" rx="8"></rect>
+          <text class="txt-plum" x="430" y="45" text-anchor="middle" font-size="11">BIG TASK: migrate the order pipeline to the new API</text>
+          <line class="arrow-thin" stroke="var(--ink-soft)" x1="430" y1="60" x2="430" y2="82" marker-end="url(#arrow)"></line>
+          <line stroke="var(--ink-soft)" stroke-opacity="0.4" x1="40" y1="85" x2="820" y2="85"></line>
+
+          <rect class="box-copper" x="40" y="100" width="170" height="60" rx="8"></rect>
+          <text class="txt-copper" x="125" y="126" text-anchor="middle" font-size="10">Update schema</text>
+          <text class="lbl" x="125" y="146" text-anchor="middle" font-size="8.5">fits in context</text>
+
+          <rect class="box-copper" x="230" y="100" width="170" height="60" rx="8"></rect>
+          <text class="txt-copper" x="315" y="126" text-anchor="middle" font-size="10">Migrate reads</text>
+          <text class="lbl" x="315" y="146" text-anchor="middle" font-size="8.5">fits in context</text>
+
+          <rect class="box-copper" x="420" y="100" width="170" height="60" rx="8"></rect>
+          <text class="txt-copper" x="505" y="126" text-anchor="middle" font-size="10">Migrate writes</text>
+          <text class="lbl" x="505" y="146" text-anchor="middle" font-size="8.5">fits in context</text>
+
+          <rect class="box-copper" x="610" y="100" width="170" height="60" rx="8"></rect>
+          <text class="txt-copper" x="695" y="126" text-anchor="middle" font-size="10">Remove old API</text>
+          <text class="lbl" x="695" y="146" text-anchor="middle" font-size="8.5">fits in context</text>
+
+          <line x1="40" y1="190" x2="800" y2="190" stroke="var(--ink-soft)" stroke-opacity="0.4"></line>
+          <polygon class="fill-plum" points="220,182 228,190 220,198 212,190"></polygon>
+          <text class="lbl" x="220" y="214" text-anchor="middle" font-size="9">checkpoint</text>
+          <polygon class="fill-plum" points="410,182 418,190 410,198 402,190"></polygon>
+          <polygon class="fill-plum" points="600,182 608,190 600,198 592,190"></polygon>
+          <polygon class="fill-plum" points="790,182 798,190 790,198 782,190"></polygon>
+
+          <path class="arrow-thin stroke-brick" stroke="var(--brick)" stroke-dasharray="4 3" d="M600,198 C 600,255 220,255 220,198" marker-end="url(#arrow)"></path>
+          <text class="txt-brick" x="410" y="270" text-anchor="middle" font-size="10">revert to the last good checkpoint if a step fails</text>
+        </svg>
+      </div>
+      <figcaption>Same discipline as Module 5's targeted diffs, applied at the scale of a whole migration instead of a single line.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Hands-on</p>
+    <h2 class="section-title">Implement a small feature across files</h2>
+    <p class="lede">Module 6 closes with a single hands-on exercise — no quiz, just Agent mode end to end.</p>
+    <div class="activity-grid" style="grid-template-columns:1fr; max-width:560px;">
+      <div class="activity-card">
+        <p class="activity-tag">Exercise</p>
+        <h3>Ship the CSV export feature</h3>
+        <p>Use Agent mode to implement the CSV export used throughout this module's diagrams — a route, a new exporter module, and its tests. Scope the task to the feature folder, review the plan and the per-file diffs before accepting, and watch which terminal commands the agent runs on its own versus which ones it asks you to confirm.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Before Module 7</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Agent mode fans one request into edits across multiple files — each file still gated by your review.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Codebase indexing turns repo files into searchable chunks the agent retrieves before it edits.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Risk tiers determine how much friction a terminal command faces before it's allowed to run.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Decompose large tasks into context-sized, checkpointed steps so any step can be rolled back alone.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 7 — Plan, Debug, Refactoring &amp; Testing</strong> puts this same agentic loop to work on harder problems: planning complex tasks, diagnosing failures, and validating fixes.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 6 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

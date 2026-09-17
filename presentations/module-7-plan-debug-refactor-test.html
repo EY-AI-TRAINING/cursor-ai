@@ -1,0 +1,545 @@
+<title>Plan, Debug &amp; Refactor</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:13px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#planmode" data-target="planmode"><span class="dot"></span><span class="rail-label">01 · Plan mode</span></a>
+  <a href="#debugmode" data-target="debugmode"><span class="dot"></span><span class="rail-label">02 · Debug mode</span></a>
+  <a href="#refactor" data-target="refactor"><span class="dot"></span><span class="rail-label">03 · Refactoring</span></a>
+  <a href="#bugfix" data-target="bugfix"><span class="dot"></span><span class="rail-label">04 · Stack traces</span></a>
+  <a href="#testing" data-target="testing"><span class="dot"></span><span class="rail-label">05 · Test loop</span></a>
+  <a href="#validate" data-target="validate"><span class="dot"></span><span class="rail-label">06 · Safety net</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">07 · Hands-on</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">08 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#planmode" data-target="planmode">01</a>
+  <a href="#debugmode" data-target="debugmode">02</a>
+  <a href="#refactor" data-target="refactor">03</a>
+  <a href="#bugfix" data-target="bugfix">04</a>
+  <a href="#testing" data-target="testing">05</a>
+  <a href="#validate" data-target="validate">06</a>
+  <a href="#handson" data-target="handson">07</a>
+  <a href="#recap" data-target="recap">08</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 2 · Cursor Power User &amp; AI-Assisted Coding — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Plan, Debug, Refactoring &amp; Testing</h1>
+    <p class="lede hero-lede">Module 7 — 60 minutes. Day 2 closes its coding arc here: turning the same agentic loop from Modules 5 and 6 onto harder problems — tasks big enough to plan first, failures that need a real hypothesis, legacy code that needs restructuring, and tests that prove nothing broke along the way.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">subtopic</span></li>
+      <li class="stat-tile"><span class="stat-num">2</span><span class="stat-label">exercise + quiz</span></li>
+      <li class="stat-tile"><span class="stat-num">60</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#planmode"><span class="agenda-index">01</span><span>Plan mode for complex tasks: explore → plan → review → implement</span></a></li>
+      <li><a href="#debugmode"><span class="agenda-index">02</span><span>Debug mode for diagnosing failures and validating hypotheses</span></a></li>
+      <li><a href="#refactor"><span class="agenda-index">03</span><span>Refactoring code using natural-language instructions; handling legacy code</span></a></li>
+      <li><a href="#bugfix"><span class="agenda-index">04</span><span>Using AI to identify bugs, explain stack traces, and suggest/apply fixes</span></a></li>
+      <li><a href="#testing"><span class="agenda-index">05</span><span>Writing, executing, and debugging unit/API tests with AI assistance</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="planmode">
+  <div class="section-inner">
+    <p class="eyebrow">01 — Structured thinking</p>
+    <h2 class="section-title">Four steps before the first edit</h2>
+    <p class="lede">Plan mode is for tasks too big to trust to a single prompt. It explores the codebase, drafts a step-by-step plan, and stops — nothing gets implemented until you've reviewed the plan itself, not just the eventual diff.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 280" role="img" aria-label="A four-stage pipeline: explore the codebase, draft a plan, review it, then implement — with review able to send the task back to planning if the plan needs adjustment." style="min-width:700px">
+          <rect class="box-copper" x="30" y="70" width="180" height="90" rx="10"></rect>
+          <text class="txt-copper" x="120" y="102" text-anchor="middle" font-size="12">EXPLORE</text>
+          <text class="lbl" x="120" y="122" text-anchor="middle" font-size="9.5">reads the repo,</text>
+          <text class="lbl" x="120" y="136" text-anchor="middle" font-size="9.5">no edits yet</text>
+          <line class="arrow" x1="210" y1="115" x2="238" y2="115" marker-end="url(#arrow)"></line>
+
+          <rect class="box-teal" x="240" y="70" width="180" height="90" rx="10"></rect>
+          <text class="txt-teal" x="330" y="102" text-anchor="middle" font-size="12">PLAN</text>
+          <text class="lbl" x="330" y="122" text-anchor="middle" font-size="9.5">drafts a step-by-step</text>
+          <text class="lbl" x="330" y="136" text-anchor="middle" font-size="9.5">approach</text>
+          <line class="arrow" x1="420" y1="115" x2="448" y2="115" marker-end="url(#arrow)"></line>
+
+          <rect class="box-plum" x="450" y="70" width="180" height="90" rx="10"></rect>
+          <text class="txt-plum" x="540" y="102" text-anchor="middle" font-size="12">REVIEW</text>
+          <text class="lbl" x="540" y="122" text-anchor="middle" font-size="9.5">you approve</text>
+          <text class="lbl" x="540" y="136" text-anchor="middle" font-size="9.5">or adjust</text>
+          <line class="arrow" x1="630" y1="115" x2="658" y2="115" marker-end="url(#arrow)"></line>
+          <text class="lbl" x="644" y="102" text-anchor="middle" font-size="9">approved</text>
+
+          <rect class="box" x="660" y="70" width="170" height="90" rx="10"></rect>
+          <text class="lbl-strong" x="745" y="102" text-anchor="middle" font-size="12">IMPLEMENT</text>
+          <text class="lbl" x="745" y="122" text-anchor="middle" font-size="9.5">now it writes</text>
+          <text class="lbl" x="745" y="136" text-anchor="middle" font-size="9.5">the code</text>
+
+          <path class="arrow-thin stroke-plum" stroke="var(--plum)" stroke-dasharray="4 3" d="M540,160 C 540,215 330,215 330,160" marker-end="url(#arrow)"></path>
+          <text class="txt-plum" x="435" y="235" text-anchor="middle" font-size="10">not quite right → back to PLAN</text>
+        </svg>
+      </div>
+      <figcaption>The plan is the artifact being reviewed here — catching a wrong approach on paper is far cheaper than catching it in a 12-file diff.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="debugmode">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Method, not guessing</p>
+    <h2 class="section-title">A failure is a hypothesis to test</h2>
+    <p class="lede">Debug mode doesn't jump straight to a fix. It observes the actual failure, forms a specific hypothesis about the cause, and tests that hypothesis before touching any code — refining and re-testing until the root cause is confirmed.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 820 340" role="img" aria-label="A debugging cycle: observe the failure, form a hypothesis, test it, and check whether the root cause is confirmed — looping back to refine the hypothesis if not, or proceeding to apply the fix if so." style="min-width:660px">
+          <rect class="box-brick" x="330" y="20" width="160" height="60" rx="10"></rect>
+          <text class="txt-brick" x="410" y="46" text-anchor="middle" font-size="11">OBSERVE FAILURE</text>
+          <text class="lbl" x="410" y="64" text-anchor="middle" font-size="9">the actual error, not a guess</text>
+
+          <rect class="box-copper" x="560" y="140" width="180" height="60" rx="10"></rect>
+          <text class="txt-copper" x="650" y="166" text-anchor="middle" font-size="11">FORM HYPOTHESIS</text>
+          <text class="lbl" x="650" y="184" text-anchor="middle" font-size="9">"probably a nil check"</text>
+
+          <rect class="box-teal" x="330" y="260" width="160" height="60" rx="10"></rect>
+          <text class="txt-teal" x="410" y="286" text-anchor="middle" font-size="11">TEST HYPOTHESIS</text>
+          <text class="lbl" x="410" y="304" text-anchor="middle" font-size="9">adds a probe, re-runs</text>
+
+          <polygon class="box-plum" points="170,110 250,170 170,230 90,170"></polygon>
+          <text class="lbl-strong" x="170" y="164" text-anchor="middle" font-size="9.5">ROOT CAUSE</text>
+          <text class="lbl-strong" x="170" y="178" text-anchor="middle" font-size="9.5">CONFIRMED?</text>
+
+          <rect class="box" x="20" y="140" width="150" height="60" rx="10"></rect>
+          <text class="lbl-strong" x="95" y="166" text-anchor="middle" font-size="10.5">APPLY FIX</text>
+          <text class="lbl" x="95" y="184" text-anchor="middle" font-size="9">exactly where it broke</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M410,80 Q 540,90 620,140" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M620,200 Q 550,255 480,275" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M330,285 Q 240,265 200,225" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="255" y="270" text-anchor="middle" font-size="9">run it</text>
+
+          <path class="arrow-thin stroke-copper" stroke="var(--copper)" stroke-dasharray="4 3" d="M245,140 Q 400,75 560,155" marker-end="url(#arrow)"></path>
+          <text class="txt-copper" x="400" y="90" text-anchor="middle" font-size="9.5">no → refine hypothesis</text>
+
+          <line class="arrow" x1="150" y1="185" x2="170" y2="200" marker-end="url(#arrow)"></line>
+          <text class="txt-teal" x="160" y="215" text-anchor="middle" font-size="9.5">yes</text>
+        </svg>
+      </div>
+      <figcaption>The loop only exits once the cause is confirmed — a fix applied to an unconfirmed hypothesis is still a guess, just a more confident-looking one.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="refactor">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Restructuring</p>
+    <h2 class="section-title">Same behavior, untangled structure</h2>
+    <p class="lede">A plain-language instruction can restructure legacy code — pulling a dense, tightly coupled function apart into small, independent pieces — without changing what it does. The shape of the code changes; the shape of the connections between its pieces changes with it.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 320" role="img" aria-label="A tangled legacy function with crossing dependencies is transformed by a natural-language refactoring instruction into five small, independently connected functions with no crossing lines." style="min-width:700px">
+          <text class="txt-brick" x="190" y="34" text-anchor="middle" font-size="11">LEGACY — one 300-line function</text>
+          <rect class="box dim" x="40" y="50" width="300" height="220" rx="12"></rect>
+          <rect class="box-brick" x="60" y="70" width="70" height="30" rx="5"></rect>
+          <rect class="box-brick" x="180" y="90" width="70" height="30" rx="5"></rect>
+          <rect class="box-brick" x="90" y="150" width="70" height="30" rx="5"></rect>
+          <rect class="box-brick" x="230" y="170" width="70" height="30" rx="5"></rect>
+          <rect class="box-brick" x="60" y="220" width="70" height="30" rx="5"></rect>
+          <line x1="95" y1="100" x2="265" y2="170" stroke="var(--brick)" stroke-opacity="0.5"></line>
+          <line x1="215" y1="120" x2="95" y2="230" stroke="var(--brick)" stroke-opacity="0.5"></line>
+          <line x1="125" y1="165" x2="215" y2="105" stroke="var(--brick)" stroke-opacity="0.5"></line>
+          <line x1="265" y1="185" x2="95" y2="235" stroke="var(--brick)" stroke-opacity="0.5"></line>
+          <line x1="95" y1="235" x2="125" y2="170" stroke="var(--brick)" stroke-opacity="0.5"></line>
+
+          <line class="arrow" x1="340" y1="160" x2="368" y2="160" marker-end="url(#arrow)"></line>
+          <rect class="box-plum" x="370" y="120" width="150" height="80" rx="10"></rect>
+          <text class="txt-plum" x="445" y="150" text-anchor="middle" font-size="9.5">"extract into small</text>
+          <text class="txt-plum" x="445" y="164" text-anchor="middle" font-size="9.5">functions, add types"</text>
+          <line class="arrow" x1="520" y1="160" x2="548" y2="160" marker-end="url(#arrow)"></line>
+
+          <text class="txt-teal" x="670" y="34" text-anchor="middle" font-size="11">REFACTORED — 5 small functions</text>
+          <rect class="box" x="550" y="50" width="270" height="220" rx="12"></rect>
+          <rect class="box-teal" x="575" y="70" width="220" height="30" rx="5"></rect>
+          <text class="txt-teal" x="685" y="90" text-anchor="middle" font-size="9.5">parseInput()</text>
+          <line x1="685" y1="100" x2="685" y2="115" stroke="var(--teal)"></line>
+          <rect class="box-teal" x="575" y="115" width="220" height="30" rx="5"></rect>
+          <text class="txt-teal" x="685" y="135" text-anchor="middle" font-size="9.5">validate()</text>
+          <line x1="685" y1="145" x2="685" y2="160" stroke="var(--teal)"></line>
+          <rect class="box-teal" x="575" y="160" width="220" height="30" rx="5"></rect>
+          <text class="txt-teal" x="685" y="180" text-anchor="middle" font-size="9.5">transform()</text>
+          <line x1="685" y1="190" x2="685" y2="205" stroke="var(--teal)"></line>
+          <rect class="box-teal" x="575" y="205" width="220" height="30" rx="5"></rect>
+          <text class="txt-teal" x="685" y="225" text-anchor="middle" font-size="9.5">persist()</text>
+        </svg>
+      </div>
+      <figcaption>Coupling is what made the legacy version risky to touch — the refactor's real output is the straight line replacing the tangle, not just the new function names.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="bugfix">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Diagnosis</p>
+    <h2 class="section-title">From a wall of red text to a specific line</h2>
+    <p class="lede">A stack trace buries the one frame that matters inside a dozen that don't. AI reads the whole trace, points at the actual root-cause line, explains it in plain language, and proposes a fix scoped to exactly that line.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="A stack trace with one highlighted root-cause frame feeds an AI explanation of the actual problem, which produces a targeted before-and-after fix with an apply button." style="min-width:700px">
+          <rect class="box" x="30" y="40" width="260" height="220" rx="10"></rect>
+          <text class="lbl" x="50" y="66" font-size="9.5">Traceback (most recent call last):</text>
+          <text class="lbl" x="50" y="86" font-size="9.5">&#160;&#160;File app.py, line 88, in handle</text>
+          <rect class="fill-brick" x="42" y="98" width="236" height="22" opacity="0.16" rx="3"></rect>
+          <text class="txt-brick" x="50" y="114" font-size="9.5">&#160;&#160;File orders.py, line 42, in parseOrder</text>
+          <text class="lbl" x="50" y="136" font-size="9.5">&#160;&#160;File orders.py, line 40</text>
+          <text class="lbl" x="50" y="156" font-size="9.5">&#160;&#160;in &lt;listcomp&gt;</text>
+          <text class="txt-brick" x="50" y="180" font-size="10.5">KeyError: 'total'</text>
+
+          <line class="arrow" x1="290" y1="150" x2="318" y2="150" marker-end="url(#arrow)"></line>
+          <rect class="box-plum" x="320" y="105" width="200" height="90" rx="10"></rect>
+          <text class="txt-plum" x="420" y="130" text-anchor="middle" font-size="10">ROOT CAUSE:</text>
+          <text class="txt-plum" x="420" y="150" text-anchor="middle" font-size="10">'total' key missing when</text>
+          <text class="txt-plum" x="420" y="168" text-anchor="middle" font-size="10">an order has no line items</text>
+
+          <line class="arrow" x1="520" y1="150" x2="548" y2="150" marker-end="url(#arrow)"></line>
+          <text class="lbl-strong" x="690" y="90" text-anchor="middle" font-size="10.5">SUGGESTED FIX</text>
+          <rect class="box" x="550" y="100" width="280" height="130" rx="10"></rect>
+          <text x="568" y="130" font-size="10.5" fill="var(--brick)" text-decoration="line-through">- return order['total']</text>
+          <text x="568" y="152" font-size="10.5" fill="var(--teal)">+ return order.get('total', 0)</text>
+          <rect class="box-teal" x="640" y="175" width="130" height="36" rx="18"></rect>
+          <text class="txt-teal" x="705" y="198" text-anchor="middle" font-size="10">Apply fix</text>
+        </svg>
+      </div>
+      <figcaption>The trace already contained the answer — the value is in reading it correctly, fast, under a dozen frames of noise.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="testing">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Verification</p>
+    <h2 class="section-title">Tests close the loop the debugger opened</h2>
+    <p class="lede">AI drafts a test straight from the function, runs it, and reads the result. A pass ships with confidence; a failure feeds its own output back in as the context for the next attempt, the same failure-as-context habit from Module 6.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 820 300" role="img" aria-label="A test cycle: write a test from the function, run it, check whether it passes — a pass leads to done, a failure leads to reading the failure output and adjusting the code before re-running." style="min-width:660px">
+          <rect class="box-copper" x="30" y="110" width="150" height="70" rx="8"></rect>
+          <text class="txt-copper" x="105" y="140" text-anchor="middle" font-size="11">WRITE TEST</text>
+          <text class="lbl" x="105" y="158" text-anchor="middle" font-size="9">drafted from the function</text>
+          <line class="arrow" x1="180" y1="145" x2="208" y2="145" marker-end="url(#arrow)"></line>
+
+          <rect class="box" x="210" y="110" width="130" height="70" rx="8"></rect>
+          <text class="lbl-strong" x="275" y="140" text-anchor="middle" font-size="11">RUN</text>
+          <text class="lbl" x="275" y="158" text-anchor="middle" font-size="9">executes the suite</text>
+          <line class="arrow" x1="340" y1="145" x2="368" y2="145" marker-end="url(#arrow)"></line>
+
+          <polygon class="box-plum" points="430,110 465,145 430,180 395,145"></polygon>
+          <text class="lbl-strong" x="430" y="149" text-anchor="middle" font-size="9.5">PASS?</text>
+
+          <line class="arrow" x1="465" y1="145" x2="528" y2="145" marker-end="url(#arrow)"></line>
+          <text class="txt-teal" x="497" y="132" text-anchor="middle" font-size="9">yes</text>
+          <rect class="box-teal" x="530" y="110" width="160" height="70" rx="8"></rect>
+          <text class="txt-teal" x="610" y="140" text-anchor="middle" font-size="11">DONE</text>
+          <text class="lbl" x="610" y="158" text-anchor="middle" font-size="9">merge with confidence</text>
+
+          <line class="arrow" x1="430" y1="180" x2="430" y2="218" marker-end="url(#arrow)"></line>
+          <text class="txt-brick" x="452" y="204" text-anchor="middle" font-size="9">no</text>
+          <rect class="box-brick" x="330" y="220" width="220" height="60" rx="8"></rect>
+          <text class="txt-brick" x="440" y="245" text-anchor="middle" font-size="10.5">READ FAILURE OUTPUT</text>
+          <text class="lbl" x="440" y="263" text-anchor="middle" font-size="9">adjust the code, re-run</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M420,220 Q 320,190 275,182" marker-end="url(#arrow)"></path>
+        </svg>
+      </div>
+      <figcaption>A failing test isn't a dead end — its output is exactly the context the next attempt needs.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="validate">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Subtopic: the safety net</p>
+    <h2 class="section-title">Tests are the safety net for everything above</h2>
+    <p class="lede">Refactoring is only safe to trust when the existing suite is green before and green after. When a test does fail mid-refactor, its output — not a fresh guess — becomes the context for the next attempt.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="An existing test suite passes before a refactor and the same tests still pass after it, confirming the behavior is unchanged; if a test fails mid-refactor, its failure output is fed back in as context for the next attempt." style="min-width:700px">
+          <rect class="box" x="30" y="50" width="230" height="150" rx="10"></rect>
+          <text class="lbl-strong" x="145" y="42" text-anchor="middle" font-size="11">BEFORE — existing tests</text>
+          <circle cx="55" cy="75" r="6" fill="var(--teal)"></circle>
+          <text class="lbl" x="70" y="79" font-size="9.5">test_parse_order ✓</text>
+          <circle cx="55" cy="100" r="6" fill="var(--teal)"></circle>
+          <text class="lbl" x="70" y="104" font-size="9.5">test_apply_discount ✓</text>
+          <circle cx="55" cy="125" r="6" fill="var(--teal)"></circle>
+          <text class="lbl" x="70" y="129" font-size="9.5">test_calc_total ✓</text>
+          <circle cx="55" cy="150" r="6" fill="var(--teal)"></circle>
+          <text class="lbl" x="70" y="154" font-size="9.5">test_empty_cart ✓</text>
+
+          <line class="arrow" x1="260" y1="125" x2="288" y2="125" marker-end="url(#arrow)"></line>
+          <rect class="box-plum" x="290" y="90" width="220" height="70" rx="10"></rect>
+          <text class="txt-plum" x="400" y="118" text-anchor="middle" font-size="10">REFACTOR:</text>
+          <text class="txt-plum" x="400" y="136" text-anchor="middle" font-size="10">"extract, add types"</text>
+          <line class="arrow" x1="510" y1="125" x2="538" y2="125" marker-end="url(#arrow)"></line>
+
+          <rect class="box" x="540" y="50" width="230" height="150" rx="10"></rect>
+          <text class="lbl-strong" x="655" y="42" text-anchor="middle" font-size="11">AFTER — same tests</text>
+          <circle cx="565" cy="75" r="6" fill="var(--teal)"></circle>
+          <text class="lbl" x="580" y="79" font-size="9.5">test_parse_order ✓</text>
+          <circle cx="565" cy="100" r="6" fill="var(--teal)"></circle>
+          <text class="lbl" x="580" y="104" font-size="9.5">test_apply_discount ✓</text>
+          <circle cx="565" cy="125" r="6" fill="var(--teal)"></circle>
+          <text class="lbl" x="580" y="129" font-size="9.5">test_calc_total ✓</text>
+          <circle cx="565" cy="150" r="6" fill="var(--teal)"></circle>
+          <text class="lbl" x="580" y="154" font-size="9.5">test_empty_cart ✓</text>
+          <text class="txt-teal" x="655" y="178" text-anchor="middle" font-size="9.5">same behavior, cleaner code</text>
+
+          <rect class="box-brick" x="290" y="220" width="220" height="60" rx="8"></rect>
+          <text class="txt-brick" x="400" y="243" text-anchor="middle" font-size="9.5">if a test fails mid-refactor:</text>
+          <text class="txt-brick" x="400" y="260" text-anchor="middle" font-size="9.5">its output → next attempt's context</text>
+          <path class="arrow-thin stroke-brick" stroke="var(--brick)" stroke-dasharray="4 3" d="M400,220 L400,168" marker-end="url(#arrow)"></path>
+        </svg>
+      </div>
+      <figcaption>Green-before, green-after is the whole proof — anything else is a refactor you're taking on faith.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Hands-on</p>
+    <h2 class="section-title">Exercise, then a quick check</h2>
+    <p class="lede">Module 7 closes with practice across the full loop — plan, debug, refactor, test — then a knowledge check before Module 8 turns to making these habits durable across a team.</p>
+    <div class="activity-grid">
+      <div class="activity-card">
+        <p class="activity-tag">Part 1 — Exercise</p>
+        <h3>Debug, then refactor, then prove it</h3>
+        <p>Use Debug mode to isolate the cause of a failing test, apply a natural-language refactor to the surrounding function, and confirm the full suite is still green before considering it done.</p>
+      </div>
+      <div class="activity-card">
+        <p class="activity-tag">Part 2 — Quiz</p>
+        <h3>Knowledge check</h3>
+        <p>Short quiz on Plan mode's four stages, recognizing a confirmed vs. unconfirmed hypothesis, and finding the actual root-cause frame in a stack trace.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Before Module 8</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Plan mode makes explore → plan → review explicit, with review able to send the task back to replanning.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Debug mode treats a failure as a hypothesis to test and confirm, not a guess to patch.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>A plain-language instruction can untangle legacy coupling without changing what the code does.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>The existing test suite is the safety net — green before, green after, and every failure becomes context.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 8 — Rules, AGENTS.md, Skills &amp; Team Standards</strong> closes Day 2 by turning today's habits into instructions the whole team — and every agent — can follow.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 7 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

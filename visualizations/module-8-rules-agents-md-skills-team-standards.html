@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 8 — Rules, AGENTS.md, Skills &amp; Team Standards</title>
+<meta name="description" content="Interactive walkthrough: Project Rules in .cursor/rules/, AGENTS.md and persistent repository guidance, User/Team/Project instruction precedence, Skills for reusable capabilities, reusable prompt templates and workflows, standardizing AI-assisted practices across a team, and version-controlling rules and skills.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%90%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.6px;font-weight:600;color:var(--text-faint);padding:8px 10px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:640px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Chat bubbles ===================== */
+.chatbubble{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:14px 16px;font-size:14px;position:relative;}
+.chatbubble.user{background:var(--surface-3);}
+.chatbubble .who{font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-bottom:6px;text-transform:uppercase;}
+
+/* ===================== Diff blocks ===================== */
+.diff-block{font-family:var(--mono);font-size:12.8px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;margin-top:10px;}
+.diff-line{padding:2px 6px;border-radius:3px;}
+.diff-add{background:rgba(52,211,153,0.12);color:var(--good);}
+.diff-del{background:rgba(251,113,133,0.12);color:var(--danger);text-decoration:line-through;}
+.diff-ctx{color:var(--text-faint);}
+
+/* ===================== Code editor mockup ===================== */
+.code-editor{background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:16px 18px;font-family:var(--mono);font-size:13px;line-height:1.85;overflow-x:auto;}
+.code-line{display:flex;white-space:pre;}
+.line-num{color:var(--text-faint);width:22px;flex:0 0 auto;text-align:right;margin-right:16px;user-select:none;}
+.code-text{color:var(--text);}
+.code-kw{color:var(--accent-soft);}
+.code-str{color:var(--good);}
+.code-meta{color:var(--text-faint);font-style:italic;}
+
+/* ===================== Accordion table ===================== */
+.acc-table{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:6px;}
+.acc-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:14px 18px;cursor:pointer;border-top:1px solid var(--border-soft);background:var(--surface);transition:background .15s;}
+.acc-row:first-child{border-top:none;}
+.acc-row:hover{background:var(--surface-2);}
+.acc-row .dim{font-weight:700;font-size:14px;font-family:var(--mono);}
+.acc-detail{display:none;padding:0 18px 16px;background:var(--surface);border-top:1px solid var(--border-soft);}
+.acc-detail.single.show{display:block;padding-top:14px;animation:fadein .3s ease;}
+.acc-caret{color:var(--text-faint);transition:transform .2s;}
+.acc-row.open .acc-caret{transform:rotate(180deg);}
+
+/* ===================== Stepper (shared pattern) ===================== */
+.stepper{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+.step-btn{flex:1;min-width:150px;text-align:left;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;}
+.step-btn:hover{border-color:var(--accent-soft);}
+.step-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));box-shadow:0 0 0 1px rgba(168,85,247,0.3);}
+.step-num{font-family:var(--mono);color:var(--accent-2);font-size:12px;}
+.step-title{font-weight:700;margin-top:6px;font-size:14.5px;}
+.step-bar{height:5px;border-radius:3px;background:var(--surface-3);margin-top:12px;overflow:hidden;}
+.step-bar-fill{height:100%;background:var(--grad-1);}
+.step-detail{padding:22px;}
+.step-detail .example{margin-top:14px;padding:12px 14px;background:var(--bg-2);border-left:3px solid var(--accent-2);border-radius:8px;font-family:var(--mono);font-size:13px;color:var(--text-dim);}
+
+/* ===================== Skill picker ===================== */
+.skill-grid{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+.skill-btn{flex:1;min-width:170px;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;text-align:left;transition:all .15s;}
+.skill-btn:hover{border-color:var(--accent-soft);}
+.skill-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));}
+.skill-btn .sk-icon{font-size:20px;}
+.skill-btn .sk-name{font-weight:700;font-size:14px;margin-top:6px;font-family:var(--mono);}
+.skill-btn .sk-ex{font-size:12px;color:var(--text-faint);margin-top:2px;}
+
+/* ===================== Scenario / hands-on ===================== */
+.scenario-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;}
+.scenario-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
+.scenario-item:hover{background:var(--surface-2);}
+.scenario-item.checked{background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.25);}
+.scenario-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.scenario-item.checked .scenario-box{background:var(--accent);border-color:var(--accent);color:#fff;}
+.scenario-label{font-size:14px;font-family:var(--mono);}
+.scenario-item.fb-good .scenario-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.scenario-item.fb-bad .scenario-box{background:var(--danger);border-color:var(--danger);color:#3a0a10;}
+.scenario-fb-tag{margin-left:auto;font-size:11.5px;font-family:var(--mono);color:var(--text-faint);}
+.scenario-result{margin-top:16px;padding:14px 16px;border-radius:10px;display:none;}
+.scenario-result.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Checklist ===================== */
+.checklist{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);text-decoration:line-through;}
+.check-label{font-size:14px;}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){ .section{padding:60px 16px;} .acc-row{grid-template-columns:1fr auto;} }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="module-7-plan-debug-refactoring-testing.html" class="brand"><span class="brand-badge">📐</span> Module 8</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#project-rules">Project Rules</a>
+      <a href="#agents-md">AGENTS.md</a>
+      <a href="#precedence">Precedence</a>
+      <a href="#skills">Skills</a>
+      <a href="#templates">Templates</a>
+      <a href="#standardizing">Team standards</a>
+      <a href="#versioning">Versioning</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-7-plan-debug-refactoring-testing.html" class="prev-link">← Module 7</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 2 · Module 8</div>
+    <h1>Rules, AGENTS.md,<br>Skills &amp; Team Standards</h1>
+    <p class="hero-sub">Everything so far has been about how <i>you</i> work with Cursor. This last Day 2 module is about how a whole team works with it the same way — instructions that live in the repo, apply automatically, and don't rot into stale tribal knowledge.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 60 min</span>
+      <span class="pill pill-neutral">🎯 Consistency across a team, not just you</span>
+      <span class="pill pill-neutral">📝 Hands-on: direct foundation for Modules 9 &amp; 11</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. PROJECT RULES -->
+<!-- ============================================================ -->
+<section class="section" id="project-rules">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / Project Rules in .cursor/rules/ and project-level AI instructions</span>
+      <h2>Instructions that live in the repo, not in your head</h2>
+      <p>Each file scopes its own instructions with <code>globs</code> and <code>alwaysApply</code>. Click one to see it.</p>
+    </div>
+    <div class="card reveal">
+      <div class="acc-table" id="rulesAccTable"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. AGENTS.md -->
+<!-- ============================================================ -->
+<section class="section" id="agents-md">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / AGENTS.md and persistent repository guidance</span>
+      <h2>One file every AI tool in the repo can read</h2>
+      <p>Broad orientation, in one predictable place — not scoped to specific files, just always there.</p>
+    </div>
+    <div class="card reveal">
+      <div class="code-editor" id="agentsMdBlock"></div>
+    </div>
+    <div class="grid-2" style="margin-top:18px;">
+      <div class="card-soft reveal" style="padding:16px;">
+        <b style="font-size:13.5px;">📄 AGENTS.md</b>
+        <p style="font-size:12.8px;color:var(--text-dim);margin-top:8px;">Portable, plain-text convention. Multiple AI tools (not just Cursor) can read it. One file, general orientation.</p>
+      </div>
+      <div class="card-soft reveal" style="padding:16px;">
+        <b style="font-size:13.5px;">📂 .cursor/rules/</b>
+        <p style="font-size:12.8px;color:var(--text-dim);margin-top:8px;">Cursor-specific. Multiple files, each scoped with globs, always-on or on-demand — precise, targeted instructions.</p>
+      </div>
+    </div>
+    <p class="hint" style="margin-top:14px;">Many teams use both — AGENTS.md for broad orientation, rules for precise, scoped instructions.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. USER / TEAM / PROJECT PRECEDENCE -->
+<!-- ============================================================ -->
+<section class="section" id="precedence">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / User/Team/Project instruction scope and precedence</span>
+      <h2>When instructions conflict, who wins?</h2>
+      <p>Three levels of instructions can all apply to the same file at once.</p>
+    </div>
+    <div class="card reveal">
+      <div class="stepper" id="precedenceStepper"></div>
+      <div class="card-soft step-detail" id="precedenceDetail"></div>
+    </div>
+    <div class="card reveal" style="margin-top:18px;">
+      <p style="font-size:13.8px;">⚖️ All three disagree on indentation here. The <b>Project</b> rule (4-space) wins — precedence runs <span class="pill pill-good" style="margin:0 2px;">Project</span> &gt; <span class="pill pill-warn" style="margin:0 2px;">Team</span> &gt; <span class="pill pill-neutral" style="margin:0 2px;">User</span>. The most specific scope always takes priority.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. SKILLS -->
+<!-- ============================================================ -->
+<section class="section" id="skills">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Skills for reusable specialized capabilities</span>
+      <h2>Package a workflow once, reuse it everywhere</h2>
+      <p>A Skill is a named, reusable capability — not a prompt you retype every time.</p>
+    </div>
+    <div class="card reveal">
+      <div class="skill-grid" id="skillGrid"></div>
+      <div class="card-soft" id="skillDetail" style="padding:16px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. REUSABLE PROMPT TEMPLATES & WORKFLOWS -->
+<!-- ============================================================ -->
+<section class="section" id="templates">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Creating reusable prompt templates and standard workflows</span>
+      <h2>Turn a good prompt into a repeatable one</h2>
+      <p>A good one-off prompt is a lucky draft. A template is a team default.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card reveal">
+        <div class="chatbubble user"><div class="who">One-off prompt</div>Can you write a PR description for the changes I just made, explaining what changed and why, and format it for our team?</div>
+        <p class="hint" style="margin-top:10px;">Quality depends entirely on whoever happens to be typing that day.</p>
+      </div>
+      <div class="card reveal">
+        <div class="code-editor">
+          <div class="code-line"><span class="code-text code-meta"># .cursor/prompts/pr-description.md</span></div>
+          <div class="code-line"><span class="code-text">## Summary</span></div>
+          <div class="code-line"><span class="code-text">{{summary}}</span></div>
+          <div class="code-line"><span class="code-text">&nbsp;</span></div>
+          <div class="code-line"><span class="code-text">## Why</span></div>
+          <div class="code-line"><span class="code-text">{{motivation}}</span></div>
+          <div class="code-line"><span class="code-text">&nbsp;</span></div>
+          <div class="code-line"><span class="code-text">## Testing</span></div>
+          <div class="code-line"><span class="code-text">{{testing_notes}}</span></div>
+          <div class="code-line"><span class="code-text">&nbsp;</span></div>
+          <div class="code-line"><span class="code-text">## Risk</span></div>
+          <div class="code-line"><span class="code-text">{{risk_level}} — {{risk_notes}}</span></div>
+        </div>
+        <p class="hint" style="margin-top:10px;">Same shape and quality every time, for anyone who runs it.</p>
+      </div>
+    </div>
+    <p class="hint" style="margin-top:16px;">Standard workflows chain templates like this together — plan → implement → test → PR description — each step reusing a known-good template instead of a fresh, improvised prompt.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. STANDARDIZING ACROSS THE TEAM -->
+<!-- ============================================================ -->
+<section class="section" id="standardizing">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / Standardizing AI-assisted development practices across the team</span>
+      <h2>From one person's habits to the team's default</h2>
+      <p>Everything above only pays off once it's actually shared.</p>
+    </div>
+    <div class="card reveal">
+      <b style="font-size:14px;">Signs a team has actually standardized this:</b>
+      <div class="checklist" id="standardChecklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="standardFill"></div></div>
+      <div class="progress-label" id="standardLabel">0 / 5</div>
+      <div class="setup-done" id="standardDone">✅ That's a team that's standardized this — not just one person who has good habits.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. SUBTOPIC: VERSION-CONTROLLING RULES & SKILLS -->
+<!-- ============================================================ -->
+<section class="section" id="versioning">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Subtopic: version-controlling rules and skills; keeping instructions concise, testable, and maintainable</span>
+      <h2>Treat instructions like code — because they are</h2>
+      <p>A vague rule is worse than no rule. Here's the same instruction, before and after.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card-soft reveal" style="padding:16px;border:1px solid rgba(251,113,133,0.3);">
+        <span class="pill pill-bad">✗ Not testable</span>
+        <p style="margin-top:10px;font-family:var(--mono);font-size:13.5px;">"Write good tests."</p>
+        <p class="hint" style="margin-top:8px;">Vague — nobody can tell whether it was followed or violated.</p>
+      </div>
+      <div class="card-soft reveal" style="padding:16px;border:1px solid rgba(52,211,153,0.3);">
+        <span class="pill pill-good">✓ Testable</span>
+        <p style="margin-top:10px;font-family:var(--mono);font-size:13.5px;">"Every new API endpoint needs a request-validation test and a 4xx-response test, colocated in the same folder."</p>
+        <p class="hint" style="margin-top:8px;">Specific — you can check whether it happened.</p>
+      </div>
+    </div>
+    <div class="card reveal" style="margin-top:18px;">
+      <b style="font-size:13.5px;">Committed and reviewed like any other change:</b>
+      <div class="diff-block">
+        <div class="diff-line diff-ctx"># .cursor/rules/testing.mdc</div>
+        <div class="diff-line diff-del">- Write good tests.</div>
+        <div class="diff-line diff-add">+ Every new API endpoint needs a request-validation test and a 4xx-response test, colocated in the same folder.</div>
+        <div class="diff-line diff-ctx"># reviewed and merged like any other pull request</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. HANDS-ON EXERCISE -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">08 / Hands-on exercise — direct foundation for Module 9 and Module 11</span>
+      <h2>Improve this rule</h2>
+      <p>Existing rule: <code>"Write good tests."</code> Pick the moves that actually make it better.</p>
+    </div>
+    <div class="card reveal">
+      <div class="scenario-list" id="ruleScenarioList"></div>
+      <button class="btn btn-primary btn-sm" id="ruleScenarioCheck" style="margin-top:16px;">Check my approach</button>
+      <div class="scenario-result" id="ruleScenarioResult"></div>
+    </div>
+    <div class="card reveal" style="margin-top:18px;">
+      <b style="font-size:14.5px;">Before committing a new rule or skill:</b>
+      <div class="checklist" id="commitChecklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="commitFill"></div></div>
+      <div class="progress-label" id="commitLabel">0 / 4 checked</div>
+      <div class="setup-done" id="commitDone">✅ Exercise complete — this is exactly the discipline Module 9 (SDD) and Module 11 build on. Nice work finishing Day 2.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 9. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">09 / Knowledge check</span>
+      <h2>Quick check to close out Day 2</h2>
+      <p>Five questions from what you just walked through.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/5</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">Day 2, complete</h3>
+    <ul>
+      <li>Project Rules in .cursor/rules/ scope AI instructions to specific files or the whole repo, and travel with the codebase instead of living in someone's head.</li>
+      <li>AGENTS.md is a portable, plain-text convention for persistent repo guidance that multiple AI tools can read.</li>
+      <li>When User, Team, and Project instructions conflict, the most specific scope wins — Project beats Team beats User.</li>
+      <li>Skills package a workflow once so anyone on the team can reuse it, instead of re-explaining the same instructions every time.</li>
+      <li>Reusable prompt templates and standard workflows turn a good one-off prompt into a repeatable team default.</li>
+      <li>Instructions are code: keep them concise, testable, and version-controlled, and review changes to them the same way you'd review any other PR.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-7-plan-debug-refactoring-testing.html" class="btn">← Module 7: Plan, Debug, Refactoring &amp; Testing</a>
+    <a href="#" class="btn">↑ Back to top</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 8 — Rules, AGENTS.md, Skills &amp; Team Standards · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["rules","AGENTS.md","skill","template","precedence","glob","scope","team","standard","version-control","testable","concise","workflow","maintainable","instructions"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ---------- Shared: checklist factory ---------- */
+function initChecklist(items, listId, fillId, labelId, doneId, labelSuffix){
+  var list = document.getElementById(listId);
+  var fill = document.getElementById(fillId);
+  var label = document.getElementById(labelId);
+  var done = document.getElementById(doneId);
+  var checked = new Array(items.length).fill(false);
+  list.innerHTML = '';
+  items.forEach(function(text, i){
+    var row = document.createElement('div');
+    row.className = 'check-item';
+    row.innerHTML = '<span class="check-box">✓</span><span class="check-label">'+text+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+      update();
+    });
+    list.appendChild(row);
+  });
+  function update(){
+    var count = checked.filter(Boolean).length;
+    fill.style.width = (count / items.length * 100) + '%';
+    label.textContent = count + ' / ' + items.length + ' ' + (labelSuffix || 'checked');
+    done.classList.toggle('show', count === items.length);
+  }
+  update();
+}
+
+/* ============================================================
+   1. PROJECT RULES DIRECTORY
+   ============================================================ */
+(function(){
+  var files = [
+    { name:'react-components.mdc', meta:'globs: src/components/**/*.tsx · alwaysApply: false', lines:[
+      "- Use function components with hooks, never classes",
+      "- Co-locate a component's styles and tests in the same folder",
+      "- Props interfaces are named `<Component>Props`"
+    ]},
+    { name:'api-conventions.mdc', meta:'globs: src/api/**/*.ts · alwaysApply: false', lines:[
+      "- All endpoints return `{ data, error }` — never throw raw errors to the client",
+      "- Validate request bodies with the shared zod schemas in src/api/schemas/",
+      "- New endpoints require an OpenAPI entry in docs/api.yaml"
+    ]},
+    { name:'always-on.mdc', meta:'globs: (repo-wide) · alwaysApply: true', lines:[
+      "- Never commit secrets, API keys, or .env files",
+      "- Prefer editing existing files over creating new ones",
+      "- Match the existing code style in the file you're editing"
+    ]}
+  ];
+  var wrap = document.getElementById('rulesAccTable');
+  files.forEach(function(f){
+    var row = document.createElement('div');
+    row.className = 'acc-row';
+    row.innerHTML = '<span class="dim">.cursor/rules/'+f.name+'</span><span class="pill pill-neutral">rule</span><span class="acc-caret">▾</span>';
+    var detail = document.createElement('div');
+    detail.className = 'acc-detail single';
+    var html = '<p class="hint" style="margin-bottom:10px;">'+f.meta+'</p><div class="code-editor">';
+    f.lines.forEach(function(l, i){ html += '<div class="code-line"><span class="line-num">'+(i+1)+'</span><span class="code-text">'+l+'</span></div>'; });
+    html += '</div>';
+    detail.innerHTML = html;
+    row.addEventListener('click', function(){
+      var isOpen = detail.classList.contains('show');
+      wrap.querySelectorAll('.acc-detail').forEach(function(d){ d.classList.remove('show'); });
+      wrap.querySelectorAll('.acc-row').forEach(function(rr){ rr.classList.remove('open'); });
+      if(!isOpen){ detail.classList.add('show'); row.classList.add('open'); }
+    });
+    wrap.appendChild(row);
+    wrap.appendChild(detail);
+  });
+  wrap.querySelectorAll('.acc-row')[0].click();
+})();
+
+/* ============================================================
+   2. AGENTS.md BLOCK
+   ============================================================ */
+(function(){
+  var lines = [
+    "# AGENTS.md",
+    "",
+    "## Project overview",
+    "A checkout and billing service for the retail platform.",
+    "",
+    "## Build & test",
+    "- npm install",
+    "- npm run test    — full suite",
+    "- npm run dev      — local server on :4000",
+    "",
+    "## Code style",
+    "- TypeScript, strict mode",
+    "- Prettier + ESLint enforced pre-commit",
+    "",
+    "## Where things live",
+    "- src/api/            — HTTP layer",
+    "- src/domain/       — business logic",
+    "- src/api/schemas/ — request/response validation"
+  ];
+  var block = document.getElementById('agentsMdBlock');
+  block.innerHTML = lines.map(function(l, i){ return '<div class="code-line"><span class="line-num">'+(i+1)+'</span><span class="code-text">'+l+'</span></div>'; }).join('');
+})();
+
+/* ============================================================
+   3. PRECEDENCE STEPPER
+   ============================================================ */
+(function(){
+  var steps = [
+    { title:'User', icon:'👤',
+      desc:'Your personal Cursor settings — apply to everything you do, across every repo.',
+      example:'"Always respond in a casual tone." "Prefer dark theme."' },
+    { title:'Team', icon:'👥',
+      desc:'Org-wide instructions your team or company sets — apply across every repo your team touches.',
+      example:'Team rule: "Use 2-space indentation and Conventional Commits messages."' },
+    { title:'Project', icon:'📁',
+      desc:'Rules committed to this specific repo — apply only here, to whoever opens this codebase.',
+      example:'.cursor/rules/formatting.mdc: "Use 4-space indentation to match this codebase."' }
+  ];
+  var stepperEl = document.getElementById('precedenceStepper');
+  var detailEl = document.getElementById('precedenceDetail');
+  var active = 2;
+  function renderDetail(){
+    var s = steps[active];
+    detailEl.innerHTML = '<div style="font-size:22px;">'+s.icon+'</div>'+
+      '<h4 style="margin-top:10px;font-size:16px;">'+s.title+'</h4>'+
+      '<p style="margin-top:8px;font-size:14px;color:var(--text-dim);">'+s.desc+'</p>'+
+      '<div class="example">'+s.example+'</div>';
+  }
+  steps.forEach(function(s, i){
+    var btn = document.createElement('div');
+    btn.className = 'step-btn' + (i===active ? ' active' : '');
+    btn.innerHTML = '<div class="step-num">LEVEL '+(i+1)+'</div><div class="step-title">'+s.icon+' '+s.title+'</div>'+
+      '<div class="step-bar"><div class="step-bar-fill" style="width:'+((i+1)/steps.length*100)+'%"></div></div>';
+    btn.addEventListener('click', function(){
+      active = i;
+      stepperEl.querySelectorAll('.step-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderDetail();
+    });
+    stepperEl.appendChild(btn);
+  });
+  renderDetail();
+})();
+
+/* ============================================================
+   4. SKILLS PICKER
+   ============================================================ */
+(function(){
+  var skills = [
+    { icon:'📊', name:'changelog-writer', ex:'Invoke: "use the changelog-writer skill for this release"', desc:'Reads recent commits and open PRs, and drafts a changelog entry in the team\'s exact format — every time, not just when someone remembers the template.' },
+    { icon:'🔍', name:'pr-reviewer', ex:'Invoke: "run pr-reviewer on this branch"', desc:'Runs the team\'s actual review checklist against a diff — security, tests, naming conventions — before a human reviewer even opens it.' },
+    { icon:'🧪', name:'test-generator', ex:'Invoke: "use test-generator on PricingEngine.ts"', desc:'Generates unit tests matching this project\'s existing test patterns and assertion style, not a generic boilerplate template.' }
+  ];
+  var grid = document.getElementById('skillGrid');
+  var detail = document.getElementById('skillDetail');
+  var active = 0;
+  function render(){
+    var s = skills[active];
+    detail.innerHTML = '<b style="font-size:13.5px;">'+s.icon+' '+s.name+'</b><p style="margin-top:8px;font-size:13.3px;color:var(--text-dim);">'+s.desc+'</p><p class="hint" style="margin-top:8px;">'+s.ex+'</p>';
+  }
+  skills.forEach(function(s, i){
+    var b = document.createElement('div');
+    b.className = 'skill-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="sk-icon">'+s.icon+'</div><div class="sk-name">'+s.name+'</div><div class="sk-ex">click to see what it does</div>';
+    b.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.skill-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    grid.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   6. STANDARDIZING CHECKLIST
+   ============================================================ */
+initChecklist([
+  'Rules and skills live in the repo, not in someone\'s personal settings',
+  'AGENTS.md reflects how the project actually works today, not 6 months ago',
+  'New team members are pointed at the rules/skills instead of re-learning tribal knowledge',
+  'Prompt templates exist for the tasks the team repeats most often',
+  'Someone owns keeping all of the above up to date'
+], 'standardChecklist', 'standardFill', 'standardLabel', 'standardDone');
+
+/* ============================================================
+   8. HANDS-ON: IMPROVE THE RULE
+   ============================================================ */
+(function(){
+  var items = [
+    { label:'Specify what "good" means: coverage expectations and required test types', good:true },
+    { label:'Scope it with a glob so it only applies to test files', good:true },
+    { label:'Keep it short enough that someone will actually read it', good:true },
+    { label:'Make the rule longer to try to cover every possible edge case', good:false },
+    { label:'Leave it vague so it technically applies to everything', good:false }
+  ];
+  var list = document.getElementById('ruleScenarioList');
+  var checked = new Array(items.length).fill(false);
+  items.forEach(function(item, i){
+    var row = document.createElement('div');
+    row.className = 'scenario-item';
+    row.innerHTML = '<span class="scenario-box">✓</span><span class="scenario-label">'+item.label+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+    });
+    list.appendChild(row);
+    row._item = item;
+  });
+
+  document.getElementById('ruleScenarioCheck').addEventListener('click', function(){
+    var rows = list.querySelectorAll('.scenario-item');
+    var score = 0, total = 0;
+    rows.forEach(function(row, i){
+      var item = row._item;
+      row.classList.remove('checked');
+      if(checked[i]){
+        total++;
+        if(item.good){ row.classList.add('fb-good'); score++; }
+        else { row.classList.add('fb-bad'); score--; }
+        var tag = document.createElement('span');
+        tag.className = 'scenario-fb-tag';
+        tag.textContent = item.good ? '👍 makes it concise & testable' : '⚠️ makes it worse, not better';
+        row.appendChild(tag);
+      }
+    });
+    var result = document.getElementById('ruleScenarioResult');
+    var missedGood = items.filter(function(it,i){ return it.good && !checked[i]; }).length;
+    var verdict, cls;
+    if(total === 0){ verdict = 'Pick at least one move, then check again.'; cls = 'pill-warn'; }
+    else if(score === 3 && missedGood === 0){ verdict = '🟢 Exactly right — specific, scoped, and short enough to actually be read and followed.'; cls = 'pill-good'; }
+    else if(score >= 1){ verdict = '🟡 On the right track — check the ⚠️ items. Longer and vaguer both make a rule less testable, not more.'; cls = 'pill-warn'; }
+    else { verdict = '🔴 This leans on making the rule longer or vaguer, which is the opposite of concise and testable. Try again.'; cls = 'pill-bad'; }
+    result.innerHTML = '<span class="pill '+cls+'">score '+score+'</span><p style="margin-top:10px;font-size:13.8px;">'+verdict+'</p>';
+    result.classList.add('show');
+  });
+
+  initChecklist([
+    'Is it specific enough that someone could fail to follow it?',
+    'Is it scoped to the right files (glob), or does it truly need to be repo-wide?',
+    'Would a new team member understand it without extra context?',
+    'Is it committed to version control, not sitting in personal settings?'
+  ], 'commitChecklist', 'commitFill', 'commitLabel', 'commitDone');
+})();
+
+/* ============================================================
+   9. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:'What do `globs` and `alwaysApply` control in a .cursor/rules/ file?', options:[
+        'The AI model used to generate suggestions',
+        'Which files the rule applies to, and whether it\'s always active vs. on-demand',
+        'File permissions on disk',
+        'They have no functional effect — they are just comments'
+      ], correct:1, explain:'react-components.mdc and api-conventions.mdc are glob-scoped; always-on.mdc applies everywhere via alwaysApply (Section 01).' },
+    { q:'What makes AGENTS.md meaningfully different from .cursor/rules/?', options:[
+        'AGENTS.md is a portable, plain-text convention multiple AI tools can read, rather than a Cursor-specific mechanism',
+        'AGENTS.md can only contain build commands and nothing else',
+        'They are functionally identical in every respect',
+        'AGENTS.md is deleted automatically after each session'
+      ], correct:0, explain:'AGENTS.md gives broad, tool-agnostic orientation; .cursor/rules/ gives Cursor-specific, glob-scoped instructions (Section 02).' },
+    { q:'When User, Team, and Project instructions conflict, which one wins?', options:[
+        'User preferences always win, regardless of scope',
+        'The most specific scope wins — Project beats Team beats User',
+        'Whichever instruction was written most recently, regardless of level',
+        'Team rules always override Project rules'
+      ], correct:1, explain:'The indentation conflict resolved in favor of the Project rule — the narrowest, most specific scope (Section 03).' },
+    { q:'What is a "Skill" in this context?', options:[
+        'A packaged, reusable specialized capability that anyone on the team can invoke consistently',
+        'A personal typing-speed benchmark',
+        'A one-time prompt that can never be reused',
+        'A synonym for a Cursor keyboard shortcut'
+      ], correct:0, explain:'pr-reviewer and test-generator are named, reusable capabilities — not prompts retyped from scratch each time (Section 04).' },
+    { q:'Per the subtopic on version-controlling rules, what makes a rule "testable"?', options:[
+        'It is long enough to cover every conceivable edge case',
+        'It is specific enough that you can tell whether it was actually followed or violated',
+        'It is written in casual, conversational language',
+        'It applies to exactly one person\'s personal settings'
+      ], correct:1, explain:'"Write good tests" can\'t be checked; the endpoint-specific version can — that\'s what testable means here (Section 07).' }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.innerHTML = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — Day 2 complete.'
+      : score >= questions.length - 1
+      ? 'Nice work — solid grasp of rules, AGENTS.md, and team standards.'
+      : 'Worth a re-skim of the sections above before moving on.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>
