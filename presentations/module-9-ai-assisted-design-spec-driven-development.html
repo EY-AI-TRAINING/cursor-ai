@@ -1,0 +1,574 @@
+<title>Spec-Driven Development</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#spec" data-target="spec"><span class="dot"></span><span class="rail-label">01 · Spec as source of truth</span></a>
+  <a href="#traceability" data-target="traceability"><span class="dot"></span><span class="rail-label">02 · Traceability</span></a>
+  <a href="#contrast" data-target="contrast"><span class="dot"></span><span class="rail-label">03 · SDD vs prompt vs vibe</span></a>
+  <a href="#explore" data-target="explore"><span class="dot"></span><span class="rail-label">04 · Explore → Plan</span></a>
+  <a href="#architecture" data-target="architecture"><span class="dot"></span><span class="rail-label">05 · Architecture &amp; API</span></a>
+  <a href="#srssds" data-target="srssds"><span class="dot"></span><span class="rail-label">06 · SRS → SDS &amp; ADRs</span></a>
+  <a href="#acceptance" data-target="acceptance"><span class="dot"></span><span class="rail-label">07 · Acceptance criteria</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">08 · Hands-on</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">09 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#spec" data-target="spec">01</a>
+  <a href="#traceability" data-target="traceability">02</a>
+  <a href="#contrast" data-target="contrast">03</a>
+  <a href="#explore" data-target="explore">04</a>
+  <a href="#architecture" data-target="architecture">05</a>
+  <a href="#srssds" data-target="srssds">06</a>
+  <a href="#acceptance" data-target="acceptance">07</a>
+  <a href="#handson" data-target="handson">08</a>
+  <a href="#recap" data-target="recap">09</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 3 · Design, Spec-Driven Development &amp; Agent Architecture — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">AI-Assisted Design &amp; Spec-Driven Development</h1>
+    <p class="lede hero-lede">Module 9 — 90 minutes, and the pivot point of the whole course. Every module before this treated the conversation itself as the working context. From here on, the spec is the artifact — a structured, versioned, reviewed document an agent is held accountable to, long after the chat that produced it has closed. It's the foundation everything from Day 3 onward is built against.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">6</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">subtopic</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">hands-on lab</span></li>
+      <li class="stat-tile"><span class="stat-num">90</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#spec"><span class="agenda-index">01</span><span>Writing a spec as the durable source of truth for agent-generated code</span></a></li>
+      <li><a href="#traceability"><span class="agenda-index">02</span><span>Spec-to-code and spec-to-test traceability; spec versioning and change management</span></a></li>
+      <li><a href="#contrast"><span class="agenda-index">03</span><span>Contrasting Spec-Driven Development with prompt-driven and vibe-coding approaches</span></a></li>
+      <li><a href="#explore"><span class="agenda-index">04</span><span>Using Cursor to explore requirements and create implementation plans</span></a></li>
+      <li><a href="#architecture"><span class="agenda-index">05</span><span>Architecture diagram generation from requirements; API/interface contract drafting</span></a></li>
+      <li><a href="#srssds"><span class="agenda-index">06</span><span>Architecture Decision Records (ADRs); translating SRS → SDS with AI assistance</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="spec">
+  <div class="section-inner">
+    <p class="eyebrow">01 — The durable artifact</p>
+    <h2 class="section-title">A spec outlives the chat that wrote it</h2>
+    <p class="lede">A prompt is read once and forgotten when the session ends. A spec is a file in the repo — reviewed, versioned, and re-read by every agent and every teammate that touches the feature afterward, not just the one that opened the first chat.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 250" role="img" aria-label="Contrast: a one-off chat prompt is read once and then gone, while a spec.md file is durable and versioned, feeding three separate future sessions that all read the same requirement without re-explaining it." style="min-width:700px">
+          <text class="lbl" x="140" y="30" text-anchor="middle" font-size="10">A ONE-OFF PROMPT: read once, then gone</text>
+          <rect class="box dim" x="30" y="40" width="220" height="90" rx="10"></rect>
+          <rect class="box dim" x="45" y="55" width="190" height="16" rx="3"></rect>
+          <rect class="box dim" x="45" y="78" width="190" height="16" rx="3"></rect>
+          <rect class="box dim" x="45" y="101" width="190" height="16" rx="3"></rect>
+
+          <rect class="box-plum" x="330" y="90" width="180" height="60" rx="10"></rect>
+          <text class="txt-plum" x="420" y="115" text-anchor="middle" font-size="11">spec.md</text>
+          <text class="lbl" x="420" y="133" text-anchor="middle" font-size="9">durable, versioned, reviewed</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M510,105 L618,50" marker-end="url(#arrow)"></path>
+          <path class="arrow" stroke="var(--ink-soft)" d="M510,120 L618,120" marker-end="url(#arrow)"></path>
+          <path class="arrow" stroke="var(--ink-soft)" d="M510,135 L618,190" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="620" y="25" width="210" height="50" rx="8"></rect>
+          <text class="txt-teal" x="725" y="55" text-anchor="middle" font-size="10">Session 1 — first implementation</text>
+          <rect class="box-teal" x="620" y="95" width="210" height="50" rx="8"></rect>
+          <text class="txt-teal" x="725" y="125" text-anchor="middle" font-size="10">Session 2 — generates tests</text>
+          <rect class="box-teal" x="620" y="165" width="210" height="50" rx="8"></rect>
+          <text class="txt-teal" x="725" y="195" text-anchor="middle" font-size="10">Session 3 — new teammate onboards</text>
+
+          <text class="lbl" x="430" y="235" text-anchor="middle" font-size="10.5">Any agent that opens the spec inherits the same requirement — no re-explaining</text>
+        </svg>
+      </div>
+      <figcaption>What belongs in a spec vs. what belongs in a throwaway prompt is the question this whole module answers — starting with durability.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="traceability">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Change management</p>
+    <h2 class="section-title">Every clause traces to code and to a test</h2>
+    <p class="lede">Spec-to-code and spec-to-test traceability means each requirement clause has an ID, and every module and test case implementing it references that ID back. When a clause changes under versioning, everything traced to it is flagged automatically — nothing drifts silently.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 290" role="img" aria-label="Three spec requirement clauses each trace through an arrow to a corresponding code module and then to a corresponding test. REQ-2 has changed in spec version 1.2, so its code module and test are flagged in a warning color for re-review, while REQ-1 and REQ-3 remain untouched." style="min-width:700px">
+          <rect class="box-plum" x="40" y="30" width="160" height="50" rx="8"></rect>
+          <text class="txt-plum" x="120" y="59" text-anchor="middle" font-size="10">REQ-1: login</text>
+          <rect class="box-plum" x="40" y="110" width="160" height="50" rx="8"></rect>
+          <text class="txt-plum" x="120" y="139" text-anchor="middle" font-size="10">REQ-2: rate limit</text>
+          <circle cx="206" cy="112" r="11" fill="var(--brick)"></circle>
+          <text x="206" y="116" text-anchor="middle" font-size="9.5" fill="var(--paper-raised)">Δ</text>
+          <text class="lbl" x="222" y="105" font-size="9">v1.2 changed</text>
+          <rect class="box-plum" x="40" y="190" width="160" height="50" rx="8"></rect>
+          <text class="txt-plum" x="120" y="219" text-anchor="middle" font-size="10">REQ-3: audit log</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M200,55 L350,55" marker-end="url(#arrow)"></path>
+          <path class="arrow" stroke="var(--brick)" d="M200,135 L350,135" marker-end="url(#arrow)"></path>
+          <path class="arrow" stroke="var(--ink-soft)" d="M200,215 L350,215" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="350" y="30" width="160" height="50" rx="8"></rect>
+          <text class="txt-teal" x="430" y="59" text-anchor="middle" font-size="10">auth.ts</text>
+          <rect class="box-brick" x="350" y="110" width="160" height="50" rx="8"></rect>
+          <text class="txt-brick" x="430" y="132" text-anchor="middle" font-size="9.5">rateLimiter.ts</text>
+          <text class="lbl" x="430" y="148" text-anchor="middle" font-size="8.5">flagged for review</text>
+          <rect class="box-teal" x="350" y="190" width="160" height="50" rx="8"></rect>
+          <text class="txt-teal" x="430" y="219" text-anchor="middle" font-size="10">auditLog.ts</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M510,55 L660,55" marker-end="url(#arrow)"></path>
+          <path class="arrow" stroke="var(--brick)" d="M510,135 L660,135" marker-end="url(#arrow)"></path>
+          <path class="arrow" stroke="var(--ink-soft)" d="M510,215 L660,215" marker-end="url(#arrow)"></path>
+
+          <rect class="box-copper" x="660" y="30" width="160" height="50" rx="8"></rect>
+          <text class="txt-copper" x="740" y="59" text-anchor="middle" font-size="10">auth.test.ts</text>
+          <rect class="box-brick" x="660" y="110" width="160" height="50" rx="8"></rect>
+          <text class="txt-brick" x="740" y="132" text-anchor="middle" font-size="9.5">rateLimiter.test.ts</text>
+          <text class="lbl" x="740" y="148" text-anchor="middle" font-size="8.5">must re-run</text>
+          <rect class="box-copper" x="660" y="190" width="160" height="50" rx="8"></rect>
+          <text class="txt-copper" x="740" y="219" text-anchor="middle" font-size="10">auditLog.test.ts</text>
+
+          <text class="lbl" x="430" y="266" text-anchor="middle" font-size="10.5">spec v1.2 — REQ-2 changed, and everything traced to it lights up for review</text>
+        </svg>
+      </div>
+      <figcaption>Traceability is what turns "we changed the spec" into a concrete, bounded checklist instead of a guess about what else might be broken.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="contrast">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Three approaches, compared</p>
+    <h2 class="section-title">Rigor is a dial, not a switch</h2>
+    <p class="lede">Vibe-coding produces nothing durable. Prompt-driven development produces code from a single pass with nothing to verify it against. Spec-Driven Development closes the loop — a reviewed spec feeds a plan, a plan is approved before code is written, and the result traces back to where it started.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="Three lanes compared: vibe-coding is a chat prompt leading through dashed arrows to unreviewed, untracked code with no artifact persisting; prompt-driven development is one prompt producing code shipped without verification; Spec-Driven Development is a closed loop of spec, plan, review gate, and code plus tests, with a dashed arrow tracing back to the spec." style="min-width:700px">
+          <rect class="box dim" x="40" y="25" width="140" height="45" rx="8"></rect>
+          <text class="lbl" x="110" y="51" text-anchor="middle" font-size="9.5">chat prompt</text>
+          <path class="arrow-thin dim" stroke="var(--ink-soft)" stroke-dasharray="3 4" d="M180,47 L260,47" marker-end="url(#arrow)"></path>
+          <rect class="box dim" x="260" y="25" width="140" height="45" rx="8"></rect>
+          <text class="lbl" x="330" y="51" text-anchor="middle" font-size="9.5">code (unreviewed)</text>
+          <path class="arrow-thin dim" stroke="var(--ink-soft)" stroke-dasharray="3 4" d="M400,47 L480,47" marker-end="url(#arrow)"></path>
+          <rect class="box dim" x="480" y="25" width="140" height="45" rx="8"></rect>
+          <text class="lbl" x="550" y="51" text-anchor="middle" font-size="9.5">??? untracked</text>
+          <text class="lbl" x="700" y="52" font-size="10">VIBE-CODING — no artifact, no trace</text>
+
+          <rect class="box-copper" x="40" y="115" width="140" height="45" rx="8"></rect>
+          <text class="txt-copper" x="110" y="141" text-anchor="middle" font-size="9.5">one prompt</text>
+          <path class="arrow" stroke="var(--copper)" d="M180,137 L260,137" marker-end="url(#arrow)"></path>
+          <rect class="box-copper" x="260" y="115" width="140" height="45" rx="8"></rect>
+          <text class="txt-copper" x="330" y="141" text-anchor="middle" font-size="9.5">generated code</text>
+          <path class="arrow" stroke="var(--brick)" d="M400,137 L480,137" marker-end="url(#arrow)"></path>
+          <rect class="box-brick" x="480" y="115" width="150" height="45" rx="8"></rect>
+          <text class="txt-brick" x="555" y="141" text-anchor="middle" font-size="9.5">shipped, unverified</text>
+          <text class="lbl" x="700" y="142" font-size="10">PROMPT-DRIVEN — single pass, nothing to check against</text>
+
+          <rect class="box-plum" x="40" y="210" width="120" height="45" rx="8"></rect>
+          <text class="txt-plum" x="100" y="236" text-anchor="middle" font-size="9.5">spec (reviewed)</text>
+          <path class="arrow" stroke="var(--plum)" d="M160,232 L225,232" marker-end="url(#arrow)"></path>
+          <rect class="box" x="225" y="210" width="110" height="45" rx="8"></rect>
+          <text class="lbl-strong" x="280" y="236" text-anchor="middle" font-size="9.5">plan</text>
+          <path class="arrow" stroke="var(--plum)" d="M335,232 L400,232" marker-end="url(#arrow)"></path>
+          <rect class="box" x="400" y="210" width="120" height="45" rx="8"></rect>
+          <text class="lbl-strong" x="460" y="236" text-anchor="middle" font-size="9.5">review gate</text>
+          <path class="arrow" stroke="var(--teal)" d="M520,232 L595,232" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="595" y="210" width="140" height="45" rx="8"></rect>
+          <text class="txt-teal" x="665" y="236" text-anchor="middle" font-size="9.5">code + tests</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" stroke-dasharray="3 4" d="M665,210 C665,180 100,180 100,208" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="740" y="236" font-size="10">SPEC-DRIVEN — reviewed, closed loop, traceable</text>
+        </svg>
+      </div>
+      <figcaption>The three lanes aren't about speed — the spec-driven loop is slower up front and dramatically cheaper to trust downstream.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="explore">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Requirements to plan</p>
+    <h2 class="section-title">Explore the repo before you plan the change</h2>
+    <p class="lede">Cursor's plan-mode rhythm — explore, plan, review, implement — applies directly to requirements work: the agent reads the existing codebase and requirements together, drafts an implementation plan grounded in what's actually there, and waits for approval before touching code.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 240" role="img" aria-label="A four-stage pipeline: explore requirements and repository context, draft an implementation plan, human review and approval, then implement against the approved plan. A dashed feedback arrow loops from the review stage back to the plan stage for revisions." style="min-width:700px">
+          <rect class="box-teal" x="40" y="90" width="170" height="60" rx="10"></rect>
+          <text class="txt-teal" x="125" y="115" text-anchor="middle" font-size="10.5">Explore</text>
+          <text class="lbl" x="125" y="133" text-anchor="middle" font-size="9">requirements + repo context</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M210,120 L248,120" marker-end="url(#arrow)"></path>
+
+          <rect class="box-copper" x="250" y="90" width="170" height="60" rx="10"></rect>
+          <text class="txt-copper" x="335" y="115" text-anchor="middle" font-size="10.5">Plan</text>
+          <text class="lbl" x="335" y="133" text-anchor="middle" font-size="9">draft implementation plan</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M420,120 L458,120" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="460" y="90" width="170" height="60" rx="10"></rect>
+          <text class="lbl-strong" x="545" y="115" text-anchor="middle" font-size="10.5">Review</text>
+          <text class="lbl" x="545" y="133" text-anchor="middle" font-size="9">human approval</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M630,120 L668,120" marker-end="url(#arrow)"></path>
+
+          <rect class="box-plum" x="670" y="90" width="170" height="60" rx="10"></rect>
+          <text class="txt-plum" x="755" y="115" text-anchor="middle" font-size="10.5">Implement</text>
+          <text class="lbl" x="755" y="133" text-anchor="middle" font-size="9">against the approved plan</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" stroke-dasharray="3 4" d="M545,90 C545,55 335,55 335,88" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="440" y="50" text-anchor="middle" font-size="9.5">revise</text>
+        </svg>
+      </div>
+      <figcaption>Nothing reaches "Implement" without passing through a human checkpoint at least once — the loop back to Plan is the normal path, not the exception.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="architecture">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Design artifacts</p>
+    <h2 class="section-title">One requirements pass, two durable artifacts</h2>
+    <p class="lede">Given requirements and repo context, Cursor can draft both a component/data-flow architecture diagram and an API/interface contract in the same pass — two artifacts that get reviewed and versioned alongside the spec, not regenerated from scratch on every implementation task.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 260" role="img" aria-label="Requirements and SRS documents feed into a Cursor agent, which produces two outputs in the same pass: an architecture diagram of components and data flow, and an API or interface contract of endpoints and types." style="min-width:700px">
+          <rect class="box-plum" x="40" y="95" width="180" height="60" rx="10"></rect>
+          <text class="txt-plum" x="130" y="120" text-anchor="middle" font-size="10.5">Requirements / SRS</text>
+          <text class="lbl" x="130" y="138" text-anchor="middle" font-size="9">approved spec input</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M220,125 L328,125" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="330" y="95" width="160" height="60" rx="10"></rect>
+          <text class="lbl-strong" x="410" y="120" text-anchor="middle" font-size="10.5">Cursor Agent</text>
+          <text class="lbl" x="410" y="138" text-anchor="middle" font-size="9">design pass</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M490,110 L588,55" marker-end="url(#arrow)"></path>
+          <path class="arrow" stroke="var(--copper)" d="M490,140 L588,185" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="590" y="20" width="230" height="70" rx="8"></rect>
+          <text class="txt-teal" x="705" y="48" text-anchor="middle" font-size="10">Architecture diagram</text>
+          <text class="lbl" x="705" y="66" text-anchor="middle" font-size="9">components + data flow</text>
+
+          <rect class="box-copper" x="590" y="150" width="230" height="70" rx="8"></rect>
+          <text class="txt-copper" x="705" y="178" text-anchor="middle" font-size="10">API / interface contract</text>
+          <text class="lbl" x="705" y="196" text-anchor="middle" font-size="9">endpoints + types</text>
+
+          <text class="lbl" x="410" y="230" text-anchor="middle" font-size="10">Both are reviewed and versioned alongside the spec, not regenerated from scratch each time</text>
+        </svg>
+      </div>
+      <figcaption>The diagram and the contract are outputs the team keeps — the same way the spec is kept — not disposable illustrations of a single conversation.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="srssds">
+  <div class="section-inner">
+    <p class="eyebrow">06 — SRS → SDS, with decisions logged</p>
+    <h2 class="section-title">Business requirements become system design, on the record</h2>
+    <p class="lede">Translating an SRS into an SDS with AI assistance is a structured pass, not a rewrite from memory — and every non-obvious design choice along the way gets captured as an Architecture Decision Record, so the "why" survives even after the "what" ships.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 230" role="img" aria-label="An SRS business requirements document is translated with AI assistance into an SDS system design specification. Below, a decision timeline shows several small logged decisions with one highlighted Architecture Decision Record about choosing Postgres over DynamoDB, with its rationale and trade-offs recorded." style="min-width:700px">
+          <rect class="box-plum" x="60" y="30" width="200" height="60" rx="10"></rect>
+          <text class="txt-plum" x="160" y="56" text-anchor="middle" font-size="10.5">SRS</text>
+          <text class="lbl" x="160" y="74" text-anchor="middle" font-size="9">business requirements</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M260,60 L598,60" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="430" y="50" text-anchor="middle" font-size="9.5">AI-assisted translation</text>
+
+          <rect class="box-teal" x="600" y="30" width="200" height="60" rx="10"></rect>
+          <text class="txt-teal" x="700" y="56" text-anchor="middle" font-size="10.5">SDS</text>
+          <text class="lbl" x="700" y="74" text-anchor="middle" font-size="9">system design spec</text>
+
+          <line x1="60" y1="165" x2="800" y2="165" stroke="var(--ink-soft)" stroke-opacity="0.4"></line>
+          <circle cx="110" cy="165" r="6" fill="var(--ink-soft)" opacity="0.5"></circle>
+          <circle cx="200" cy="165" r="6" fill="var(--ink-soft)" opacity="0.5"></circle>
+          <circle cx="290" cy="165" r="6" fill="var(--ink-soft)" opacity="0.5"></circle>
+          <circle cx="430" cy="165" r="10" fill="var(--plum)"></circle>
+          <circle cx="560" cy="165" r="6" fill="var(--ink-soft)" opacity="0.5"></circle>
+          <circle cx="650" cy="165" r="6" fill="var(--ink-soft)" opacity="0.5"></circle>
+          <circle cx="740" cy="165" r="6" fill="var(--ink-soft)" opacity="0.5"></circle>
+
+          <rect class="box-plum" x="320" y="195" width="220" height="30" rx="6"></rect>
+          <text class="txt-plum" x="430" y="215" text-anchor="middle" font-size="9">ADR-014: Postgres over DynamoDB — rationale logged</text>
+        </svg>
+      </div>
+      <figcaption>ADRs aren't a separate ceremony — they're the audit trail for every "we chose X over Y" decision that the SDS translation surfaces.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="acceptance">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Subtopic: what belongs in a spec</p>
+    <h2 class="section-title">Acceptance criteria are testable clauses, not prose</h2>
+    <p class="lede">The line between a spec and a prompt is testability. A prompt says "add rate limiting." A spec clause says exactly what "done" means — Given/When/Then criteria a test can check mechanically — and nothing gets implemented until a human approves that clause.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 260" role="img" aria-label="A spec document with three requirement clauses; the second clause, an acceptance criterion, expands into a Given, When, Then structure, which then passes through a human approval gate before implementation is allowed to begin." style="min-width:700px">
+          <rect class="box" x="40" y="30" width="230" height="180" rx="10"></rect>
+          <text class="lbl-strong" x="155" y="52" text-anchor="middle" font-size="10">spec.md</text>
+          <rect class="box dim" x="55" y="65" width="200" height="30" rx="4"></rect>
+          <text class="lbl" x="65" y="84" font-size="9">REQ-1: session handling</text>
+          <rect class="box-plum" x="55" y="103" width="200" height="40" rx="4"></rect>
+          <text class="txt-plum" x="65" y="120" font-size="9">REQ-2: login</text>
+          <text class="lbl" x="65" y="135" font-size="8.5">acceptance criteria →</text>
+          <rect class="box dim" x="55" y="151" width="200" height="30" rx="4"></rect>
+          <text class="lbl" x="65" y="170" font-size="9">REQ-3: audit log</text>
+
+          <path class="arrow" stroke="var(--plum)" d="M255,123 L328,90" marker-end="url(#arrow)"></path>
+
+          <rect class="box-copper" x="330" y="30" width="270" height="110" rx="10"></rect>
+          <text class="lbl-strong" x="465" y="52" text-anchor="middle" font-size="10">REQ-2 — acceptance criteria</text>
+          <text class="lbl" x="345" y="74" font-size="9.5">GIVEN valid credentials</text>
+          <text class="lbl" x="345" y="94" font-size="9.5">WHEN user submits login</text>
+          <text class="lbl" x="345" y="114" font-size="9.5">THEN session token issued within 200ms</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M600,85 L668,85" marker-end="url(#arrow)"></path>
+
+          <rect class="box-brick" x="670" y="55" width="160" height="60" rx="10"></rect>
+          <text class="txt-brick" x="750" y="80" text-anchor="middle" font-size="9.5">HUMAN APPROVAL</text>
+          <text class="lbl" x="750" y="98" text-anchor="middle" font-size="9">gate before implementation</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M750,115 L750,170" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="640" y="172" width="220" height="45" rx="8"></rect>
+          <text class="txt-teal" x="750" y="199" text-anchor="middle" font-size="9.5">Implementation begins</text>
+        </svg>
+      </div>
+      <figcaption>If a criterion can't be phrased as something a test could check, it isn't ready for the spec yet — it's still a conversation.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Hands-on</p>
+    <h2 class="section-title">Draft, plan, approve, implement — in that order</h2>
+    <p class="lede">Module 9 closes with a single hands-on exercise built directly on Module 8's rules-and-skills starter kit — and it becomes the spec that Module 11's Use Case Lab 1 builds reusable agents and prompts against on this same Day 3.</p>
+    <div class="activity-grid" style="grid-template-columns:1fr; max-width:640px;">
+      <div class="activity-card">
+        <p class="activity-tag">Lab · Feeds Module 10 &amp; Module 11</p>
+        <h3>Draft a spec, plan against it, implement against approval</h3>
+        <p>Draft a spec for a sample feature with testable acceptance criteria, generate an implementation plan from it, review and approve that plan, then generate a first implementation pass against the approved spec — nothing implemented before the approval step. Keep the spec small enough to read in one pass; you'll extend it directly in Module 11's lab.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">09 — Before Module 10</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>A spec is the durable, versioned artifact an agent is held accountable to — not a one-off prompt that vanishes when the chat ends.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Spec-to-code and spec-to-test traceability means every clause maps to real code and tests, so a spec change flags exactly what needs re-review.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Spec-Driven Development replaces vibe-coding and single-pass prompting with a closed, reviewed loop: spec → plan → review → code + tests.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Acceptance criteria live in the spec as testable clauses, and implementation only starts after a human approves the plan.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 10 — Agent, Skill &amp; Subagent Architecture Fundamentals</strong> builds directly on the spec drafted in this module's hands-on exercise.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 9 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

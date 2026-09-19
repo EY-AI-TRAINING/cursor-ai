@@ -1,0 +1,585 @@
+<title>Agent Architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#taxonomy" data-target="taxonomy"><span class="dot"></span><span class="rail-label">01 · Rule → Subagent spectrum</span></a>
+  <a href="#anatomy" data-target="anatomy"><span class="dot"></span><span class="rail-label">02 · Anatomy of an agent</span></a>
+  <a href="#delegation" data-target="delegation"><span class="dot"></span><span class="rail-label">03 · Subagent delegation</span></a>
+  <a href="#templates" data-target="templates"><span class="dot"></span><span class="rail-label">04 · Prompt templates</span></a>
+  <a href="#reposvsteam" data-target="reposvsteam"><span class="dot"></span><span class="rail-label">05 · Repo rules vs. team skills</span></a>
+  <a href="#workflows" data-target="workflows"><span class="dot"></span><span class="rail-label">06 · Reusable workflows</span></a>
+  <a href="#discipline" data-target="discipline"><span class="dot"></span><span class="rail-label">07 · Versioning &amp; scope</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">08 · Hands-on</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">09 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#taxonomy" data-target="taxonomy">01</a>
+  <a href="#anatomy" data-target="anatomy">02</a>
+  <a href="#delegation" data-target="delegation">03</a>
+  <a href="#templates" data-target="templates">04</a>
+  <a href="#reposvsteam" data-target="reposvsteam">05</a>
+  <a href="#workflows" data-target="workflows">06</a>
+  <a href="#discipline" data-target="discipline">07</a>
+  <a href="#handson" data-target="handson">08</a>
+  <a href="#recap" data-target="recap">09</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 3 · Design, Spec-Driven Development &amp; Agent Architecture — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Agent, Skill &amp; Subagent Architecture Fundamentals</h1>
+    <p class="lede hero-lede">Module 10 — 45 minutes, the shortest session of Day 3 and the most vocabulary-dense: five overlapping terms get precise definitions before the day closes with lab work. Module 9 made the spec the durable source of truth; Module 10 defines the executors that read it, how much structure each one deserves, and when adding another one is overkill.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">6</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">subtopic</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">hands-on walkthrough</span></li>
+      <li class="stat-tile"><span class="stat-num">45</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#taxonomy"><span class="agenda-index">01</span><span>Agent vs. rule vs. prompt vs. skill vs. subagent: definitions and when to use each</span></a></li>
+      <li><a href="#anatomy"><span class="agenda-index">02</span><span>Anatomy of a reusable agent (role, inputs, tools, guardrails, outputs)</span></a></li>
+      <li><a href="#delegation"><span class="agenda-index">03</span><span>Subagent delegation: focused work, isolated context, and result handoff</span></a></li>
+      <li><a href="#templates"><span class="agenda-index">04</span><span>Parameterized prompt-template design</span></a></li>
+      <li><a href="#reposvsteam"><span class="agenda-index">05</span><span>Repository-level rules vs. team-level skills libraries</span></a></li>
+      <li><a href="#workflows"><span class="agenda-index">06</span><span>Designing reusable workflows around Cursor's native agent capabilities</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="taxonomy">
+  <div class="section-inner">
+    <p class="eyebrow">01 — Five overlapping terms</p>
+    <h2 class="section-title">Not synonyms — a spectrum of autonomy</h2>
+    <p class="lede">Rule, prompt, skill, agent, and subagent all "give the AI instructions," which is why they get confused. The real difference is how much autonomy each one holds — from a passive, always-on constraint to a fully delegated unit of work with its own isolated context.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 230" role="img" aria-label="Five boxes arranged left to right on a spectrum of increasing autonomy: Rule, a scoped always-on instruction; Prompt, a one-off instruction with no persistence; Skill, an on-demand packaged capability; Agent, a role with tools that drives a task; and Subagent, a delegated agent with isolated context." style="min-width:740px">
+          <text class="lbl" x="60" y="28" font-size="10">STATIC / PASSIVE</text>
+          <text class="lbl" x="800" y="28" text-anchor="end" font-size="10">DELEGATED / AUTONOMOUS</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M40,42 L820,42" marker-end="url(#arrow)"></path>
+
+          <rect class="box dim" x="25" y="70" width="150" height="90" rx="10"></rect>
+          <text class="lbl-strong" x="100" y="100" text-anchor="middle" font-size="11">RULE</text>
+          <text class="lbl" x="100" y="120" text-anchor="middle" font-size="9">scoped, always-on</text>
+          <text class="lbl" x="100" y="134" text-anchor="middle" font-size="9">instruction</text>
+
+          <rect class="box" x="190" y="70" width="150" height="90" rx="10"></rect>
+          <text class="lbl-strong" x="265" y="100" text-anchor="middle" font-size="11">PROMPT</text>
+          <text class="lbl" x="265" y="120" text-anchor="middle" font-size="9">one-off instruction,</text>
+          <text class="lbl" x="265" y="134" text-anchor="middle" font-size="9">no persistence</text>
+
+          <rect class="box-copper" x="355" y="70" width="150" height="90" rx="10"></rect>
+          <text class="txt-copper" x="430" y="100" text-anchor="middle" font-size="11">SKILL</text>
+          <text class="lbl" x="430" y="120" text-anchor="middle" font-size="9">packaged capability,</text>
+          <text class="lbl" x="430" y="134" text-anchor="middle" font-size="9">invoked on demand</text>
+
+          <rect class="box-teal" x="520" y="70" width="150" height="90" rx="10"></rect>
+          <text class="txt-teal" x="595" y="100" text-anchor="middle" font-size="11">AGENT</text>
+          <text class="lbl" x="595" y="120" text-anchor="middle" font-size="9">role + tools, drives</text>
+          <text class="lbl" x="595" y="134" text-anchor="middle" font-size="9">a task end to end</text>
+
+          <rect class="box-plum" x="685" y="70" width="150" height="90" rx="10"></rect>
+          <text class="txt-plum" x="760" y="100" text-anchor="middle" font-size="11">SUBAGENT</text>
+          <text class="lbl" x="760" y="120" text-anchor="middle" font-size="9">delegated, isolated</text>
+          <text class="lbl" x="760" y="134" text-anchor="middle" font-size="9">context, focused scope</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M175,115 L188,115" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M340,115 L353,115" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M505,115 L518,115" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M670,115 L683,115" marker-end="url(#arrow)"></path>
+
+          <text class="lbl" x="430" y="198" text-anchor="middle" font-size="10.5">Same underlying model, five different amounts of scope, memory, and delegated authority</text>
+        </svg>
+      </div>
+      <figcaption>Picking the wrong one is rarely catastrophic, but it is wasteful — a rule where a skill belongs bloats every conversation; an agent where a prompt would do adds ceremony nobody needed.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="anatomy">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Reusable agent design</p>
+    <h2 class="section-title">Four inputs define what an agent can and can't do</h2>
+    <p class="lede">A reusable agent isn't just a system prompt — it's a role, a defined set of inputs, an explicit toolset, and guardrails that bound its behavior, all producing a consistent kind of output. Skip any one of the four and the agent becomes unpredictable to reuse.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="Four components — Role, Inputs, Tools, and Guardrails — each feed into a central Agent box, which produces a defined Output. Skipping any one of the four components makes the agent unpredictable to reuse." style="min-width:700px">
+          <rect class="box-plum" x="40" y="15" width="220" height="55" rx="8"></rect>
+          <text class="txt-plum" x="150" y="38" text-anchor="middle" font-size="10.5">ROLE</text>
+          <text class="lbl" x="150" y="55" text-anchor="middle" font-size="9">what it's responsible for</text>
+
+          <rect class="box-teal" x="40" y="90" width="220" height="55" rx="8"></rect>
+          <text class="txt-teal" x="150" y="113" text-anchor="middle" font-size="10.5">INPUTS</text>
+          <text class="lbl" x="150" y="130" text-anchor="middle" font-size="9">context, files, parameters</text>
+
+          <rect class="box-copper" x="40" y="165" width="220" height="55" rx="8"></rect>
+          <text class="txt-copper" x="150" y="188" text-anchor="middle" font-size="10.5">TOOLS</text>
+          <text class="lbl" x="150" y="205" text-anchor="middle" font-size="9">what it's allowed to call</text>
+
+          <rect class="box-brick" x="40" y="240" width="220" height="55" rx="8"></rect>
+          <text class="txt-brick" x="150" y="263" text-anchor="middle" font-size="10.5">GUARDRAILS</text>
+          <text class="lbl" x="150" y="280" text-anchor="middle" font-size="9">limits, approvals, scope</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M260,42 L358,130" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M260,117 L358,145" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M260,192 L358,165" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M260,267 L358,180" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="360" y="105" width="160" height="100" rx="12"></rect>
+          <text class="lbl-strong" x="440" y="150" text-anchor="middle" font-size="12">AGENT</text>
+          <text class="lbl" x="440" y="168" text-anchor="middle" font-size="9">composes all four</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M520,155 L628,155" marker-end="url(#arrow)"></path>
+
+          <rect class="box-plum" x="630" y="125" width="190" height="60" rx="8"></rect>
+          <text class="txt-plum" x="725" y="150" text-anchor="middle" font-size="10.5">OUTPUT</text>
+          <text class="lbl" x="725" y="168" text-anchor="middle" font-size="9">consistent result, every run</text>
+        </svg>
+      </div>
+      <figcaption>The same four slots apply whether it's a full agent or a lightweight subagent — only the scope of each slot shrinks.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="delegation">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Focused, isolated, handed back</p>
+    <h2 class="section-title">A subagent sees the task, not the whole conversation</h2>
+    <p class="lede">Delegating to a subagent means handing off a focused unit of work with its own isolated context — it doesn't inherit the parent's full history, and it doesn't hand back its raw working context either. Only the result crosses the boundary.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 260" role="img" aria-label="A parent agent delegates a focused task into a dashed isolated-context boundary containing the subagent, which sees only the delegated scope and not the parent's full history. The subagent produces a result, which is handed back and merges into the parent's context via a curved return arrow, without exposing the subagent's raw working context." style="min-width:700px">
+          <rect class="box-plum" x="30" y="95" width="180" height="65" rx="10"></rect>
+          <text class="txt-plum" x="120" y="120" text-anchor="middle" font-size="10.5">Parent Agent</text>
+          <text class="lbl" x="120" y="138" text-anchor="middle" font-size="9">full conversation, orchestrates</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M210,127 L288,127" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="248" y="115" text-anchor="middle" font-size="8.5">delegate: focused task</text>
+
+          <rect class="box dim" x="290" y="40" width="280" height="180" rx="14" stroke-dasharray="5 4"></rect>
+          <text class="lbl" x="430" y="60" text-anchor="middle" font-size="9.5">ISOLATED CONTEXT</text>
+          <rect class="box-teal" x="320" y="95" width="220" height="65" rx="10"></rect>
+          <text class="txt-teal" x="430" y="120" text-anchor="middle" font-size="10.5">Subagent</text>
+          <text class="lbl" x="430" y="138" text-anchor="middle" font-size="9">sees only the delegated scope</text>
+          <text class="lbl" x="430" y="200" text-anchor="middle" font-size="8.5">cannot see the parent's full history</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M572,127 L648,127" marker-end="url(#arrow)"></path>
+
+          <rect class="box-plum" x="650" y="95" width="180" height="65" rx="10"></rect>
+          <text class="txt-plum" x="740" y="120" text-anchor="middle" font-size="10.5">Result</text>
+          <text class="lbl" x="740" y="138" text-anchor="middle" font-size="9">handoff only, no raw context</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" stroke-dasharray="3 4" d="M740,95 C740,25 120,25 120,93" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="430" y="20" text-anchor="middle" font-size="9">merges back into the parent's context</text>
+        </svg>
+      </div>
+      <figcaption>Isolation is the point, not a limitation — it's what keeps a long orchestration from drowning the parent agent in every subagent's intermediate noise.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="templates">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Explicit contracts, not prose</p>
+    <h2 class="section-title">Same template, different run, same shape back</h2>
+    <p class="lede">A parameterized prompt template defines its input slots and its output shape once — explicit enough that the result can be checked mechanically, not just read. Every instantiation fills the same contract with different concrete values.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="A single agent prompt template defines role, input, and output slots. Three instantiations below fill the template with different concrete ticket IDs and produce differently valued but identically structured status and findings output objects." style="min-width:700px">
+          <rect class="box" x="270" y="14" width="320" height="110" rx="10"></rect>
+          <text class="lbl-strong" x="430" y="34" text-anchor="middle" font-size="10.5">AGENT PROMPT TEMPLATE</text>
+          <text x="288" y="58" font-size="9.5" fill="var(--ink)">ROLE: <tspan class="txt-plum">{{role}}</tspan></text>
+          <text x="288" y="78" font-size="9.5" fill="var(--ink)">INPUT: <tspan class="txt-copper">{{ticketId}}, {{repoPath}}</tspan></text>
+          <text x="288" y="98" font-size="9.5" fill="var(--ink)">OUTPUT: <tspan class="txt-teal">{{status}}, {{findings[]}}</tspan></text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M370,124 L130,158" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M430,124 L430,158" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M490,124 L730,158" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="30" y="160" width="240" height="130" rx="8"></rect>
+          <text class="lbl-strong" x="150" y="180" text-anchor="middle" font-size="10">Run — TCKT-241</text>
+          <text class="lbl" x="45" y="200" font-size="9">role: <tspan class="txt-plum">Requirement Validator</tspan></text>
+          <text class="lbl" x="45" y="218" font-size="9">ticketId: TCKT-241</text>
+          <text class="lbl" x="45" y="240" font-size="9">status: <tspan class="txt-teal">"pass"</tspan></text>
+          <text class="lbl" x="45" y="258" font-size="9">findings: []</text>
+
+          <rect class="box" x="310" y="160" width="240" height="130" rx="8"></rect>
+          <text class="lbl-strong" x="430" y="180" text-anchor="middle" font-size="10">Run — TCKT-242</text>
+          <text class="lbl" x="325" y="200" font-size="9">role: <tspan class="txt-plum">Test Generator</tspan></text>
+          <text class="lbl" x="325" y="218" font-size="9">ticketId: TCKT-242</text>
+          <text class="lbl" x="325" y="240" font-size="9">status: <tspan class="txt-teal">"pass"</tspan></text>
+          <text class="lbl" x="325" y="258" font-size="9">findings: [4 tests]</text>
+
+          <rect class="box" x="590" y="160" width="240" height="130" rx="8"></rect>
+          <text class="lbl-strong" x="710" y="180" text-anchor="middle" font-size="10">Run — TCKT-243</text>
+          <text class="lbl" x="605" y="200" font-size="9">role: <tspan class="txt-plum">Reviewer</tspan></text>
+          <text class="lbl" x="605" y="218" font-size="9">ticketId: TCKT-243</text>
+          <text class="lbl" x="605" y="240" font-size="9">status: <tspan class="txt-brick">"fail"</tspan></text>
+          <text class="lbl" x="605" y="258" font-size="9">findings: [2 issues]</text>
+        </svg>
+      </div>
+      <figcaption>Because the output shape is fixed, a downstream agent — or a quality gate — can consume any of these three runs without knowing which template instance produced it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="reposvsteam">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Scope of reuse</p>
+    <h2 class="section-title">One repo's rules vs. every repo's skills</h2>
+    <p class="lede">Repository-level rules stay local — they shape how agents behave inside this one codebase. A team-level skills library lives outside any single repo, versioned on its own, and gets pulled into many repositories at once.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 260" role="img" aria-label="On the left, a single repository contains its own local rules folder that applies only inside that repository. On the right, a shared, versioned team skills library sits outside any one repository and fans out to be consumed by three separate repositories: Repo A, Repo B, and Repo C." style="min-width:700px">
+          <rect class="box dim" x="30" y="50" width="280" height="160" rx="12"></rect>
+          <text class="lbl" x="170" y="72" text-anchor="middle" font-size="10">REPO A (self-contained)</text>
+          <rect class="box-plum" x="55" y="95" width="230" height="50" rx="8"></rect>
+          <text class="txt-plum" x="170" y="123" text-anchor="middle" font-size="10">.cursor/rules/</text>
+          <text class="lbl" x="170" y="185" text-anchor="middle" font-size="9">applies only inside this repo</text>
+
+          <rect class="box-teal" x="440" y="30" width="280" height="55" rx="10"></rect>
+          <text class="txt-teal" x="580" y="52" text-anchor="middle" font-size="10.5">TEAM SKILLS LIBRARY</text>
+          <text class="lbl" x="580" y="70" text-anchor="middle" font-size="9">shared, versioned, external</text>
+
+          <path class="arrow-thin" stroke="var(--teal)" d="M500,85 L440,145" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--teal)" d="M580,85 L580,145" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--teal)" d="M660,85 L720,145" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="370" y="150" width="140" height="50" rx="8"></rect>
+          <text class="lbl-strong" x="440" y="180" text-anchor="middle" font-size="9.5">Repo A</text>
+          <rect class="box" x="510" y="150" width="140" height="50" rx="8"></rect>
+          <text class="lbl-strong" x="580" y="180" text-anchor="middle" font-size="9.5">Repo B</text>
+          <rect class="box" x="650" y="150" width="140" height="50" rx="8"></rect>
+          <text class="lbl-strong" x="720" y="180" text-anchor="middle" font-size="9.5">Repo C</text>
+
+          <text class="lbl" x="580" y="230" text-anchor="middle" font-size="10">One reviewed skill update reaches every consuming repo at once</text>
+        </svg>
+      </div>
+      <figcaption>Most teams run both — repo rules for what's genuinely local, a skills library for what's worth reusing everywhere.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="workflows">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Composition, not a new engine</p>
+    <h2 class="section-title">Reusable workflows are built from parts you already have</h2>
+    <p class="lede">Designing a reusable workflow means composing rules, skills, agents, and subagents Cursor already supports natively — reaching for external glue like MCP, Git, or CI scripts only where the task genuinely needs to cross outside the IDE.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 240" role="img" aria-label="Four building blocks — Rules, Skills, Agent, and Subagent — converge into a single reusable workflow box, with a note that MCP, Git, or CI are added as glue only where needed, and that Cursor-native features come first." style="min-width:700px">
+          <rect class="box-plum" x="40" y="25" width="170" height="55" rx="8"></rect>
+          <text class="txt-plum" x="125" y="58" text-anchor="middle" font-size="10.5">Rules</text>
+          <rect class="box-copper" x="230" y="25" width="170" height="55" rx="8"></rect>
+          <text class="txt-copper" x="315" y="58" text-anchor="middle" font-size="10.5">Skills</text>
+          <rect class="box-teal" x="420" y="25" width="170" height="55" rx="8"></rect>
+          <text class="txt-teal" x="505" y="58" text-anchor="middle" font-size="10.5">Agent</text>
+          <rect class="box-brick" x="610" y="25" width="170" height="55" rx="8"></rect>
+          <text class="txt-brick" x="695" y="58" text-anchor="middle" font-size="10.5">Subagent</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M125,80 L340,150" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M315,80 L400,150" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M505,80 L460,150" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M695,80 L520,150" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="250" y="155" width="360" height="55" rx="10"></rect>
+          <text class="lbl-strong" x="430" y="188" text-anchor="middle" font-size="11">REUSABLE WORKFLOW</text>
+
+          <text class="lbl" x="430" y="228" text-anchor="middle" font-size="10">+ MCP / Git / CI glue only where the task needs to leave the IDE — Cursor-native first</text>
+        </svg>
+      </div>
+      <figcaption>The design principle from Module 9 applies here too: teach the Cursor-native building blocks first, add external orchestration only when the task genuinely demands it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="discipline">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Subtopic: treat definitions like code</p>
+    <h2 class="section-title">Review every definition — and question every split</h2>
+    <p class="lede">Agent and skill definitions get versioned and reviewed exactly like the code they operate on. And before splitting one agent into three, the question is always whether the extra handoffs buy more than they cost — unnecessary decomposition is its own kind of technical debt.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 260" role="img" aria-label="Left half: a commit timeline shows an agent definition update reviewed in a pull request, held to the same concise, testable, maintainable bar as code. Right half: a comparison shows five tiny micro-subagents with heavy handoff overhead above, versus two well-scoped agents achieving the same outcome with simpler coordination below." style="min-width:740px">
+          <text class="lbl-strong" x="205" y="20" text-anchor="middle" font-size="10.5">VERSIONED LIKE CODE</text>
+          <line x1="30" y1="90" x2="400" y2="90" stroke="var(--ink-soft)" stroke-opacity="0.4"></line>
+          <circle cx="55" cy="90" r="5" fill="var(--ink-soft)" opacity="0.5"></circle>
+          <circle cx="110" cy="90" r="5" fill="var(--ink-soft)" opacity="0.5"></circle>
+          <circle cx="200" cy="90" r="9" fill="var(--plum)"></circle>
+          <circle cx="290" cy="90" r="5" fill="var(--ink-soft)" opacity="0.5"></circle>
+          <circle cx="360" cy="90" r="5" fill="var(--ink-soft)" opacity="0.5"></circle>
+          <rect class="box-plum" x="110" y="35" width="190" height="42" rx="8"></rect>
+          <text class="txt-plum" x="205" y="53" text-anchor="middle" font-size="9">update reviewer-agent.md</text>
+          <text class="txt-plum" x="205" y="68" text-anchor="middle" font-size="9">— reviewed in a PR</text>
+
+          <rect class="box-teal" x="30" y="115" width="105" height="26" rx="13"></rect>
+          <text class="txt-teal" x="82" y="132" text-anchor="middle" font-size="8.5">CONCISE</text>
+          <rect class="box-copper" x="150" y="115" width="105" height="26" rx="13"></rect>
+          <text class="txt-copper" x="202" y="132" text-anchor="middle" font-size="8.5">TESTABLE</text>
+          <rect class="box-brick" x="270" y="115" width="130" height="26" rx="13"></rect>
+          <text class="txt-brick" x="335" y="132" text-anchor="middle" font-size="8.5">MAINTAINABLE</text>
+
+          <line x1="430" y1="10" x2="430" y2="250" stroke="var(--line-strong)"></line>
+
+          <text class="lbl-strong" x="645" y="20" text-anchor="middle" font-size="10">AVOID UNNECESSARY DECOMPOSITION</text>
+
+          <rect class="box-brick" x="455" y="40" width="65" height="34" rx="6"></rect>
+          <rect class="box-brick" x="528" y="40" width="65" height="34" rx="6"></rect>
+          <rect class="box-brick" x="601" y="40" width="65" height="34" rx="6"></rect>
+          <rect class="box-brick" x="674" y="40" width="65" height="34" rx="6"></rect>
+          <rect class="box-brick" x="747" y="40" width="65" height="34" rx="6"></rect>
+          <path class="arrow-thin" stroke="var(--brick)" d="M520,57 L528,57" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--brick)" d="M593,57 L601,57" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--brick)" d="M666,57 L674,57" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--brick)" d="M739,57 L747,57" marker-end="url(#arrow)"></path>
+          <text class="txt-brick" x="632" y="95" text-anchor="middle" font-size="9">5 micro-subagents — heavy handoff overhead</text>
+
+          <rect class="box-teal" x="470" y="150" width="150" height="50" rx="8"></rect>
+          <text class="txt-teal" x="545" y="180" text-anchor="middle" font-size="9.5">well-scoped agent A</text>
+          <path class="arrow" stroke="var(--teal)" d="M620,175 L648,175" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="650" y="150" width="150" height="50" rx="8"></rect>
+          <text class="txt-teal" x="725" y="180" text-anchor="middle" font-size="9.5">well-scoped agent B</text>
+          <text class="txt-teal" x="632" y="228" text-anchor="middle" font-size="9">2 agents — same outcome, simpler coordination</text>
+        </svg>
+      </div>
+      <figcaption>More subagents isn't more rigor — each extra handoff is another place for context to be lost or a result to be misinterpreted.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Hands-on</p>
+    <h2 class="section-title">Read a real agent/subagent definition end to end</h2>
+    <p class="lede">Module 10 closes with a walkthrough, not a build — the construction happens in Module 11's Use Case Lab 1 right after. This is where the vocabulary from today gets pointed at a real, working example before you write your own.</p>
+    <div class="activity-grid" style="grid-template-columns:1fr; max-width:640px;">
+      <div class="activity-card">
+        <p class="activity-tag">Walkthrough · Sets up Module 11</p>
+        <h3>Trace a sample agent/subagent definition</h3>
+        <p>Walk through a working agent definition and identify its role, inputs, tools, and guardrails; trace where it delegates to a subagent and what crosses that isolation boundary in each direction. No build yet — Module 11's Use Case Lab 1 is where you define your own reusable agents, prompts, and skills from scratch.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">09 — Before Module 11</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Rule, prompt, skill, agent, and subagent sit on one spectrum of autonomy — pick the least amount of structure the task actually needs.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>A reusable agent is role + inputs + tools + guardrails producing a consistent output — skip a slot and reuse breaks down.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Subagents work in isolated context and hand back only a result — that isolation is what keeps orchestration legible, not a limitation.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Agent and skill definitions are reviewed like code, and every extra decomposition needs to earn its handoff overhead.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 11 — Use Case Lab 1: Reusable Agents, Prompts &amp; Skills Framework</strong> builds the library this module only walked through.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 10 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

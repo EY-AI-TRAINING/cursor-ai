@@ -64,8 +64,9 @@ courseOutline/*.pages
 presentations/ppt/
 presentations/*.pptx
 
+
 # Labs - Facilitator guides
-labs/module-*/facilitator-guide.md
+labs/module-*/facilitator-notes.md
 
 # ========================
 # Office Documents (Large Binary Files)

@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 9 — AI-Assisted Design &amp; Spec-Driven Development</title>
+<meta name="description" content="Interactive walkthrough: writing a spec as the durable source of truth, spec-to-code and spec-to-test traceability, spec versioning and change management, contrasting Spec-Driven Development with prompt-driven and vibe-coding approaches, using Cursor to explore requirements and create implementation plans, architecture diagram generation, API/interface contract drafting, Architecture Decision Records, and translating SRS into SDS with AI assistance.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.6px;font-weight:600;color:var(--text-faint);padding:8px 10px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:640px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Chat bubbles ===================== */
+.chatbubble{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:14px 16px;font-size:14px;position:relative;}
+.chatbubble.user{background:var(--surface-3);}
+.chatbubble .who{font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-bottom:6px;text-transform:uppercase;}
+
+/* ===================== Diff blocks ===================== */
+.diff-block{font-family:var(--mono);font-size:12.8px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;margin-top:10px;}
+.diff-line{padding:2px 6px;border-radius:3px;}
+.diff-add{background:rgba(52,211,153,0.12);color:var(--good);}
+.diff-del{background:rgba(251,113,133,0.12);color:var(--danger);text-decoration:line-through;}
+.diff-ctx{color:var(--text-faint);}
+
+/* ===================== Code editor mockup ===================== */
+.code-editor{background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:16px 18px;font-family:var(--mono);font-size:13px;line-height:1.85;overflow-x:auto;}
+.code-line{display:flex;white-space:pre;}
+.line-num{color:var(--text-faint);width:22px;flex:0 0 auto;text-align:right;margin-right:16px;user-select:none;}
+.code-text{color:var(--text);}
+.code-kw{color:var(--accent-soft);}
+.code-str{color:var(--good);}
+.code-meta{color:var(--text-faint);font-style:italic;}
+
+/* ===================== Accordion table ===================== */
+.acc-table{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:6px;}
+.acc-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:14px 18px;cursor:pointer;border-top:1px solid var(--border-soft);background:var(--surface);transition:background .15s;}
+.acc-row:first-child{border-top:none;}
+.acc-row:hover{background:var(--surface-2);}
+.acc-row .dim{font-weight:700;font-size:14px;font-family:var(--mono);}
+.acc-detail{display:none;padding:0 18px 16px;background:var(--surface);border-top:1px solid var(--border-soft);}
+.acc-detail.single.show{display:block;padding-top:14px;animation:fadein .3s ease;}
+.acc-caret{color:var(--text-faint);transition:transform .2s;}
+.acc-row.open .acc-caret{transform:rotate(180deg);}
+
+/* ===================== Stepper (shared pattern) ===================== */
+.stepper{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+.step-btn{flex:1;min-width:150px;text-align:left;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;}
+.step-btn:hover{border-color:var(--accent-soft);}
+.step-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));box-shadow:0 0 0 1px rgba(168,85,247,0.3);}
+.step-num{font-family:var(--mono);color:var(--accent-2);font-size:12px;}
+.step-title{font-weight:700;margin-top:6px;font-size:14.5px;}
+.step-bar{height:5px;border-radius:3px;background:var(--surface-3);margin-top:12px;overflow:hidden;}
+.step-bar-fill{height:100%;background:var(--grad-1);}
+.step-detail{padding:22px;}
+.step-detail .example{margin-top:14px;padding:12px 14px;background:var(--bg-2);border-left:3px solid var(--accent-2);border-radius:8px;font-family:var(--mono);font-size:13px;color:var(--text-dim);}
+
+/* ===================== Skill / option picker ===================== */
+.skill-grid{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+.skill-btn{flex:1;min-width:170px;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;text-align:left;transition:all .15s;}
+.skill-btn:hover{border-color:var(--accent-soft);}
+.skill-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));}
+.skill-btn .sk-icon{font-size:20px;}
+.skill-btn .sk-name{font-weight:700;font-size:14px;margin-top:6px;font-family:var(--mono);}
+.skill-btn .sk-ex{font-size:12px;color:var(--text-faint);margin-top:2px;}
+
+/* ===================== Scenario / hands-on ===================== */
+.scenario-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;}
+.scenario-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
+.scenario-item:hover{background:var(--surface-2);}
+.scenario-item.checked{background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.25);}
+.scenario-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.scenario-item.checked .scenario-box{background:var(--accent);border-color:var(--accent);color:#fff;}
+.scenario-label{font-size:14px;font-family:var(--mono);}
+.scenario-item.fb-good .scenario-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.scenario-item.fb-bad .scenario-box{background:var(--danger);border-color:var(--danger);color:#3a0a10;}
+.scenario-fb-tag{margin-left:auto;font-size:11.5px;font-family:var(--mono);color:var(--text-faint);}
+.scenario-result{margin-top:16px;padding:14px 16px;border-radius:10px;display:none;}
+.scenario-result.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Checklist ===================== */
+.checklist{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);text-decoration:line-through;}
+.check-label{font-size:14px;}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Traceability matcher ===================== */
+.trace-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:6px;}
+@media (max-width:820px){.trace-grid{grid-template-columns:1fr;}}
+.trace-col-title{font-family:var(--mono);font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+.trace-cell{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:all .15s ease;}
+.trace-cell:hover{border-color:var(--accent-soft);}
+.trace-cell .trace-id{font-family:var(--mono);font-size:11px;color:var(--accent-2);font-weight:700;display:block;margin-bottom:4px;}
+.trace-cell .trace-body{font-size:13px;color:var(--text-dim);}
+.trace-cell.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));box-shadow:0 0 0 1px rgba(168,85,247,0.3);}
+.trace-cell.dim{opacity:0.32;}
+
+/* ===================== Flow / gate visual ===================== */
+.flow-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.flow-node{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);font-size:12.8px;font-family:var(--mono);white-space:nowrap;}
+.flow-node.gate{border-color:var(--warn);background:rgba(245,158,11,0.1);color:var(--warn);font-weight:700;}
+.flow-node.good{border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.1);color:var(--good);}
+.flow-arrow{color:var(--text-faint);font-size:16px;}
+
+/* ===================== Architecture diagram ===================== */
+.arch-wrap{background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:14px;overflow-x:auto;}
+.arch-wrap svg{display:block;min-width:640px;width:100%;height:auto;}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){ .section{padding:60px 16px;} .acc-row{grid-template-columns:1fr auto;} .flow-row{gap:6px;} }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="module-8-rules-agents-md-skills-team-standards.html" class="brand"><span class="brand-badge">📋</span> Module 9</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#sdd-vs-vibe">SDD vs. vibe-coding</a>
+      <a href="#writing-spec">Writing a spec</a>
+      <a href="#traceability">Traceability</a>
+      <a href="#explore-plan">Explore &amp; plan</a>
+      <a href="#architecture">Architecture &amp; contracts</a>
+      <a href="#adr-srs-sds">ADRs &amp; SRS→SDS</a>
+      <a href="#spec-clauses">Spec vs. prompt</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-8-rules-agents-md-skills-team-standards.html" class="prev-link">← Module 8</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 3 · Module 9</div>
+    <h1>AI-Assisted Design &amp;<br>Spec-Driven Development</h1>
+    <p class="hero-sub">A prompt is what you typed today. A spec is what the team agreed to — reviewable, versioned, and still readable six months from now. This module builds the durable source of truth an agent implements against, instead of a fresh guess every session.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 90 min</span>
+      <span class="pill pill-neutral">🎯 Spec as source of truth, not a one-off prompt</span>
+      <span class="pill pill-neutral">📝 Hands-on: draft a spec → plan → review → implement</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. SDD vs PROMPT-DRIVEN vs VIBE-CODING -->
+<!-- ============================================================ -->
+<section class="section" id="sdd-vs-vibe">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / Contrasting Spec-Driven Development with prompt-driven and vibe-coding approaches</span>
+      <h2>Same AI, three very different processes</h2>
+      <p>Same model, same Cursor — but what you hand it, and what you keep afterward, changes everything downstream.</p>
+    </div>
+    <div class="card reveal">
+      <div class="skill-grid" id="approachGrid"></div>
+      <div class="card-soft" id="approachDetail" style="padding:18px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. WRITING A SPEC -->
+<!-- ============================================================ -->
+<section class="section" id="writing-spec">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / Writing a spec as the durable source of truth for agent-generated code</span>
+      <h2>What actually goes inside a spec</h2>
+      <p>Not a wall of prose — a small set of sections, each doing a specific job. Click one to see it filled in.</p>
+    </div>
+    <div class="card reveal">
+      <div class="acc-table" id="specAccTable"></div>
+    </div>
+    <p class="hint reveal" style="margin-top:14px;">The spec outlives the conversation that produced it. Close Cursor, come back in a month — the spec still tells you (and the agent) exactly what "done" means.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. TRACEABILITY + VERSIONING -->
+<!-- ============================================================ -->
+<section class="section" id="traceability">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / Spec-to-code and spec-to-test traceability; spec versioning and change management</span>
+      <h2>Every clause has a paper trail</h2>
+      <p>Click a requirement to see exactly which code and which test it produced — and vice versa.</p>
+    </div>
+    <div class="card reveal">
+      <div class="trace-grid">
+        <div>
+          <div class="trace-col-title">📋 Spec clause</div>
+          <div id="traceSpecCol"></div>
+        </div>
+        <div>
+          <div class="trace-col-title">💻 Code</div>
+          <div id="traceCodeCol"></div>
+        </div>
+        <div>
+          <div class="trace-col-title">🧪 Test</div>
+          <div id="traceTestCol"></div>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:6px;">Nothing selected yet — click any clause, code cell, or test to trace the link.</p>
+    </div>
+
+    <div class="card reveal" style="margin-top:18px;">
+      <b style="font-size:14px;">Spec versioning &amp; change management</b>
+      <p class="hint" style="margin-top:6px;">A security review changed REQ-3.2 after v1.0 shipped. The spec is versioned like code — and code/tests must catch up to match.</p>
+      <div class="diff-block">
+        <div class="diff-line diff-ctx"># spec/password-reset.md — v1.0 → v1.1</div>
+        <div class="diff-line diff-del">- REQ-3.2: Reset link expires after 60 minutes.</div>
+        <div class="diff-line diff-add">+ REQ-3.2: Reset link expires after 15 minutes and is single-use.</div>
+        <div class="diff-line diff-ctx"># changelog: v1.1 — tightened expiry + added single-use per security review, 2026-02-11</div>
+        <div class="diff-line diff-ctx"># downstream: resetPassword.ts, resetPassword.test.ts flagged as out-of-sync until updated</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. EXPLORE REQUIREMENTS -> IMPLEMENTATION PLAN -->
+<!-- ============================================================ -->
+<section class="section" id="explore-plan">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Using Cursor to explore requirements and create implementation plans</span>
+      <h2>From a raw ask to an approved plan</h2>
+      <p>Five stages, one gate. Nothing gets implemented until a human signs off on the plan.</p>
+    </div>
+    <div class="card reveal">
+      <div class="stepper" id="planStepper"></div>
+      <div class="card-soft step-detail" id="planDetail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. ARCHITECTURE DIAGRAMS + API CONTRACTS -->
+<!-- ============================================================ -->
+<section class="section" id="architecture">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Architecture diagram generation from requirements; API/interface contract drafting</span>
+      <h2>Two artifacts, generated from the same spec</h2>
+      <p>A diagram for humans to review the shape of the system; a contract for the agent to implement against precisely.</p>
+    </div>
+    <div class="card reveal">
+      <div class="skill-grid" id="archTabGrid"></div>
+      <div id="archPanel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. ADRs + SRS -> SDS -->
+<!-- ============================================================ -->
+<section class="section" id="adr-srs-sds">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / Architecture Decision Records (ADRs); translating SRS → SDS with AI assistance</span>
+      <h2>Recording <i>why</i>, not just <i>what</i></h2>
+      <p>A spec says what to build. An ADR records why one option was chosen over the alternatives — so nobody re-litigates it in six months.</p>
+    </div>
+    <div class="card reveal">
+      <div class="acc-table" id="adrAccTable"></div>
+    </div>
+
+    <div class="section-head reveal" style="margin-top:40px;margin-bottom:20px;">
+      <h2 style="font-size:22px;">SRS → SDS, with AI assistance</h2>
+      <p>Cursor helps translate a business-level requirement into a technical design — a human still owns the decision.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card-soft reveal" style="padding:16px;border:1px solid var(--border-soft);">
+        <span class="pill pill-neutral">📄 SRS (business requirement)</span>
+        <p style="margin-top:10px;font-family:var(--mono);font-size:13.5px;">"Users must be able to securely reset a forgotten password without contacting support."</p>
+        <p class="hint" style="margin-top:8px;">What the business needs — no implementation detail.</p>
+      </div>
+      <div class="card-soft reveal" style="padding:16px;border:1px solid var(--border-soft);">
+        <span class="pill pill-good">⚙️ SDS (technical design, AI-drafted)</span>
+        <p style="margin-top:10px;font-family:var(--mono);font-size:13.5px;">"POST /auth/reset-request issues a hashed, single-use token (15 min TTL) via the existing email service; see ADR-002 for token storage."</p>
+        <p class="hint" style="margin-top:8px;">Specific enough for an agent to implement, and a reviewer to approve.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. SUBTOPIC: SPEC vs PROMPT / ACCEPTANCE CRITERIA / HUMAN APPROVAL -->
+<!-- ============================================================ -->
+<section class="section" id="spec-clauses">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Subtopic: what belongs in a spec vs. a prompt; acceptance criteria as testable spec clauses; human approval before implementation</span>
+      <h2>Sort it: spec, or just the prompt?</h2>
+      <p>Some things belong in the durable spec. Some are fine as throwaway context in the prompt that asks the agent to implement it. Select the items that belong in the <b>spec</b>.</p>
+    </div>
+    <div class="card reveal">
+      <div class="scenario-list" id="specSortList"></div>
+      <button class="btn btn-primary btn-sm" id="specSortCheck" style="margin-top:16px;">Check my sorting</button>
+      <div class="scenario-result" id="specSortResult"></div>
+    </div>
+
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="card reveal">
+        <b style="font-size:13.5px;">✅ Acceptance criteria as testable spec clauses</b>
+        <div class="code-editor" style="margin-top:12px;">
+          <div class="code-line"><span class="code-text code-meta">Given a token older than 15 minutes</span></div>
+          <div class="code-line"><span class="code-text code-meta">When the user submits it to /auth/reset</span></div>
+          <div class="code-line"><span class="code-text code-meta">Then the API returns 410 Gone and no password changes</span></div>
+        </div>
+        <p class="hint" style="margin-top:10px;">Given/When/Then converts straight into a test — that's what "testable" means here.</p>
+      </div>
+      <div class="card reveal">
+        <b style="font-size:13.5px;">🚦 Human approval before implementation</b>
+        <div class="flow-row" style="margin-top:14px;">
+          <span class="flow-node">Draft spec</span><span class="flow-arrow">→</span>
+          <span class="flow-node">Team review</span><span class="flow-arrow">→</span>
+          <span class="flow-node gate">🚦 Approval gate</span><span class="flow-arrow">→</span>
+          <span class="flow-node good">Agent implements</span>
+        </div>
+        <p class="hint" style="margin-top:12px;">Nothing crosses the gate on a hunch — the agent implements against an <i>approved</i> spec, not a draft.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. HANDS-ON -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">08 / Hands-on — draft a spec, generate an implementation plan, review it, and generate a first implementation pass against the approved spec</span>
+      <h2>Lab walkthrough</h2>
+      <p>Track your progress through the exercise.</p>
+    </div>
+    <div class="card reveal">
+      <b style="font-size:14px;">Lab steps</b>
+      <div class="checklist" id="labChecklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="labFill"></div></div>
+      <div class="progress-label" id="labLabel">0 / 4</div>
+      <div class="setup-done" id="labDone">✅ Spec drafted, planned, reviewed, and implemented against — exactly the loop Module 11's lab builds on.</div>
+    </div>
+    <div class="card reveal" style="margin-top:18px;">
+      <b style="font-size:14.5px;">Before calling a spec "approved":</b>
+      <div class="checklist" id="specQualityChecklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="specQualityFill"></div></div>
+      <div class="progress-label" id="specQualityLabel">0 / 4 checked</div>
+      <div class="setup-done" id="specQualityDone">✅ That's an approved spec — traceable, testable, and reviewed, not just a document someone wrote.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 9. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">09 / Knowledge check</span>
+      <h2>Quick check before Module 10</h2>
+      <p>Five questions from what you just walked through.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/5</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">Day 3 begins: design and spec, locked in</h3>
+    <ul>
+      <li>Spec-Driven Development treats a structured, versioned spec as the durable source of truth an agent implements against — unlike prompt-driven or vibe-coding, which leave no lasting artifact.</li>
+      <li>A spec has a fixed shape: overview, requirements, acceptance criteria, interfaces, and out-of-scope — not a wall of unstructured prose.</li>
+      <li>Every spec clause should trace forward to the code that implements it and the test that verifies it — and specs are versioned, with downstream code/tests flagged when a clause changes.</li>
+      <li>Cursor explores requirements and drafts an implementation plan before any code is written — and that plan gets reviewed and approved, not rubber-stamped.</li>
+      <li>Architecture diagrams and API/interface contracts are both generated from the same spec — one for human review, one for the agent to implement against precisely.</li>
+      <li>ADRs capture <i>why</i> a decision was made, not just what was built; SRS → SDS translation turns a business requirement into an implementable technical design.</li>
+      <li>Acceptance criteria are written as testable Given/When/Then clauses, and implementation only begins after a human approval gate — not on a draft.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-8-rules-agents-md-skills-team-standards.html" class="btn">← Module 8: Rules, AGENTS.md, Skills &amp; Team Standards</a>
+    <a href="#" class="btn">↑ Back to top</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 9 — AI-Assisted Design &amp; Spec-Driven Development · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["spec","REQ-3.1","traceability","ADR","SRS","SDS","acceptance criteria","approval gate","versioned","plan","contract","diagram","testable","source of truth","change log"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ---------- Shared: checklist factory ---------- */
+function initChecklist(items, listId, fillId, labelId, doneId, labelSuffix){
+  var list = document.getElementById(listId);
+  var fill = document.getElementById(fillId);
+  var label = document.getElementById(labelId);
+  var done = document.getElementById(doneId);
+  var checked = new Array(items.length).fill(false);
+  list.innerHTML = '';
+  items.forEach(function(text, i){
+    var row = document.createElement('div');
+    row.className = 'check-item';
+    row.innerHTML = '<span class="check-box">✓</span><span class="check-label">'+text+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+      update();
+    });
+    list.appendChild(row);
+  });
+  function update(){
+    var count = checked.filter(Boolean).length;
+    fill.style.width = (count / items.length * 100) + '%';
+    label.textContent = count + ' / ' + items.length + ' ' + (labelSuffix || 'checked');
+    done.classList.toggle('show', count === items.length);
+  }
+  update();
+}
+
+/* ============================================================
+   1. SDD vs PROMPT-DRIVEN vs VIBE-CODING
+   ============================================================ */
+(function(){
+  var approaches = [
+    { icon:'🎨', name:'vibe-coding', ex:'Input: a vague idea, typed straight into chat',
+      desc:'You describe a feeling for what you want and accept whatever comes out, iterating by feel. There\'s no acceptance criteria, no audit trail, and no way to tell a reviewer what "correct" was supposed to mean. Breaks silently on edge cases nobody wrote down.' },
+    { icon:'💬', name:'prompt-driven', ex:'Input: a well-written one-off prompt for this task',
+      desc:'A clear, specific prompt gets a clear, specific result — for this session. But quality depends entirely on whoever happened to be typing that day, and there\'s no durable record of why a decision was made once the chat scrolls away.' },
+    { icon:'📋', name:'Spec-Driven Development', ex:'Input: a structured, versioned spec — reviewed and approved first',
+      desc:'The agent implements against an approved spec, not a fresh guess. Code and tests trace back to specific spec clauses, the spec is versioned like code, and a human signs off before implementation starts. Slower to start; far cheaper to maintain.' }
+  ];
+  var grid = document.getElementById('approachGrid');
+  var detail = document.getElementById('approachDetail');
+  var active = 2;
+  function render(){
+    var a = approaches[active];
+    detail.innerHTML = '<b style="font-size:14px;">'+a.icon+' '+a.name+'</b><p style="margin-top:8px;font-size:13.5px;color:var(--text-dim);">'+a.desc+'</p><p class="hint" style="margin-top:8px;">'+a.ex+'</p>';
+  }
+  approaches.forEach(function(a, i){
+    var b = document.createElement('div');
+    b.className = 'skill-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="sk-icon">'+a.icon+'</div><div class="sk-name">'+a.name+'</div><div class="sk-ex">click to compare</div>';
+    b.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.skill-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    grid.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   2. WRITING A SPEC — accordion
+   ============================================================ */
+(function(){
+  var sections = [
+    { name:'Overview', meta:'What problem this solves, and for whom', lines:[
+      "# Feature: Self-service password reset",
+      "Users who forget their password currently must contact support.",
+      "This adds a self-service, email-based reset flow."
+    ]},
+    { name:'Requirements', meta:'Numbered, individually referenceable clauses', lines:[
+      "REQ-3.1: Users can reset their password via a time-limited email link",
+      "REQ-3.2: Reset link expires after 15 minutes and is single-use",
+      "REQ-3.3: New password must meet complexity policy (12+ chars, mixed case, number)"
+    ]},
+    { name:'Acceptance criteria', meta:'Given/When/Then — testable, not aspirational', lines:[
+      "Given a valid, unexpired token",
+      "When the user submits a compliant new password",
+      "Then the password is updated and the token is invalidated"
+    ]},
+    { name:'Interfaces', meta:'The contract the agent implements against', lines:[
+      "POST /auth/reset-request { email } → 202 Accepted",
+      "POST /auth/reset { token, newPassword } → 200 OK | 410 Gone | 422 Unprocessable"
+    ]},
+    { name:'Out of scope', meta:'Explicitly not building this — prevents scope creep', lines:[
+      "- SMS-based reset (future consideration)",
+      "- Password history / reuse prevention (tracked separately in REQ-7)"
+    ]}
+  ];
+  var wrap = document.getElementById('specAccTable');
+  sections.forEach(function(s){
+    var row = document.createElement('div');
+    row.className = 'acc-row';
+    row.innerHTML = '<span class="dim">'+s.name+'</span><span class="pill pill-neutral">spec section</span><span class="acc-caret">▾</span>';
+    var detail = document.createElement('div');
+    detail.className = 'acc-detail single';
+    var html = '<p class="hint" style="margin-bottom:10px;">'+s.meta+'</p><div class="code-editor">';
+    s.lines.forEach(function(l, i){ html += '<div class="code-line"><span class="line-num">'+(i+1)+'</span><span class="code-text">'+l+'</span></div>'; });
+    html += '</div>';
+    detail.innerHTML = html;
+    row.addEventListener('click', function(){
+      var isOpen = detail.classList.contains('show');
+      wrap.querySelectorAll('.acc-detail').forEach(function(d){ d.classList.remove('show'); });
+      wrap.querySelectorAll('.acc-row').forEach(function(rr){ rr.classList.remove('open'); });
+      if(!isOpen){ detail.classList.add('show'); row.classList.add('open'); }
+    });
+    wrap.appendChild(row);
+    wrap.appendChild(detail);
+  });
+  wrap.querySelectorAll('.acc-row')[0].click();
+})();
+
+/* ============================================================
+   3. TRACEABILITY MATCHER
+   ============================================================ */
+(function(){
+  var links = [
+    { id:'3.1', spec:'REQ-3.1: Users can reset their password via a time-limited email link', code:'resetPassword.ts — generatePasswordResetLink()', test:'resetPassword.test.ts — "sends reset email with valid link"' },
+    { id:'3.2', spec:'REQ-3.2: Reset link expires after 15 minutes and is single-use', code:'resetPassword.ts — validateResetToken() checks expiry + used flag', test:'resetPassword.test.ts — "rejects expired or reused token"' },
+    { id:'3.3', spec:'REQ-3.3: New password must meet complexity policy', code:'passwordPolicy.ts — validatePasswordComplexity()', test:'passwordPolicy.test.ts — "rejects passwords under 12 chars"' }
+  ];
+  var specCol = document.getElementById('traceSpecCol');
+  var codeCol = document.getElementById('traceCodeCol');
+  var testCol = document.getElementById('traceTestCol');
+  var allCells = [];
+
+  function makeCell(col, id, label, body){
+    var cell = document.createElement('div');
+    cell.className = 'trace-cell';
+    cell.dataset.id = id;
+    cell.innerHTML = '<span class="trace-id">'+label+'</span><span class="trace-body">'+body+'</span>';
+    cell.addEventListener('click', function(){ select(id); });
+    col.appendChild(cell);
+    allCells.push(cell);
+  }
+
+  links.forEach(function(l){
+    makeCell(specCol, l.id, 'REQ-'+l.id, l.spec.replace('REQ-'+l.id+': ', ''));
+    makeCell(codeCol, l.id, l.code.split(' — ')[0], l.code.split(' — ')[1]);
+    makeCell(testCol, l.id, l.test.split(' — ')[0], l.test.split(' — ')[1]);
+  });
+
+  function select(id){
+    var already = allCells.filter(function(c){ return c.dataset.id === id && c.classList.contains('active'); }).length > 0;
+    allCells.forEach(function(c){ c.classList.remove('active'); c.classList.remove('dim'); });
+    if(already) return;
+    allCells.forEach(function(c){
+      if(c.dataset.id === id){ c.classList.add('active'); }
+      else { c.classList.add('dim'); }
+    });
+  }
+})();
+
+/* ============================================================
+   4. EXPLORE -> PLAN STEPPER
+   ============================================================ */
+(function(){
+  var steps = [
+    { title:'Explore', icon:'🔎', desc:'Cursor explores the repo and existing patterns relevant to the ask — auth flows, email service, schema conventions — before anything is written down.', example:'"@codebase how does the existing login flow issue and validate tokens?"' },
+    { title:'Draft spec', icon:'📝', desc:'Requirements, acceptance criteria, and interfaces get written as a structured spec — not buried in a chat transcript.', example:'REQ-3.1 … REQ-3.3, plus Given/When/Then acceptance criteria' },
+    { title:'Generate plan', icon:'🗺️', desc:'Cursor turns the approved-draft spec into a concrete implementation plan: files to touch, order of changes, risk areas.', example:'"1. passwordPolicy.ts  2. resetPassword.ts  3. routes  4. tests"' },
+    { title:'Review & approve', icon:'🚦', desc:'A human reviews the spec and plan together — this is the approval gate. Nothing is implemented against an unapproved spec.', example:'Reviewer comment: "Add single-use enforcement to REQ-3.2 before approving."' },
+    { title:'Implement', icon:'⚙️', desc:'Only now does the agent generate code — against the approved spec, traceable clause by clause.', example:'Agent implements REQ-3.1–3.3, cites the spec clause in each commit message' }
+  ];
+  var stepperEl = document.getElementById('planStepper');
+  var detailEl = document.getElementById('planDetail');
+  var active = 0;
+  function renderDetail(){
+    var s = steps[active];
+    detailEl.innerHTML = '<div style="font-size:22px;">'+s.icon+'</div>'+
+      '<h4 style="margin-top:10px;font-size:16px;">'+s.title+'</h4>'+
+      '<p style="margin-top:8px;font-size:14px;color:var(--text-dim);">'+s.desc+'</p>'+
+      '<div class="example">'+s.example+'</div>';
+  }
+  steps.forEach(function(s, i){
+    var btn = document.createElement('div');
+    btn.className = 'step-btn' + (i===active ? ' active' : '');
+    btn.innerHTML = '<div class="step-num">STAGE '+(i+1)+'</div><div class="step-title">'+s.icon+' '+s.title+'</div>'+
+      '<div class="step-bar"><div class="step-bar-fill" style="width:'+((i+1)/steps.length*100)+'%"></div></div>';
+    btn.addEventListener('click', function(){
+      active = i;
+      stepperEl.querySelectorAll('.step-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderDetail();
+    });
+    stepperEl.appendChild(btn);
+  });
+  renderDetail();
+})();
+
+/* ============================================================
+   5. ARCHITECTURE DIAGRAM / API CONTRACT TABS
+   ============================================================ */
+(function(){
+  var tabs = [
+    { icon:'🗺️', name:'architecture diagram', ex:'Generated from the spec, for human review' },
+    { icon:'🔌', name:'API contract', ex:'Generated from the spec, for the agent to implement' }
+  ];
+  var grid = document.getElementById('archTabGrid');
+  var panel = document.getElementById('archPanel');
+  var active = 0;
+
+  var diagramHtml =
+    '<div class="arch-wrap"><svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">'+
+      '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'+
+        '<path d="M0,0 L10,5 L0,10 z" style="fill:var(--text-faint)"></path>'+
+      '</marker></defs>'+
+      '<line x1="140" y1="110" x2="205" y2="110" style="stroke:var(--text-faint);stroke-width:2" marker-end="url(#arrow)"></line>'+
+      '<line x1="345" y1="105" x2="400" y2="75" style="stroke:var(--text-faint);stroke-width:2" marker-end="url(#arrow)"></line>'+
+      '<line x1="345" y1="120" x2="400" y2="155" style="stroke:var(--text-faint);stroke-width:2" marker-end="url(#arrow)"></line>'+
+      '<line x1="545" y1="60" x2="600" y2="60" style="stroke:var(--text-faint);stroke-width:2" marker-end="url(#arrow)"></line>'+
+      '<line x1="480" y1="140" x2="480" y2="110" style="stroke:var(--text-faint);stroke-width:2;stroke-dasharray:3,3"></line>'+
+      '<rect x="20" y="85" width="120" height="50" rx="10" style="fill:var(--surface-2);stroke:var(--border);stroke-width:1.5"></rect>'+
+      '<text x="80" y="115" text-anchor="middle" style="fill:var(--text);font-family:var(--mono);font-size:12px">Web / Mobile</text>'+
+      '<rect x="205" y="85" width="140" height="50" rx="10" style="fill:var(--surface-2);stroke:var(--border);stroke-width:1.5"></rect>'+
+      '<text x="275" y="115" text-anchor="middle" style="fill:var(--text);font-family:var(--mono);font-size:12px">API Gateway</text>'+
+      '<rect x="400" y="40" width="150" height="50" rx="10" style="fill:var(--surface-3);stroke:var(--accent-soft);stroke-width:1.5"></rect>'+
+      '<text x="475" y="70" text-anchor="middle" style="fill:var(--text);font-family:var(--mono);font-size:12px">Password Service</text>'+
+      '<rect x="400" y="140" width="150" height="50" rx="10" style="fill:var(--surface-2);stroke:var(--border);stroke-width:1.5"></rect>'+
+      '<text x="475" y="170" text-anchor="middle" style="fill:var(--text);font-family:var(--mono);font-size:12px">Email Service</text>'+
+      '<rect x="600" y="35" width="140" height="50" rx="10" style="fill:var(--surface-2);stroke:var(--border);stroke-width:1.5"></rect>'+
+      '<text x="670" y="65" text-anchor="middle" style="fill:var(--text);font-family:var(--mono);font-size:12px">Postgres</text>'+
+    '</svg></div>'+
+    '<p class="hint" style="margin-top:10px;">Dashed line = read/write to storage. Reviewers check this shape before a single line of code exists.</p>';
+
+  var contractHtml =
+    '<div class="code-editor">'+
+      ['openapi: 3.0.0',
+       'paths:',
+       '  /auth/reset-request:',
+       '    post:',
+       '      requestBody: { email: string }',
+       '      responses: { "202": Accepted }',
+       '  /auth/reset:',
+       '    post:',
+       '      requestBody: { token: string, newPassword: string }',
+       '      responses:',
+       '        "200": OK',
+       '        "410": Gone        # per REQ-3.2 (expired/reused)',
+       '        "422": Unprocessable  # per REQ-3.3 (weak password)'
+      ].map(function(l,i){ return '<div class="code-line"><span class="line-num">'+(i+1)+'</span><span class="code-text">'+l+'</span></div>'; }).join('') +
+    '</div>'+
+    '<p class="hint" style="margin-top:10px;">This is what the agent implements against — precise enough that "done" isn\'t a judgment call.</p>';
+
+  function render(){
+    panel.innerHTML = active === 0 ? diagramHtml : contractHtml;
+  }
+  tabs.forEach(function(t, i){
+    var b = document.createElement('div');
+    b.className = 'skill-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="sk-icon">'+t.icon+'</div><div class="sk-name">'+t.name+'</div><div class="sk-ex">'+t.ex+'</div>';
+    b.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.skill-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    grid.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   6. ADR ACCORDION
+   ============================================================ */
+(function(){
+  var adrs = [
+    { name:'ADR-001 — Use PostgreSQL for reset-token storage', status:'Accepted', lines:[
+      "Context: Need durable, queryable storage for reset tokens with TTL semantics.",
+      "Decision: Reuse the existing PostgreSQL instance; add a reset_tokens table.",
+      "Consequences: No new infra to operate; TTL cleanup needs a scheduled job."
+    ]},
+    { name:'ADR-002 — Tokens stored hashed, single-use', status:'Accepted', lines:[
+      "Context: A leaked token table must not let an attacker reset passwords.",
+      "Decision: Store SHA-256(token), not the raw token; mark used on first redemption.",
+      "Consequences: Support cannot look up a token's raw value for troubleshooting."
+    ]},
+    { name:'ADR-003 — Reuse existing transactional email service', status:'Accepted', lines:[
+      "Context: Reset emails need reliable delivery and existing deliverability reputation.",
+      "Decision: Send via the current transactional email provider, not a new one.",
+      "Consequences: Coupled to that provider's rate limits during high-volume incidents."
+    ]}
+  ];
+  var wrap = document.getElementById('adrAccTable');
+  adrs.forEach(function(a){
+    var row = document.createElement('div');
+    row.className = 'acc-row';
+    row.innerHTML = '<span class="dim">'+a.name+'</span><span class="pill pill-good">'+a.status+'</span><span class="acc-caret">▾</span>';
+    var detail = document.createElement('div');
+    detail.className = 'acc-detail single';
+    var html = '<div class="code-editor">';
+    a.lines.forEach(function(l, i){ html += '<div class="code-line"><span class="line-num">'+(i+1)+'</span><span class="code-text">'+l+'</span></div>'; });
+    html += '</div>';
+    detail.innerHTML = html;
+    row.addEventListener('click', function(){
+      var isOpen = detail.classList.contains('show');
+      wrap.querySelectorAll('.acc-detail').forEach(function(d){ d.classList.remove('show'); });
+      wrap.querySelectorAll('.acc-row').forEach(function(rr){ rr.classList.remove('open'); });
+      if(!isOpen){ detail.classList.add('show'); row.classList.add('open'); }
+    });
+    wrap.appendChild(row);
+    wrap.appendChild(detail);
+  });
+})();
+
+/* ============================================================
+   7. SPEC vs PROMPT SORTING SCENARIO
+   ============================================================ */
+(function(){
+  var items = [
+    { label:'REQ-3.2: reset link expires after 15 minutes, single-use', good:true },
+    { label:'Given/When/Then acceptance criteria for password complexity', good:true },
+    { label:'The API contract for POST /auth/reset', good:true },
+    { label:'"Can you make the error message a bit friendlier?"', good:false },
+    { label:'"Use the same coding style as the file I have open right now"', good:false }
+  ];
+  var list = document.getElementById('specSortList');
+  var checked = new Array(items.length).fill(false);
+  items.forEach(function(item, i){
+    var row = document.createElement('div');
+    row.className = 'scenario-item';
+    row.innerHTML = '<span class="scenario-box">✓</span><span class="scenario-label">'+item.label+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+    });
+    list.appendChild(row);
+    row._item = item;
+  });
+
+  document.getElementById('specSortCheck').addEventListener('click', function(){
+    var rows = list.querySelectorAll('.scenario-item');
+    var score = 0, total = 0;
+    rows.forEach(function(row, i){
+      var item = row._item;
+      row.classList.remove('checked');
+      var tag = row.querySelector('.scenario-fb-tag');
+      if(tag) tag.remove();
+      if(checked[i]){
+        total++;
+        if(item.good){ row.classList.add('fb-good'); score++; }
+        else { row.classList.add('fb-bad'); score--; }
+        var newTag = document.createElement('span');
+        newTag.className = 'scenario-fb-tag';
+        newTag.textContent = item.good ? '👍 belongs in the spec' : '⚠️ fine as a prompt, not a spec clause';
+        row.appendChild(newTag);
+      }
+    });
+    var result = document.getElementById('specSortResult');
+    var missedGood = items.filter(function(it,i){ return it.good && !checked[i]; }).length;
+    var verdict, cls;
+    if(total === 0){ verdict = 'Select at least one item, then check again.'; cls = 'pill-warn'; }
+    else if(score === 3 && missedGood === 0){ verdict = '🟢 Exactly right — requirements, acceptance criteria, and interfaces belong in the spec; ad-hoc phrasing and one-off style notes are fine left in the prompt.'; cls = 'pill-good'; }
+    else if(score >= 1){ verdict = '🟡 On the right track — check the ⚠️ items. Those are session-specific asks, not durable requirements.'; cls = 'pill-warn'; }
+    else { verdict = '🔴 These are one-off prompt phrasing, not durable requirements — they won\'t mean anything to someone reading the spec next month.'; cls = 'pill-bad'; }
+    result.innerHTML = '<span class="pill '+cls+'">score '+score+'</span><p style="margin-top:10px;font-size:13.8px;">'+verdict+'</p>';
+    result.classList.add('show');
+  });
+})();
+
+/* ============================================================
+   8. HANDS-ON CHECKLISTS
+   ============================================================ */
+initChecklist([
+  'Draft a spec for the sample feature (requirements + acceptance criteria)',
+  'Generate an implementation plan from the draft spec',
+  'Review the spec and plan, and get explicit approval',
+  'Generate a first implementation pass against the approved spec'
+], 'labChecklist', 'labFill', 'labLabel', 'labDone');
+
+initChecklist([
+  'Every requirement is numbered and individually referenceable (REQ-x.y)',
+  'Acceptance criteria are written as testable Given/When/Then clauses',
+  'Interfaces/contracts are specific enough to implement against without guessing',
+  'A human has actually reviewed and approved it — not just skimmed it'
+], 'specQualityChecklist', 'specQualityFill', 'specQualityLabel', 'specQualityDone');
+
+/* ============================================================
+   9. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:'What is the key difference between Spec-Driven Development and prompt-driven development?', options:[
+        'SDD never uses natural language at all',
+        'SDD implements against a structured, versioned, human-approved spec instead of a one-off prompt',
+        'They are the same thing with different names',
+        'Prompt-driven development is always faster and produces the same quality'
+      ], correct:1, explain:'A prompt is single-session and undocumented; a spec is a durable, reviewable, versioned artifact the agent implements against (Section 01).' },
+    { q:'In the traceability matcher, what does REQ-3.2 trace to?', options:[
+        'Nothing — specs and code are intentionally kept separate',
+        'validateResetToken() in resetPassword.ts, and the "rejects expired or reused token" test',
+        'Only the API contract, never a specific test',
+        'A different requirement entirely'
+      ], correct:1, explain:'Each spec clause traces forward to the exact code and test it produced — REQ-3.2 → validateResetToken() → the expiry/reuse test (Section 03).' },
+    { q:'Why was REQ-3.2 changed from v1.0 to v1.1 in the versioning example?', options:[
+        'A typo was fixed with no functional change',
+        'A security review tightened the expiry window and added single-use enforcement',
+        'The requirement was deleted entirely',
+        'The API contract format changed'
+      ], correct:1, explain:'v1.1 tightened the 60-minute expiry to 15 minutes and added single-use, per a security review — and downstream code/tests were flagged as out of sync (Section 03).' },
+    { q:'What has to happen before an agent implements against a plan, per the explore→plan flow?', options:[
+        'Nothing — implementation starts as soon as a plan is generated',
+        'A human review and approval gate',
+        'The spec must be deleted first',
+        'The architecture diagram must be skipped'
+      ], correct:1, explain:'Review & approve is stage 4 of 5 — implementation is stage 5, and only happens after that gate (Section 04).' },
+    { q:'What does an ADR (Architecture Decision Record) capture that a spec does not?', options:[
+        'The exact line numbers of the implementation',
+        'The reasoning for why one option was chosen over alternatives, plus its consequences',
+        'A list of unrelated future feature ideas',
+        'The personal opinions of whoever wrote the spec'
+      ], correct:1, explain:'ADR-001 through ADR-003 each record Context → Decision → Consequences — the "why," not just the "what" (Section 06).' }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.innerHTML = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — ready for agent, skill & subagent architecture.'
+      : score >= questions.length - 1
+      ? 'Nice work — solid grasp of specs, traceability, and approval gates.'
+      : 'Worth a re-skim of the sections above before moving on.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>
