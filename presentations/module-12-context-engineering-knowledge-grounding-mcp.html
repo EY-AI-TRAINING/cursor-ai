@@ -1,0 +1,607 @@
+<title>Context Engineering &amp; MCP</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#contextengineering" data-target="contextengineering"><span class="dot"></span><span class="rail-label">01 · Context engineering</span></a>
+  <a href="#grounding" data-target="grounding"><span class="dot"></span><span class="rail-label">02 · Grounding sources</span></a>
+  <a href="#mcp" data-target="mcp"><span class="dot"></span><span class="rail-label">03 · MCP overview</span></a>
+  <a href="#retrieval" data-target="retrieval"><span class="dot"></span><span class="rail-label">04 · Retrieval strategies</span></a>
+  <a href="#hallucination" data-target="hallucination"><span class="dot"></span><span class="rail-label">05 · Hallucination risk</span></a>
+  <a href="#guardrails" data-target="guardrails"><span class="dot"></span><span class="rail-label">06 · No unsupported facts</span></a>
+  <a href="#separation" data-target="separation"><span class="dot"></span><span class="rail-label">07 · Retrieval vs. action</span></a>
+  <a href="#scoping" data-target="scoping"><span class="dot"></span><span class="rail-label">08 · Choosing the source</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">09 · Hands-on</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">10 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#contextengineering" data-target="contextengineering">01</a>
+  <a href="#grounding" data-target="grounding">02</a>
+  <a href="#mcp" data-target="mcp">03</a>
+  <a href="#retrieval" data-target="retrieval">04</a>
+  <a href="#hallucination" data-target="hallucination">05</a>
+  <a href="#guardrails" data-target="guardrails">06</a>
+  <a href="#separation" data-target="separation">07</a>
+  <a href="#scoping" data-target="scoping">08</a>
+  <a href="#handson" data-target="handson">09</a>
+  <a href="#recap" data-target="recap">10</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 4 · Context Engineering, Knowledge Grounding, Governance &amp; Observability — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Context Engineering, Knowledge Grounding &amp; MCP</h1>
+    <p class="lede hero-lede">Module 12 — 90 minutes, opening Day 4. The agent library committed in Module 11 was tested against sample input — this module gives those agents something real to point at: your repository, your specs, your standards, your defect history. Five topics build the mechanics; three subtopics turn that mechanics into discipline, before Module 13's lab connects it all to a live knowledge source.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">3</span><span class="stat-label">subtopics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">hands-on walkthrough</span></li>
+      <li class="stat-tile"><span class="stat-num">90</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#contextengineering"><span class="agenda-index">01</span><span>Context engineering: selecting, structuring, and scoping context for engineering tasks</span></a></li>
+      <li><a href="#grounding"><span class="agenda-index">02</span><span>Grounding sources: repo code, SRS/SDS documents, standards, historical defects, enterprise knowledge</span></a></li>
+      <li><a href="#mcp"><span class="agenda-index">03</span><span>MCP overview: resources, tools, and connections to external systems</span></a></li>
+      <li><a href="#retrieval"><span class="agenda-index">04</span><span>Retrieval strategies: semantic search, structured lookups, and graph traversal</span></a></li>
+      <li><a href="#hallucination"><span class="agenda-index">05</span><span>Hallucination risk in engineering contexts, and why it matters</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="contextengineering">
+  <div class="section-inner">
+    <p class="eyebrow">01 — Design it, don't dump it</p>
+    <h2 class="section-title">Context is designed, not dumped</h2>
+    <p class="lede">More context isn't better context. Everything technically available to an agent — the whole repo, every doc, full history — gets filtered down to what this specific task needs: selected for relevance, structured so the agent can use it, and scoped tightly enough to stay inside the context window.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 220" role="img" aria-label="Everything technically available, including the full repository, every document, and complete history, passes through a select, structure, and scope funnel and narrows down to a small task-specific context, which is what the agent actually receives." style="min-width:700px">
+          <rect class="box dim" x="20" y="30" width="225" height="160" rx="10"></rect>
+          <text class="lbl-strong" x="132" y="52" text-anchor="middle" font-size="10">EVERYTHING AVAILABLE</text>
+          <text class="lbl" x="35" y="75" font-size="9">• full repository</text>
+          <text class="lbl" x="35" y="93" font-size="9">• every SRS/SDS document</text>
+          <text class="lbl" x="35" y="111" font-size="9">• complete git + defect history</text>
+          <text class="lbl" x="35" y="129" font-size="9">• enterprise knowledge base</text>
+          <text class="lbl" x="35" y="147" font-size="9">• full chat history</text>
+          <text class="lbl" x="35" y="170" font-size="8.5">most of this is noise for one task</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M245,110 L298,110" marker-end="url(#arrow)"></path>
+
+          <path class="box-copper" d="M300,45 L300,175 L470,135 L470,85 Z"></path>
+          <text class="txt-copper" x="345" y="90" font-size="10">select</text>
+          <text class="txt-copper" x="345" y="112" font-size="10">structure</text>
+          <text class="txt-copper" x="345" y="134" font-size="10">scope</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M472,110 L528,110" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="530" y="80" width="160" height="60" rx="8"></rect>
+          <text class="txt-teal" x="610" y="105" text-anchor="middle" font-size="10.5">TASK CONTEXT</text>
+          <text class="lbl" x="610" y="123" text-anchor="middle" font-size="8.5">only what this task needs</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M690,110 L730,110" marker-end="url(#arrow)"></path>
+
+          <rect class="box-plum" x="732" y="80" width="110" height="60" rx="8"></rect>
+          <text class="txt-plum" x="787" y="115" text-anchor="middle" font-size="11">Agent</text>
+        </svg>
+      </div>
+      <figcaption>The funnel is a design choice made once per task type, not a one-time setting — what's relevant, structured, and in-scope changes with the work.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="grounding">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Five kinds of ground truth</p>
+    <h2 class="section-title">Grounding sources are not interchangeable</h2>
+    <p class="lede">Repo code, SRS/SDS documents, standards, historical defects, and enterprise knowledge each answer a different question. An agent citing "the spec" when it actually read a stale doc is still hallucinating — it just has a source attached now.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="Five grounding source types, repository code, SRS/SDS documents, standards, historical defects, and enterprise knowledge, each answering a different question, converge into one merged grounded context, which then feeds the agent." style="min-width:700px">
+          <rect class="box" x="20" y="20" width="150" height="95" rx="8"></rect>
+          <text class="lbl-strong" x="95" y="42" text-anchor="middle" font-size="9.5">Repo code</text>
+          <text class="lbl" x="95" y="62" text-anchor="middle" font-size="8">what the system</text>
+          <text class="lbl" x="95" y="76" text-anchor="middle" font-size="8">actually does</text>
+
+          <rect class="box-plum" x="185" y="20" width="150" height="95" rx="8"></rect>
+          <text class="txt-plum" x="260" y="42" text-anchor="middle" font-size="9.5">SRS/SDS docs</text>
+          <text class="lbl" x="260" y="62" text-anchor="middle" font-size="8">what it's supposed</text>
+          <text class="lbl" x="260" y="76" text-anchor="middle" font-size="8">to do</text>
+
+          <rect class="box-copper" x="350" y="20" width="150" height="95" rx="8"></rect>
+          <text class="txt-copper" x="425" y="42" text-anchor="middle" font-size="9.5">Standards</text>
+          <text class="lbl" x="425" y="62" text-anchor="middle" font-size="8">how it must be</text>
+          <text class="lbl" x="425" y="76" text-anchor="middle" font-size="8">built</text>
+
+          <rect class="box-teal" x="515" y="20" width="150" height="95" rx="8"></rect>
+          <text class="txt-teal" x="590" y="42" text-anchor="middle" font-size="9.5">Historical defects</text>
+          <text class="lbl" x="590" y="62" text-anchor="middle" font-size="8">what broke before,</text>
+          <text class="lbl" x="590" y="76" text-anchor="middle" font-size="8">and why</text>
+
+          <rect class="box-brick" x="680" y="20" width="160" height="95" rx="8"></rect>
+          <text class="txt-brick" x="760" y="42" text-anchor="middle" font-size="9.5">Enterprise knowledge</text>
+          <text class="lbl" x="760" y="62" text-anchor="middle" font-size="8">conventions no doc</text>
+          <text class="lbl" x="760" y="76" text-anchor="middle" font-size="8">states outright</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M95,115 L400,175" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M260,115 L410,175" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M425,115 L430,175" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M590,115 L450,175" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M760,115 L460,175" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="320" y="178" width="220" height="55" rx="10"></rect>
+          <text class="txt-teal" x="430" y="202" text-anchor="middle" font-size="10.5">GROUNDED CONTEXT</text>
+          <text class="lbl" x="430" y="220" text-anchor="middle" font-size="8.5">merged, de-duplicated, source-tagged</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M430,233 L430,258" marker-end="url(#arrow)"></path>
+
+          <rect class="box-plum" x="360" y="260" width="140" height="35" rx="8"></rect>
+          <text class="txt-plum" x="430" y="283" text-anchor="middle" font-size="10.5">Agent</text>
+        </svg>
+      </div>
+      <figcaption>Keeping the source tag attached through the merge is what lets the agent cite exactly which of the five it drew a claim from.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="mcp">
+  <div class="section-inner">
+    <p class="eyebrow">03 — The protocol, not the magic</p>
+    <h2 class="section-title">MCP is a standard way to plug in the outside world</h2>
+    <p class="lede">Model Context Protocol gives Cursor one common interface to external systems: resources it can read and tools it can invoke, both exposed by an MCP server that sits in front of whatever actually holds the data — a ticket tracker, a document store, a database, an internal API.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 230" role="img" aria-label="Cursor Agent connects through an MCP server, which exposes two kinds of capability: read-only resources and invocable tools, both of which connect onward to external systems such as a ticket tracker, a document store, a database, and an internal API." style="min-width:700px">
+          <rect class="box-plum" x="20" y="85" width="150" height="60" rx="10"></rect>
+          <text class="txt-plum" x="95" y="110" text-anchor="middle" font-size="10">Cursor Agent</text>
+          <text class="lbl" x="95" y="128" text-anchor="middle" font-size="8">MCP client</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M170,115 L228,115" marker-end="url(#arrow)"></path>
+
+          <rect class="box-copper" x="230" y="60" width="170" height="110" rx="10"></rect>
+          <text class="txt-copper" x="315" y="85" text-anchor="middle" font-size="10">MCP SERVER</text>
+          <text class="lbl" x="315" y="102" text-anchor="middle" font-size="8">standard protocol</text>
+          <text class="lbl" x="315" y="115" text-anchor="middle" font-size="8">boundary</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M400,90 L458,60" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M400,140 L458,170" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="460" y="30" width="160" height="55" rx="8"></rect>
+          <text class="txt-teal" x="540" y="53" text-anchor="middle" font-size="9.5">Resources</text>
+          <text class="lbl" x="540" y="70" text-anchor="middle" font-size="8">read-only data</text>
+
+          <rect class="box-brick" x="460" y="145" width="160" height="55" rx="8"></rect>
+          <text class="txt-brick" x="540" y="168" text-anchor="middle" font-size="9.5">Tools</text>
+          <text class="lbl" x="540" y="185" text-anchor="middle" font-size="8">invocable actions</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M620,55 L668,90" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M620,172 L668,120" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="670" y="20" width="170" height="26" rx="5"></rect>
+          <text class="lbl" x="755" y="38" text-anchor="middle" font-size="8.5">Ticket tracker (Jira)</text>
+          <rect class="box" x="670" y="52" width="170" height="26" rx="5"></rect>
+          <text class="lbl" x="755" y="70" text-anchor="middle" font-size="8.5">Document store (Confluence)</text>
+          <rect class="box" x="670" y="84" width="170" height="26" rx="5"></rect>
+          <text class="lbl" x="755" y="102" text-anchor="middle" font-size="8.5">Internal database</text>
+          <rect class="box" x="670" y="116" width="170" height="26" rx="5"></rect>
+          <text class="lbl" x="755" y="134" text-anchor="middle" font-size="8.5">Internal API</text>
+        </svg>
+      </div>
+      <figcaption>Resources are read-only by design; tools carry side effects. Which side of that line a capability sits on should be visible before it's ever called.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="retrieval">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Different questions, different lookups</p>
+    <h2 class="section-title">Match the retrieval strategy to the question</h2>
+    <p class="lede">Semantic search finds what's similar in meaning, a structured lookup finds what's known by exact key, and graph traversal follows relationships between artifacts. Using the wrong one doesn't just retrieve less — it can retrieve confidently wrong context.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 220" role="img" aria-label="Three retrieval strategies compared side by side. Semantic search takes a natural-language query and returns similar past defects by meaning. A structured lookup takes an exact key such as an ADR id and returns one exact record. Graph traversal follows relationships from a requirement to an API to its dependent services." style="min-width:700px">
+          <rect class="box" x="20" y="20" width="260" height="180" rx="10"></rect>
+          <text class="lbl-strong" x="150" y="45" text-anchor="middle" font-size="10">SEMANTIC SEARCH</text>
+          <rect class="box-copper" x="40" y="60" width="220" height="30" rx="6"></rect>
+          <text class="lbl" x="150" y="79" text-anchor="middle" font-size="8.5">query: "rate limiting bug"</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M150,90 L150,112" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="150" y="128" text-anchor="middle" font-size="8">vector similarity match</text>
+          <rect class="box-teal" x="40" y="140" width="220" height="34" rx="6"></rect>
+          <text class="txt-teal" x="150" y="161" text-anchor="middle" font-size="8.5">3 similar past defects</text>
+
+          <rect class="box" x="300" y="20" width="260" height="180" rx="10"></rect>
+          <text class="lbl-strong" x="430" y="45" text-anchor="middle" font-size="10">STRUCTURED LOOKUP</text>
+          <rect class="box-copper" x="320" y="60" width="220" height="30" rx="6"></rect>
+          <text class="lbl" x="430" y="79" text-anchor="middle" font-size="8.5">query: id = "ADR-014"</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M430,90 L430,112" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="430" y="128" text-anchor="middle" font-size="8">exact key match</text>
+          <rect class="box-teal" x="320" y="140" width="220" height="34" rx="6"></rect>
+          <text class="txt-teal" x="430" y="161" text-anchor="middle" font-size="8.5">ADR-014, one exact record</text>
+
+          <rect class="box" x="580" y="20" width="260" height="180" rx="10"></rect>
+          <text class="lbl-strong" x="710" y="45" text-anchor="middle" font-size="10">GRAPH TRAVERSAL</text>
+          <rect class="box-copper" x="600" y="60" width="220" height="30" rx="6"></rect>
+          <text class="lbl" x="710" y="79" text-anchor="middle" font-size="8.5">query: refs to API X</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M710,90 L710,112" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="710" y="128" text-anchor="middle" font-size="8">follow relationship edges</text>
+          <rect class="box-teal" x="600" y="140" width="220" height="34" rx="6"></rect>
+          <text class="txt-teal" x="710" y="161" text-anchor="middle" font-size="8.5">REQ-2 → API X → 3 services</text>
+        </svg>
+      </div>
+      <figcaption>Real grounding usually combines two or three of these in one retrieval pass — a lookup to anchor an id, then traversal or semantic search from there.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="hallucination">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Confident is not the same as correct</p>
+    <h2 class="section-title">Hallucination risk scales with how sure the answer sounds</h2>
+    <p class="lede">An engineering agent that states an API contract, a compliance rule, or a defect history from memory instead of a retrieved source is dangerous precisely because it sounds no less confident when it's wrong.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 210" role="img" aria-label="The same question, does API X support pagination, answered two ways. Without retrieval, the agent answers directly from memory with no source and a real risk of being wrong. With retrieval, the agent first searches the API X documentation, then answers with a citation to the exact section." style="min-width:700px">
+          <rect class="box" x="20" y="80" width="220" height="55" rx="8"></rect>
+          <text class="lbl-strong" x="130" y="105" text-anchor="middle" font-size="9.5">"Does API X support</text>
+          <text class="lbl-strong" x="130" y="120" text-anchor="middle" font-size="9.5">pagination?"</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M240,95 L300,55" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="310" y="45" font-size="8.5">no retrieval</text>
+          <rect class="box-brick" x="300" y="20" width="240" height="55" rx="8"></rect>
+          <text class="txt-brick" x="420" y="42" text-anchor="middle" font-size="9.5">Answer — from memory</text>
+          <text class="lbl" x="420" y="59" text-anchor="middle" font-size="8">confident, no source, may be wrong</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M240,115 L300,150" marker-end="url(#arrow)"></path>
+          <rect class="box-copper" x="300" y="128" width="180" height="34" rx="6"></rect>
+          <text class="lbl" x="390" y="149" text-anchor="middle" font-size="8.5">search API-X.md</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M480,145 L538,145" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="540" y="118" width="280" height="55" rx="8"></rect>
+          <text class="txt-teal" x="680" y="140" text-anchor="middle" font-size="9.5">Answer — cites API-X.md §pagination</text>
+          <text class="lbl" x="680" y="157" text-anchor="middle" font-size="8">verifiable, traceable to a source</text>
+        </svg>
+      </div>
+      <figcaption>Neither answer looks less confident in the transcript — the difference only shows up when someone tries to verify the claim.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="guardrails">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Subtopic: no unsupported facts</p>
+    <h2 class="section-title">Every claim needs a source, or it needs to say "unknown"</h2>
+    <p class="lede">The guardrail is simple to state and easy to skip under pressure: an agent may only assert what it can point to. If nothing in the retrieved context supports a claim, the answer is "not found in the provided sources" — never a best guess dressed up as fact.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 200" role="img" aria-label="Every candidate claim passes through a guardrail check: is it supported by a retrieved source. If yes, the agent states the claim and cites the source. If no, the agent says the claim was not found in the provided sources instead of guessing." style="min-width:700px">
+          <rect class="box" x="20" y="70" width="200" height="60" rx="8"></rect>
+          <text class="lbl-strong" x="120" y="95" text-anchor="middle" font-size="9.5">Candidate claim</text>
+          <text class="lbl" x="120" y="112" text-anchor="middle" font-size="8">e.g. "the API rate limit is 100/min"</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M220,100 L278,100" marker-end="url(#arrow)"></path>
+
+          <path class="box-copper" d="M330,60 L400,100 L330,140 L260,100 Z"></path>
+          <text class="txt-copper" x="330" y="96" text-anchor="middle" font-size="8">supported by a</text>
+          <text class="txt-copper" x="330" y="109" text-anchor="middle" font-size="8">retrieved source?</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M400,90 L460,55" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="410" y="62" font-size="8.5">yes</text>
+          <rect class="box-teal" x="462" y="25" width="280" height="55" rx="8"></rect>
+          <text class="txt-teal" x="602" y="48" text-anchor="middle" font-size="9.5">State claim + cite source</text>
+          <text class="lbl" x="602" y="65" text-anchor="middle" font-size="8">"...100/min (source: API-X.md §3)"</text>
+
+          <path class="arrow" stroke="var(--brick)" d="M400,110 L460,150" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="410" y="145" font-size="8.5">no</text>
+          <rect class="box-brick" x="462" y="122" width="280" height="55" rx="8"></rect>
+          <text class="txt-brick" x="602" y="145" text-anchor="middle" font-size="9.5">"Not found in provided sources"</text>
+          <text class="lbl" x="602" y="162" text-anchor="middle" font-size="8">flagged as unknown, not guessed</text>
+        </svg>
+      </div>
+      <figcaption>This is the same approve/reject discipline Module 9 applied to a spec clause — now applied to every factual claim an agent makes.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="separation">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Subtopic: retrieval is not action</p>
+    <h2 class="section-title">Reading a source and acting on it are two different steps</h2>
+    <p class="lede">Retrieval — searching docs, fetching a resource, reading repo code — should never carry side effects. Only after grounded context is assembled does an agent cross into the action lane: running tests, modifying files, calling a tool that changes something.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 200" role="img" aria-label="Two lanes separated by a boundary. The retrieval lane is read-only and includes searching documents, fetching a resource, and reading repository code, with no side effects. The action lane comes after and includes running tests, modifying files, and calling tools that change something, gated by approval." style="min-width:700px">
+          <rect class="box-teal" x="20" y="20" width="380" height="160" rx="10"></rect>
+          <text class="lbl-strong" x="210" y="45" text-anchor="middle" font-size="10">RETRIEVAL LANE — read-only</text>
+          <text class="lbl" x="40" y="70" font-size="9">• search documents</text>
+          <text class="lbl" x="40" y="90" font-size="9">• fetch a resource</text>
+          <text class="lbl" x="40" y="110" font-size="9">• read repository code</text>
+          <text class="lbl" x="40" y="130" font-size="9">• query a knowledge source</text>
+          <text class="txt-teal" x="210" y="160" text-anchor="middle" font-size="9">no side effects, always safe to run</text>
+
+          <line x1="430" y1="15" x2="430" y2="185" stroke="var(--copper)" stroke-width="2" stroke-dasharray="5 4"></line>
+          <text class="txt-copper" x="430" y="8" text-anchor="middle" font-size="8">grounding completes before action begins</text>
+
+          <rect class="box-brick" x="460" y="20" width="380" height="160" rx="10"></rect>
+          <text class="lbl-strong" x="650" y="45" text-anchor="middle" font-size="10">ACTION LANE — write / execute</text>
+          <text class="lbl" x="480" y="70" font-size="9">• run tests</text>
+          <text class="lbl" x="480" y="90" font-size="9">• modify files</text>
+          <text class="lbl" x="480" y="110" font-size="9">• call a tool with side effects</text>
+          <text class="lbl" x="480" y="130" font-size="9">• commit or push changes</text>
+          <text class="txt-brick" x="650" y="160" text-anchor="middle" font-size="9">gated by approvals and guardrails</text>
+        </svg>
+      </div>
+      <figcaption>MCP's own resources-vs-tools split from Section 03 maps directly onto this lane boundary — it isn't a new idea, just the same one applied deliberately.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="scoping">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Subtopic: three ways to supply context</p>
+    <h2 class="section-title">Repo context, rules/skills, or MCP — pick by task shape</h2>
+    <p class="lede">A one-off question about this codebase usually just needs direct repo context. A pattern the team repeats belongs in a rule or skill. A live external system needs MCP. Reaching for MCP when a rule would do just adds a server to maintain for no benefit.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 220" role="img" aria-label="A decision starting from what kind of task this is branches three ways. A local one-off question uses direct repository context. A pattern the team repeats uses rules and skills from Module 8. A task needing a live external system uses MCP from Section 03." style="min-width:700px">
+          <path class="box-copper" d="M370,20 L490,20 L490,70 L430,100 L370,70 Z"></path>
+          <text class="txt-copper" x="430" y="50" text-anchor="middle" font-size="9">what kind of</text>
+          <text class="txt-copper" x="430" y="63" text-anchor="middle" font-size="9">task is this?</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M390,95 L180,140" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M430,100 L430,140" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M470,95 L680,140" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="30" y="142" width="250" height="65" rx="8"></rect>
+          <text class="txt-teal" x="155" y="165" text-anchor="middle" font-size="9.5">Direct repo context</text>
+          <text class="lbl" x="155" y="182" text-anchor="middle" font-size="8">local, one-off question</text>
+          <text class="lbl" x="155" y="196" text-anchor="middle" font-size="8">"why does this function fail?"</text>
+
+          <rect class="box-plum" x="305" y="142" width="250" height="65" rx="8"></rect>
+          <text class="txt-plum" x="430" y="165" text-anchor="middle" font-size="9.5">Rules / Skills</text>
+          <text class="lbl" x="430" y="182" text-anchor="middle" font-size="8">recurring, team-wide pattern</text>
+          <text class="lbl" x="430" y="196" text-anchor="middle" font-size="8">Module 8's shared library</text>
+
+          <rect class="box-copper" x="580" y="142" width="250" height="65" rx="8"></rect>
+          <text class="txt-copper" x="705" y="165" text-anchor="middle" font-size="9.5">MCP</text>
+          <text class="lbl" x="705" y="182" text-anchor="middle" font-size="8">live, external system</text>
+          <text class="lbl" x="705" y="196" text-anchor="middle" font-size="8">ticket tracker, database, docs</text>
+        </svg>
+      </div>
+      <figcaption>The three options stack, not compete — a well-scoped agent commonly uses all three at once, each for the part of the task it actually fits.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">09 — Hands-on walkthrough</p>
+    <h2 class="section-title">Watch a context-grounding and MCP configuration, end to end</h2>
+    <p class="lede">Not a build exercise yet — that's Module 13's lab. This is a guided walkthrough of a working configuration: scoped repo context, a connected MCP server, and one grounded answer with a visible citation.</p>
+    <div class="activity-grid" style="grid-template-columns:1fr; max-width:680px;">
+      <div class="activity-card">
+        <p class="activity-tag">Walkthrough · Sets up Module 13</p>
+        <h3>Trace one question from context to cited answer</h3>
+        <p>Watch how a single engineering question gets scoped context from the repo, an MCP connection to an external doc source, a retrieval pass, and a final answer that cites exactly where each fact came from — the full mechanics from Sections 01–08, assembled in one place.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">10 — Before the lab</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Context is selected, structured, and scoped for the task — an intentional funnel, not everything the agent could technically see.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Five grounding sources answer five different questions, and MCP is the standard way to reach the ones that live outside the repo.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Retrieval strategy has to match the question — semantic search, structured lookup, or graph traversal aren't interchangeable.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Unsupported claims get flagged, not guessed; retrieval stays separate from action; and the right context source depends on the task.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 13 — Use Case Lab 2: Knowledge-Grounded Engineering Agent</strong> builds an agent that cites repo code, SRS/SDS docs, standards, and defect history — and declines unsupported claims.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 12 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

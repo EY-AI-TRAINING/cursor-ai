@@ -1,0 +1,549 @@
+<title>Governance &amp; Observability</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ font-size:11px; fill:var(--ink-soft); }
+  .lbl-strong{ font-size:12.5px; fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#privacy" data-target="privacy"><span class="dot"></span><span class="rail-label">01 · Data privacy &amp; IP</span></a>
+  <a href="#admincontrols" data-target="admincontrols"><span class="dot"></span><span class="rail-label">02 · Admin controls &amp; audit</span></a>
+  <a href="#safeexecution" data-target="safeexecution"><span class="dot"></span><span class="rail-label">03 · Safe execution</span></a>
+  <a href="#compliance" data-target="compliance"><span class="dot"></span><span class="rail-label">04 · SOC2 / GDPR</span></a>
+  <a href="#tracing" data-target="tracing"><span class="dot"></span><span class="rail-label">05 · Multi-agent tracing</span></a>
+  <a href="#handofflogs" data-target="handofflogs"><span class="dot"></span><span class="rail-label">06 · Handoff logging</span></a>
+  <a href="#costvisibility" data-target="costvisibility"><span class="dot"></span><span class="rail-label">07 · Cost visibility</span></a>
+  <a href="#accesspolicies" data-target="accesspolicies"><span class="dot"></span><span class="rail-label">08 · Policy layer</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">09 · Hands-on + quiz</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">10 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#privacy" data-target="privacy">01</a>
+  <a href="#admincontrols" data-target="admincontrols">02</a>
+  <a href="#safeexecution" data-target="safeexecution">03</a>
+  <a href="#compliance" data-target="compliance">04</a>
+  <a href="#tracing" data-target="tracing">05</a>
+  <a href="#handofflogs" data-target="handofflogs">06</a>
+  <a href="#costvisibility" data-target="costvisibility">07</a>
+  <a href="#accesspolicies" data-target="accesspolicies">08</a>
+  <a href="#handson" data-target="handson">09</a>
+  <a href="#recap" data-target="recap">10</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 4 · Context Engineering, Knowledge Grounding, Governance &amp; Observability — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Governance, Security &amp; Observability</h1>
+    <p class="lede hero-lede">Module 14 — 45 minutes, closing Day 4. The grounded agent built in Module 13 now has to survive contact with an enterprise: who can grant it access, what it's allowed to touch, what gets logged when it acts, and what it costs to run. Seven topics move fast — this is the governance layer every agent from here forward has to sit inside.</p>
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">7</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">subtopic</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">hands-on + quiz</span></li>
+      <li class="stat-tile"><span class="stat-num">45</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#privacy"><span class="agenda-index">01</span><span>Data privacy and IP handling for connected documents and knowledge sources</span></a></li>
+      <li><a href="#admincontrols"><span class="agenda-index">02</span><span>Enterprise admin controls, audit logs, and access scoping for agent tool use</span></a></li>
+      <li><a href="#safeexecution"><span class="agenda-index">03</span><span>Safe execution: approvals, permissions, sandboxing, and controlled tool access</span></a></li>
+      <li><a href="#compliance"><span class="agenda-index">04</span><span>Compliance considerations (SOC2, GDPR) as applied to grounded agents</span></a></li>
+      <li><a href="#tracing"><span class="agenda-index">05</span><span>Tracing and logging across multi-agent pipelines</span></a></li>
+      <li><a href="#handofflogs"><span class="agenda-index">06</span><span>What to log at each agent handoff for debuggability and traceability</span></a></li>
+      <li><a href="#costvisibility"><span class="agenda-index">07</span><span>Cost visibility per agent call and per task</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<section class="deck-section" id="privacy">
+  <div class="section-inner">
+    <p class="eyebrow">01 — What crosses the boundary</p>
+    <h2 class="section-title">Every connected source is also a data exposure</h2>
+    <p class="lede">Connecting a document store or knowledge base means whatever's inside it can end up inside a prompt, a log, or a model call. Data privacy and IP handling decide what's allowed to make that trip before a connection is approved — not after something leaks.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 200" role="img" aria-label="A source document passes through a classification check before it can enter agent context. Public and internal content is allowed through. Confidential or IP-restricted content is blocked or redacted before it ever reaches the model call." style="min-width:700px">
+          <rect class="box" x="20" y="75" width="200" height="50" rx="8"></rect>
+          <text class="lbl-strong" x="120" y="105" text-anchor="middle" font-size="10">Source document</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M220,100 L278,100" marker-end="url(#arrow)"></path>
+
+          <path class="box-copper" d="M330,60 L400,100 L330,140 L260,100 Z"></path>
+          <text class="txt-copper" x="330" y="96" text-anchor="middle" font-size="8">classified as</text>
+          <text class="txt-copper" x="330" y="109" text-anchor="middle" font-size="8">public / internal / IP?</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M400,90 L460,55" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="410" y="62" font-size="8.5">public / internal</text>
+          <rect class="box-teal" x="462" y="25" width="280" height="55" rx="8"></rect>
+          <text class="txt-teal" x="602" y="48" text-anchor="middle" font-size="9.5">Allowed into agent context</text>
+          <text class="lbl" x="602" y="65" text-anchor="middle" font-size="8">may be retrieved, cited, sent to the model</text>
+
+          <path class="arrow" stroke="var(--brick)" d="M400,110 L460,150" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="410" y="145" font-size="8.5">IP-restricted</text>
+          <rect class="box-brick" x="462" y="122" width="280" height="55" rx="8"></rect>
+          <text class="txt-brick" x="602" y="145" text-anchor="middle" font-size="9.5">Blocked or redacted first</text>
+          <text class="lbl" x="602" y="162" text-anchor="middle" font-size="8">never reaches the prompt or a log</text>
+        </svg>
+      </div>
+      <figcaption>The check belongs at connection time, not at retrieval time — by the time a retrieval runs, it's too late to decide the source shouldn't have been reachable.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="admincontrols">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Who can grant what</p>
+    <h2 class="section-title">Admin controls decide who can turn on agent tool access</h2>
+    <p class="lede">Access to repositories, MCP connections, and tool execution isn't a per-developer setting in an enterprise rollout — it's granted by admins, scoped per team or project, and every grant and every use gets written to an audit log.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 210" role="img" aria-label="An admin console grants scoped access to Team A and Team B. Each team's agent tool use is recorded as an event in a shared audit log, which captures both the original grant and every subsequent use." style="min-width:700px">
+          <rect class="box-plum" x="20" y="75" width="200" height="55" rx="8"></rect>
+          <text class="txt-plum" x="120" y="98" text-anchor="middle" font-size="10">Admin console</text>
+          <text class="lbl" x="120" y="115" text-anchor="middle" font-size="8">grants scoped access</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M220,90 L278,55" marker-end="url(#arrow)"></path>
+          <path class="arrow" stroke="var(--ink-soft)" d="M220,115 L278,150" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="280" y="25" width="180" height="50" rx="8"></rect>
+          <text class="lbl-strong" x="370" y="55" text-anchor="middle" font-size="9.5">Team A — repo + MCP</text>
+
+          <rect class="box" x="280" y="128" width="180" height="50" rx="8"></rect>
+          <text class="lbl-strong" x="370" y="158" text-anchor="middle" font-size="9.5">Team B — repo only</text>
+
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M460,50 L558,90" marker-end="url(#arrow)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M460,153 L558,113" marker-end="url(#arrow)"></path>
+
+          <rect class="box-copper" x="560" y="55" width="280" height="95" rx="10"></rect>
+          <text class="lbl-strong" x="700" y="78" text-anchor="middle" font-size="10">AUDIT LOG</text>
+          <text class="lbl" x="580" y="98" font-size="8">09:14 grant · Team A · repo+MCP</text>
+          <text class="lbl" x="580" y="114" font-size="8">09:41 use · Team A · fetched SRS-04</text>
+          <text class="lbl" x="580" y="130" font-size="8">10:02 use · Team B · read repo file</text>
+        </svg>
+      </div>
+      <figcaption>The audit log is the one artifact that lets a security review answer "who could this agent reach, and when did it actually reach it."</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="safeexecution">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Four layers between an agent and damage</p>
+    <h2 class="section-title">Safe execution stacks four independent controls</h2>
+    <p class="lede">Controlled tool access limits which tools exist at all. Permissions limit which actions are reachable. Sandboxing contains what a wrong action can touch. Approvals gate the moment right before a risky action runs. Any one layer failing shouldn't be catastrophic.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 210" role="img" aria-label="A requested action passes through four nested layers before it reaches the system: controlled tool access as the outermost layer, then permissions, then sandboxing, then an approval gate as the innermost layer immediately before execution." style="min-width:700px">
+          <rect class="box" x="20" y="20" width="820" height="170" rx="14"></rect>
+          <text class="lbl-strong" x="40" y="42" font-size="10">controlled tool access — only approved tools even exist</text>
+
+          <rect class="box-copper" x="50" y="55" width="750" height="120" rx="12"></rect>
+          <text class="txt-copper" x="70" y="76" font-size="9.5">permissions — which actions this agent may call</text>
+
+          <rect class="box-teal" x="90" y="88" width="620" height="70" rx="10"></rect>
+          <text class="txt-teal" x="110" y="107" font-size="9.5">sandboxing — contains what an action can touch</text>
+
+          <rect class="box-brick" x="140" y="118" width="360" height="30" rx="8"></rect>
+          <text class="txt-brick" x="320" y="138" text-anchor="middle" font-size="9.5">approval gate — human confirms before execution</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M760,110 L800,110" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="805" y="105" font-size="9">system</text>
+        </svg>
+      </div>
+      <figcaption>None of the four is optional in an enterprise rollout — they're independent, so a gap in one still leaves three others standing.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="compliance">
+  <div class="section-inner">
+    <p class="eyebrow">04 — The rules don't pause for AI</p>
+    <h2 class="section-title">SOC2 and GDPR apply to what the agent touches</h2>
+    <p class="lede">A grounded agent reading personal data out of a defect log or a customer ticket triggers the same GDPR obligations a person reading it would. SOC2's access-control and audit expectations apply just as directly to an agent's tool calls as to a person's.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 200" role="img" aria-label="Two compliance lanes, SOC2 and GDPR, both apply to the same agent actions of retrieval and tool calls. SOC2's access control and audit trail requirements are already met by the admin controls and audit log from Section 02. GDPR's personal data handling requirement is met by the data classification from Section 01." style="min-width:700px">
+          <rect class="box-copper" x="20" y="20" width="380" height="160" rx="10"></rect>
+          <text class="lbl-strong" x="210" y="44" text-anchor="middle" font-size="10">SOC2</text>
+          <text class="lbl" x="40" y="68" font-size="8.5">• access control over tool use</text>
+          <text class="lbl" x="40" y="86" font-size="8.5">• complete audit trail of actions</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" stroke-dasharray="3 4" d="M40,100 L370,100" marker-end="url(#arrow)"></path>
+          <text class="txt-teal" x="210" y="122" text-anchor="middle" font-size="9">satisfied by Section 02's admin</text>
+          <text class="txt-teal" x="210" y="138" text-anchor="middle" font-size="9">controls + audit log</text>
+
+          <rect class="box-brick" x="460" y="20" width="380" height="160" rx="10"></rect>
+          <text class="lbl-strong" x="650" y="44" text-anchor="middle" font-size="10">GDPR</text>
+          <text class="lbl" x="480" y="68" font-size="8.5">• lawful handling of personal data</text>
+          <text class="lbl" x="480" y="86" font-size="8.5">• retention limits, right to erasure</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" stroke-dasharray="3 4" d="M480,100 L810,100" marker-end="url(#arrow)"></path>
+          <text class="txt-teal" x="650" y="122" text-anchor="middle" font-size="9">satisfied by Section 01's data</text>
+          <text class="txt-teal" x="650" y="138" text-anchor="middle" font-size="9">classification at connection time</text>
+        </svg>
+      </div>
+      <figcaption>Compliance isn't a separate checklist bolted on afterward here — it's the same controls from Sections 01 and 02, pointed at a specific regulation.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="tracing">
+  <div class="section-inner">
+    <p class="eyebrow">05 — See the whole pipeline, not one call</p>
+    <h2 class="section-title">A trace follows a task across every agent that touched it</h2>
+    <p class="lede">Once multiple agents hand work to each other — as in Module 11's library, and later Module 16's chained pipeline — a log line per call isn't enough. Tracing threads one task through every agent, tool call, and handoff it passes through as a single connected timeline.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 190" role="img" aria-label="A single task carries one trace id as it moves through Agent A, Agent B, and Agent C in sequence. Each agent's span is marked along a shared timeline under the same trace id, showing the full path the task took." style="min-width:700px">
+          <text class="lbl-strong" x="40" y="30" font-size="10">trace: task-8841</text>
+          <line x1="30" y1="45" x2="830" y2="45" stroke="var(--line-strong)"></line>
+
+          <rect class="box-plum" x="40" y="65" width="220" height="50" rx="8"></rect>
+          <text class="txt-plum" x="150" y="88" text-anchor="middle" font-size="9.5">Agent A — requirement check</text>
+          <text class="lbl" x="150" y="104" text-anchor="middle" font-size="8">span: 0–1.2s</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M260,90 L316,90" marker-end="url(#arrow)"></path>
+
+          <rect class="box-copper" x="318" y="65" width="220" height="50" rx="8"></rect>
+          <text class="txt-copper" x="428" y="88" text-anchor="middle" font-size="9.5">Agent B — test generation</text>
+          <text class="lbl" x="428" y="104" text-anchor="middle" font-size="8">span: 1.2–3.8s</text>
+
+          <path class="arrow" stroke="var(--ink-soft)" d="M538,90 L594,90" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="596" y="65" width="220" height="50" rx="8"></rect>
+          <text class="txt-teal" x="706" y="88" text-anchor="middle" font-size="9.5">Agent C — validation</text>
+          <text class="lbl" x="706" y="104" text-anchor="middle" font-size="8">span: 3.8–4.5s</text>
+
+          <text class="lbl" x="430" y="145" text-anchor="middle" font-size="9">one trace id ties all three spans to the same originating task</text>
+        </svg>
+      </div>
+      <figcaption>Without a shared trace id, a failure in Agent C looks unrelated to what Agent A received two steps earlier — tracing is what keeps that link visible.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handofflogs">
+  <div class="section-inner">
+    <p class="eyebrow">06 — What to actually capture</p>
+    <h2 class="section-title">A useful handoff log is specific, not just present</h2>
+    <p class="lede">Logging "agent ran" tells you nothing when something breaks. A useful handoff log captures what was received, what it was grounded against, what it produced, and whether a guardrail fired — the same fields, every time, at every handoff.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 200" role="img" aria-label="A structured handoff log entry with six required fields: timestamp, from agent, to agent, input summary, sources used, output summary, and whether a guardrail was triggered." style="min-width:700px">
+          <rect class="box" x="150" y="20" width="560" height="165" rx="12"></rect>
+          <text class="lbl-strong" x="430" y="45" text-anchor="middle" font-size="10">handoff-log entry</text>
+          <text class="lbl" x="175" y="70" font-size="9">timestamp: 2026-09-21T10:41:03Z</text>
+          <text class="lbl" x="175" y="88" font-size="9">from_agent: "requirement-analysis"</text>
+          <text class="lbl" x="175" y="106" font-size="9">to_agent: "test-generation"</text>
+          <text class="lbl" x="175" y="124" font-size="9">input_summary: "REQ-2, approved v1.2"</text>
+          <text class="lbl" x="175" y="142" font-size="9">sources_used: ["SRS-04 §2.3", "defect-db#DEF-118"]</text>
+          <text class="lbl" x="175" y="160" font-size="9">output_summary: "4 PyTest cases generated"</text>
+          <text class="txt-teal" x="175" y="178" font-size="9">guardrail_triggered: none</text>
+        </svg>
+      </div>
+      <figcaption>The same shape as Module 11's input/output contract — a log format that's specific enough to be queried, not just read.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="costvisibility">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Know what a task costs before it scales</p>
+    <h2 class="section-title">Cost visibility turns "it's cheap" into a number</h2>
+    <p class="lede">Every agent call spends tokens, and every task is made of several calls. Without per-call and per-task visibility, a workflow that looks free in a demo can become the most expensive line item once it's running across a whole team, every day.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 200" role="img" aria-label="A cost table with four task types: a single requirement check, a full test generation pass, a grounded question with retrieval, and a five-agent chained pipeline. Each row shows average tokens per call, calls per task, and estimated cost, with the chained pipeline costing noticeably more than the others." style="min-width:700px">
+          <text class="lbl-strong" x="40" y="30" font-size="10">TASK</text>
+          <text class="lbl-strong" x="330" y="30" font-size="10">CALLS × TOKENS</text>
+          <text class="lbl-strong" x="620" y="30" font-size="10">EST. COST</text>
+          <line x1="30" y1="42" x2="830" y2="42" stroke="var(--line-strong)"></line>
+
+          <text class="lbl" x="40" y="70" font-size="10">Single requirement check</text>
+          <text class="lbl" x="330" y="70" font-size="10">1 call × ~2K tokens</text>
+          <rect class="box-teal" x="600" y="55" width="120" height="26" rx="13"></rect>
+          <text class="txt-teal" x="660" y="72" text-anchor="middle" font-size="9">$</text>
+
+          <text class="lbl" x="40" y="105" font-size="10">Grounded question (with retrieval)</text>
+          <text class="lbl" x="330" y="105" font-size="10">2 calls × ~4K tokens</text>
+          <rect class="box-teal" x="600" y="90" width="120" height="26" rx="13"></rect>
+          <text class="txt-teal" x="660" y="107" text-anchor="middle" font-size="9">$$</text>
+
+          <text class="lbl" x="40" y="140" font-size="10">Full test-generation pass</text>
+          <text class="lbl" x="330" y="140" font-size="10">3 calls × ~6K tokens</text>
+          <rect class="box-copper" x="600" y="125" width="120" height="26" rx="13"></rect>
+          <text class="txt-copper" x="660" y="142" text-anchor="middle" font-size="9">$$$</text>
+
+          <text class="lbl" x="40" y="175" font-size="10">5-agent chained pipeline</text>
+          <text class="lbl" x="330" y="175" font-size="10">14 calls × ~5K tokens avg</text>
+          <rect class="box-brick" x="600" y="160" width="120" height="26" rx="13"></rect>
+          <text class="txt-brick" x="660" y="177" text-anchor="middle" font-size="9">$$$$$</text>
+        </svg>
+      </div>
+      <figcaption>The chained pipeline in the last row is exactly the shape Module 16 introduces — cost visibility is why that module's design has to earn each additional agent.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="accesspolicies">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Subtopic: the policy layer underneath it all</p>
+    <h2 class="section-title">Four policy decisions every rollout makes once</h2>
+    <p class="lede">Which knowledge sources are approved vs. restricted, which files and folders are off-limits regardless of who's asking, how secrets stay out of context entirely, and which observability tooling actually surfaces these logs — decided once, centrally, not re-litigated per agent.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 240" role="img" aria-label="Four policy areas set once at the enterprise level: approved versus restricted knowledge sources, restricted file and folder access, secrets handling where secrets are pulled from a vault at execution time and never enter context, and the observability tooling where logs, traces, and cost data land." style="min-width:700px">
+          <rect class="box-teal" x="20" y="20" width="400" height="95" rx="10"></rect>
+          <text class="txt-teal" x="220" y="44" text-anchor="middle" font-size="10">Approved vs. restricted sources</text>
+          <text class="lbl" x="40" y="66" font-size="8.5">allow-list of doc stores, defect DBs, wikis</text>
+          <text class="lbl" x="40" y="84" font-size="8.5">— anything else is unreachable by default</text>
+
+          <rect class="box-copper" x="440" y="20" width="400" height="95" rx="10"></rect>
+          <text class="txt-copper" x="640" y="44" text-anchor="middle" font-size="10">Restricted file/folder access</text>
+          <text class="lbl" x="460" y="66" font-size="8.5">deny patterns on /secrets, /legal, /hr</text>
+          <text class="lbl" x="460" y="84" font-size="8.5">— enforced regardless of who's asking</text>
+
+          <rect class="box-brick" x="20" y="130" width="400" height="95" rx="10"></rect>
+          <text class="txt-brick" x="220" y="154" text-anchor="middle" font-size="10">Secrets handling</text>
+          <text class="lbl" x="40" y="176" font-size="8.5">pulled from a vault at execution time only</text>
+          <text class="lbl" x="40" y="194" font-size="8.5">— never enter the agent's context or a log</text>
+
+          <rect class="box-plum" x="440" y="130" width="400" height="95" rx="10"></rect>
+          <text class="txt-plum" x="640" y="154" text-anchor="middle" font-size="10">Observability tooling</text>
+          <text class="lbl" x="460" y="176" font-size="8.5">where traces, handoff logs, and cost data land</text>
+          <text class="lbl" x="460" y="194" font-size="8.5">— one dashboard, not four disconnected ones</text>
+        </svg>
+      </div>
+      <figcaption>These four decisions are what Sections 01–07 assume already exist — this is where they actually get written down.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">09 — Hands-on exercise and quiz</p>
+    <h2 class="section-title">Configure one policy, then trace what it produces</h2>
+    <p class="lede">A short, focused exercise to close Day 4: set one access-scoping policy, run a sample multi-step task through it, and read the trace and handoff logs it generates. A short quiz checks the governance vocabulary from this module before Day 5 begins.</p>
+    <div class="activity-grid" style="grid-template-columns:1fr; max-width:680px;">
+      <div class="activity-card">
+        <p class="activity-tag">Hands-on + quiz · Closes Day 4</p>
+        <h3>Set a policy, run a task, read the trace</h3>
+        <p>Configure a restricted file/folder access rule, run a grounded task against it, and confirm the audit log, trace id, and handoff log entries all line up — then a short quiz on data privacy, safe execution, compliance, and observability terms from this module.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">10 — Before Day 5</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Data privacy, admin-granted access, and audit logging decide what an agent can reach — set at connection time, not discovered later.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Safe execution stacks four independent layers, and SOC2/GDPR compliance falls out of controls this module already requires.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Tracing and structured handoff logs make a multi-agent pipeline debuggable instead of a black box once something fails.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Cost is visible per call and per task — which matters most once agents start chaining, starting with Day 5's pipelines.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 15 — Subagents &amp; Orchestration Patterns Overview</strong> opens Day 5, where these governance controls meet real multi-agent pipelines for the first time.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 14 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>

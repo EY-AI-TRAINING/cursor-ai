@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "knowledge-files": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${workspaceFolder}/knowledge"
+      ]
+    },
+    "docs-remote": {
+      "url": "https://mcp.example.internal/docs",
+      "headers": {
+        "Authorization": "Bearer ${env:DOCS_MCP_TOKEN}"
+      }
+    }
+  }
+}

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 14 — Governance, Security &amp; Observability</title>
+<meta name="description" content="Interactive walkthrough: data privacy and IP handling for connected documents and knowledge sources; enterprise admin controls, audit logs, and access scoping for agent tool use; safe execution through approvals, permissions, sandboxing, and controlled tool access; SOC2/GDPR compliance considerations for grounded agents; tracing and logging across multi-agent pipelines; and cost visibility per agent call/task.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%A1%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.6px;font-weight:600;color:var(--text-faint);padding:8px 10px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:640px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Diff blocks ===================== */
+.diff-block{font-family:var(--mono);font-size:12.8px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;margin-top:10px;}
+.diff-line{padding:2px 6px;border-radius:3px;}
+.diff-add{background:rgba(52,211,153,0.12);color:var(--good);}
+.diff-del{background:rgba(251,113,133,0.12);color:var(--danger);text-decoration:line-through;}
+.diff-ctx{color:var(--text-faint);}
+
+/* ===================== Code editor mockup ===================== */
+.code-editor{background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:16px 18px;font-family:var(--mono);font-size:13px;line-height:1.85;overflow-x:auto;}
+.code-line{display:flex;white-space:pre;border-radius:4px;transition:opacity .15s ease, background .15s ease;}
+.line-num{color:var(--text-faint);width:22px;flex:0 0 auto;text-align:right;margin-right:16px;user-select:none;}
+.code-text{color:var(--text);}
+.code-kw{color:var(--accent-soft);}
+.code-str{color:var(--good);}
+.code-meta{color:var(--text-faint);font-style:italic;}
+
+/* ===================== Accordion table ===================== */
+.acc-table{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:6px;}
+.acc-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:14px 18px;cursor:pointer;border-top:1px solid var(--border-soft);background:var(--surface);transition:background .15s;}
+.acc-row:first-child{border-top:none;}
+.acc-row:hover{background:var(--surface-2);}
+.acc-row .dim{font-weight:700;font-size:14px;font-family:var(--mono);}
+.acc-detail{display:none;padding:0 18px 16px;background:var(--surface);border-top:1px solid var(--border-soft);}
+.acc-detail.single.show{display:block;padding-top:14px;animation:fadein .3s ease;}
+.acc-caret{color:var(--text-faint);transition:transform .2s;}
+.acc-row.open .acc-caret{transform:rotate(180deg);}
+
+/* ===================== Skill / option picker ===================== */
+.skill-grid{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+.skill-btn{flex:1;min-width:160px;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;text-align:left;transition:all .15s;}
+.skill-btn:hover{border-color:var(--accent-soft);}
+.skill-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));}
+.skill-btn .sk-icon{font-size:20px;}
+.skill-btn .sk-name{font-weight:700;font-size:14px;margin-top:6px;font-family:var(--mono);}
+.skill-btn .sk-ex{font-size:12px;color:var(--text-faint);margin-top:2px;}
+
+/* ===================== Scenario / hands-on ===================== */
+.scenario-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;}
+.scenario-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
+.scenario-item:hover{background:var(--surface-2);}
+.scenario-item.checked{background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.25);}
+.scenario-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.scenario-item.checked .scenario-box{background:var(--accent);border-color:var(--accent);color:#fff;}
+.scenario-label{font-size:14px;font-family:var(--mono);}
+.scenario-item.fb-good .scenario-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.scenario-item.fb-bad .scenario-box{background:var(--danger);border-color:var(--danger);color:#3a0a10;}
+.scenario-fb-tag{margin-left:auto;font-size:11.5px;font-family:var(--mono);color:var(--text-faint);}
+.scenario-result{margin-top:16px;padding:14px 16px;border-radius:10px;display:none;}
+.scenario-result.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Checklist ===================== */
+.checklist{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);text-decoration:line-through;}
+.check-label{font-size:14px;}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Flow / gate visual ===================== */
+.flow-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.flow-node{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);font-size:12.8px;font-family:var(--mono);white-space:nowrap;transition:all .2s ease;}
+.flow-node.gate{border-color:var(--warn);background:rgba(245,158,11,0.1);color:var(--warn);font-weight:700;}
+.flow-node.good{border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.1);color:var(--good);}
+a.flow-node{text-decoration:none;color:var(--text);cursor:pointer;}
+a.flow-node:hover{border-color:var(--accent-soft);}
+.flow-arrow{color:var(--text-faint);font-size:16px;}
+
+/* ===================== Contract cards ===================== */
+.contract-field{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--border-soft);font-size:13px;}
+.contract-field:first-child{border-top:none;}
+.contract-field .fname{font-family:var(--mono);color:var(--text);}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){ .section{padding:60px 16px;} .acc-row{grid-template-columns:1fr auto;} .flow-row{gap:6px;} }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="module-13-use-case-lab-2-knowledge-grounded-engineering-agent.html" class="brand"><span class="brand-badge">🛡️</span> Module 14</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#data-privacy">Data privacy &amp; IP</a>
+      <a href="#admin-controls">Admin controls</a>
+      <a href="#safe-execution">Safe execution</a>
+      <a href="#compliance">SOC2 / GDPR</a>
+      <a href="#tracing">Tracing &amp; logging</a>
+      <a href="#cost">Cost visibility</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-13-use-case-lab-2-knowledge-grounded-engineering-agent.html" class="prev-link">← Module 13</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 4 · Module 14</div>
+    <h1>Governance, Security<br>&amp; Observability</h1>
+    <p class="hero-sub">Module 13 proved your agent can ground its answers. This module is about proving your organization can trust it at scale — who can see what, what gets logged, what's compliant, and what it costs.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 45 min</span>
+      <span class="pill pill-neutral">🔐 Access, audit, compliance</span>
+      <span class="pill pill-neutral">📊 Tracing &amp; cost visibility</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. DATA PRIVACY & IP HANDLING -->
+<!-- ============================================================ -->
+<section class="section" id="data-privacy">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / Data privacy and IP handling</span>
+      <h2>Approved source, or restricted source?</h2>
+      <p>Every connected document or knowledge source needs a classification before an agent ever touches it. Click each to sort it.</p>
+    </div>
+    <div class="card reveal">
+      <div class="scenario-list" id="privacyScenarios"></div>
+      <div class="scenario-result" id="privacyResult"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. ADMIN CONTROLS -->
+<!-- ============================================================ -->
+<section class="section" id="admin-controls">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / Enterprise admin controls</span>
+      <h2>Four levers an enterprise admin actually holds</h2>
+      <p>Click a lever to see what it controls and what it looks like configured.</p>
+    </div>
+    <div class="card reveal">
+      <div class="acc-table" id="adminAccTable"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. SAFE EXECUTION -->
+<!-- ============================================================ -->
+<section class="section" id="safe-execution">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / Safe execution</span>
+      <h2>Every tool call earns its way to running</h2>
+      <p>Approvals, permissions, and sandboxing stack before anything consequential executes — and secrets never appear in the clear.</p>
+    </div>
+    <div class="card reveal">
+      <div class="flow-row" id="safeExecFlow"></div>
+    </div>
+    <div class="card reveal" style="margin-top:18px;">
+      <b style="font-size:14px;">🔑 Secrets handling</b>
+      <p class="hint" style="margin-top:6px;">Same log line, two very different outcomes.</p>
+      <div class="diff-block" style="margin-top:12px;">
+        <div class="diff-line diff-del"># logger.info(f"Connecting with API key: {api_key}")</div>
+        <div class="diff-line diff-add"># logger.info("Connecting with API key: [REDACTED]")</div>
+        <div class="diff-line diff-add"># api_key = vault.get_secret("auth-service/api-key")  # never inlined</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. COMPLIANCE -->
+<!-- ============================================================ -->
+<section class="section" id="compliance">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Compliance considerations</span>
+      <h2>SOC2 and GDPR, applied to a grounded agent</h2>
+      <p>Not abstract policy — specific things a grounded agent's setup needs to satisfy.</p>
+    </div>
+    <div class="card reveal">
+      <div class="skill-grid" id="complianceTabGrid"></div>
+      <div id="compliancePanel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. TRACING & LOGGING -->
+<!-- ============================================================ -->
+<section class="section" id="tracing">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Tracing and logging across multi-agent pipelines</span>
+      <h2>What gets logged at every handoff</h2>
+      <p>Run a sample pipeline and watch the trace accumulate, one handoff at a time.</p>
+    </div>
+    <div class="card reveal">
+      <div class="flow-row" id="traceFlow"></div>
+      <button class="btn btn-primary btn-sm" id="traceRun" style="margin-top:18px;">▶ Trace a pipeline run</button>
+      <div class="card-soft" id="traceLog" style="padding:14px 16px;margin-top:14px;font-family:var(--mono);font-size:12.5px;color:var(--text-dim);white-space:pre-line;">Click "Trace a pipeline run" to see what gets logged at each handoff.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
+        <span class="tag">Observability tooling:</span>
+        <span class="pill pill-neutral">OpenTelemetry traces</span>
+        <span class="pill pill-neutral">Structured JSON logs</span>
+        <span class="pill pill-neutral">Cost/latency dashboard</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. COST VISIBILITY -->
+<!-- ============================================================ -->
+<section class="section" id="cost">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / Cost visibility per agent call/task</span>
+      <h2>Cost compounds with every stage</h2>
+      <p>Same underlying model, three very different bills. Click each to see the breakdown.</p>
+    </div>
+    <div class="card reveal">
+      <div class="skill-grid" id="costGrid"></div>
+      <div class="card-soft" id="costDetail" style="padding:18px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. HANDS-ON -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">Hands-on</span>
+      <h2>Governance exercise</h2>
+      <p>Track what's actually configured, not just discussed.</p>
+    </div>
+    <div class="card reveal">
+      <div class="checklist" id="handsonChecklist"></div>
+      <div class="progress-track"><div class="progress-fill" id="handsonFill"></div></div>
+      <div class="progress-label" id="handsonLabel">0 / 5</div>
+      <div class="setup-done" id="handsonDone">✅ Governed — classified, access-scoped, gated, traced, and cost-visible. Module 15 builds the multi-agent pipelines this observability was designed for.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">Knowledge check</span>
+      <h2>Quick check before Day 5</h2>
+      <p>Five questions from what you just covered.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/5</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">Day 4 complete: grounded, and governable</h3>
+    <ul>
+      <li>Every connected source gets classified as approved or restricted before an agent ever touches it — that's a data privacy and IP decision, not a technical afterthought.</li>
+      <li>Admin controls, audit logs, access scoping, and restricted file/folder policies are the four levers that make agent tool use enterprise-safe.</li>
+      <li>Tool calls pass through permission checks, sandboxing, and a human approval gate before executing — and secrets are redacted, never logged in the clear.</li>
+      <li>SOC2 and GDPR translate into concrete requirements: audit trails, versioned agent/rule changes, data minimization, and data residency for MCP connections.</li>
+      <li>Every agent handoff in a pipeline logs enough to debug and trace it — and observability tooling (traces, structured logs, dashboards) makes that usable.</li>
+      <li>Cost compounds per stage in a pipeline — visibility per call/task is what makes an ROI case possible later, in Module 21.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-13-use-case-lab-2-knowledge-grounded-engineering-agent.html" class="btn">← Module 13: Use Case Lab 2</a>
+    <a href="#" class="btn">↑ Back to top</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 14 — Governance, Security &amp; Observability · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["audit log","access scoping","sandboxing","approval gate","SOC2","GDPR","data residency","secrets redacted","trace id","token cost","least privilege","restricted source","observability","handoff","compliance"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ---------- Shared: checklist factory ---------- */
+function initChecklist(items, listId, fillId, labelId, doneId, labelSuffix){
+  var list = document.getElementById(listId);
+  var fill = document.getElementById(fillId);
+  var label = document.getElementById(labelId);
+  var done = document.getElementById(doneId);
+  var checked = new Array(items.length).fill(false);
+  list.innerHTML = '';
+  items.forEach(function(text, i){
+    var row = document.createElement('div');
+    row.className = 'check-item';
+    row.innerHTML = '<span class="check-box">✓</span><span class="check-label">'+text+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+      update();
+    });
+    list.appendChild(row);
+  });
+  function update(){
+    var count = checked.filter(Boolean).length;
+    fill.style.width = (count / items.length * 100) + '%';
+    label.textContent = count + ' / ' + items.length + ' ' + (labelSuffix || 'checked');
+    done.classList.toggle('show', count === items.length);
+  }
+  update();
+}
+
+/* ============================================================
+   1. DATA PRIVACY / IP SCENARIO SORTING
+   ============================================================ */
+(function(){
+  var items = [
+    { label:'Internal SRS/SDS documents stored in the repository', good:true },
+    { label:'A raw customer PII export dropped into a scratch file for debugging', good:false },
+    { label:'Public, published API documentation', good:true },
+    { label:'A vendor\'s proprietary source code shared under NDA', good:false },
+    { label:'Anonymized, aggregated usage metrics', good:true },
+    { label:'An HR export containing employee salary and SSN data', good:false }
+  ];
+  var list = document.getElementById('privacyScenarios');
+  var result = document.getElementById('privacyResult');
+  var checkedCount = 0;
+
+  items.forEach(function(item){
+    var row = document.createElement('div');
+    row.className = 'scenario-item';
+    row.innerHTML = '<span class="scenario-box">?</span><span class="scenario-label">'+item.label+'</span><span class="scenario-fb-tag"></span>';
+    row.addEventListener('click', function(){
+      if(row.classList.contains('fb-good') || row.classList.contains('fb-bad')) return;
+      row.classList.add('checked');
+      var isGood = item.good;
+      row.classList.add(isGood ? 'fb-good' : 'fb-bad');
+      row.querySelector('.scenario-box').textContent = isGood ? '✓' : '✗';
+      row.querySelector('.scenario-fb-tag').textContent = isGood ? 'approved source' : 'restricted source';
+      checkedCount++;
+      if(checkedCount === items.length){
+        result.classList.add('show');
+        result.style.background = 'rgba(52,211,153,0.1)';
+        result.style.border = '1px solid rgba(52,211,153,0.3)';
+        result.innerHTML = '<b style="color:var(--good);">All sorted.</b> <span style="color:var(--text-dim);">Notice it\'s not about whether a source is true or useful — PII, third-party IP, and unredacted personal data are restricted regardless of how helpful they\'d be to ground against.</span>';
+      }
+    });
+    list.appendChild(row);
+  });
+})();
+
+/* ============================================================
+   2. ADMIN CONTROLS ACCORDION
+   ============================================================ */
+(function(){
+  var levers = [
+    { icon:'👤', name:'Admin controls', meta:'Who can install MCP servers, approve new agent definitions, and rotate credentials.', lines:[
+      "org-admin-console: agent-defs -> require 2 approvers",
+      "org-admin-console: mcp-servers -> install requires security review"
+    ]},
+    { icon:'📜', name:'Audit logs', meta:'Every agent action, tool call, and config change — actor, timestamp, and diff, retained per policy.', lines:[
+      "2026-09-21T10:02Z actor=agent:test-generator action=write_file path=tests/auth/test_reset.py",
+      "2026-09-21T10:02Z actor=user:saravana action=approve_config diff=agents/grounded-support.agent.yml"
+    ]},
+    { icon:'🔑', name:'Access scoping', meta:'Per-agent, per-tool permission grants — an agent\'s credentials carry only the scopes it actually needs.', lines:[
+      "agent: doc-writer",
+      "  scopes: [repo:read, docs:write]   # no tool:deploy, no db:write"
+    ]},
+    { icon:'📁', name:'Restricted file/folder access', meta:'A deny-list of globs the agent may never read or write, enforced regardless of what the task asks for.', lines:[
+      "deny: [\"secrets/**\", \".env\", \"credentials/**\", \"**/*.pem\"]"
+    ]}
+  ];
+  var wrap = document.getElementById('adminAccTable');
+  levers.forEach(function(l){
+    var row = document.createElement('div');
+    row.className = 'acc-row';
+    row.innerHTML = '<span class="dim">'+l.icon+' '+l.name+'</span><span class="pill pill-neutral">enterprise control</span><span class="acc-caret">▾</span>';
+    var detail = document.createElement('div');
+    detail.className = 'acc-detail single';
+    var html = '<p class="hint" style="margin-bottom:10px;">'+l.meta+'</p><div class="code-editor">';
+    l.lines.forEach(function(ln, i){ html += '<div class="code-line"><span class="line-num">'+(i+1)+'</span><span class="code-text">'+ln+'</span></div>'; });
+    html += '</div>';
+    detail.innerHTML = html;
+    row.addEventListener('click', function(){
+      var isOpen = detail.classList.contains('show');
+      wrap.querySelectorAll('.acc-detail').forEach(function(d){ d.classList.remove('show'); });
+      wrap.querySelectorAll('.acc-row').forEach(function(rr){ rr.classList.remove('open'); });
+      if(!isOpen){ detail.classList.add('show'); row.classList.add('open'); }
+    });
+    wrap.appendChild(row);
+    wrap.appendChild(detail);
+  });
+  wrap.querySelectorAll('.acc-row')[0].click();
+})();
+
+/* ============================================================
+   3. SAFE EXECUTION FLOW
+   ============================================================ */
+(function(){
+  var flow = document.getElementById('safeExecFlow');
+  var nodes = [
+    { label:'🔧 Tool call requested' },
+    { label:'🔑 Permission check' },
+    { label:'📦 Sandboxed execution' },
+    { label:'🚪 Human approval', cls:'gate' },
+    { label:'✅ Executed', cls:'good' }
+  ];
+  nodes.forEach(function(n, i){
+    var el = document.createElement('span');
+    el.className = 'flow-node' + (n.cls ? ' ' + n.cls : '');
+    el.textContent = n.label;
+    flow.appendChild(el);
+    if(i < nodes.length - 1){
+      var arrow = document.createElement('span');
+      arrow.className = 'flow-arrow';
+      arrow.textContent = '→';
+      flow.appendChild(arrow);
+    }
+  });
+})();
+
+/* ============================================================
+   4. COMPLIANCE TABS
+   ============================================================ */
+(function(){
+  var tabs = [
+    { icon:'📋', name:'SOC2', ex:'Trust & audit controls' },
+    { icon:'🇪🇺', name:'GDPR', ex:'Personal data protection' }
+  ];
+  var grid = document.getElementById('complianceTabGrid');
+  var panel = document.getElementById('compliancePanel');
+  var active = 0;
+
+  var soc2Html =
+    '<div class="card-soft" style="padding:16px;margin-top:16px;">' +
+    '<div class="contract-field"><span class="fname">Audit trail</span><span class="pill pill-neutral">every agent action logged</span></div>' +
+    '<div class="contract-field"><span class="fname">Change management</span><span class="pill pill-neutral">agent/rule defs versioned like code</span></div>' +
+    '<div class="contract-field"><span class="fname">Access reviews</span><span class="pill pill-neutral">periodic scope/permission audits</span></div>' +
+    '<p style="margin-top:14px;font-size:13.3px;color:var(--text-dim);">SOC2 wants evidence that changes to what an agent can do went through review — which is exactly why Module 10\'s "version agent definitions like code" guidance matters here, not just for hygiene.</p>' +
+    '</div>';
+
+  var gdprHtml =
+    '<div class="card-soft" style="padding:16px;margin-top:16px;">' +
+    '<div class="contract-field"><span class="fname">Right to erasure</span><span class="pill pill-neutral">applies to grounded sources with personal data</span></div>' +
+    '<div class="contract-field"><span class="fname">Data minimization</span><span class="pill pill-neutral">select only what\'s needed — Module 12\'s "Select" step</span></div>' +
+    '<div class="contract-field"><span class="fname">Data residency</span><span class="pill pill-neutral">where does the MCP connection actually send data</span></div>' +
+    '<p style="margin-top:14px;font-size:13.3px;color:var(--text-dim);">If a connected source contains personal data, a deletion request has to actually propagate to the agent\'s grounding — not just the system of record.</p>' +
+    '</div>';
+
+  function render(){ panel.innerHTML = active === 0 ? soc2Html : gdprHtml; }
+  tabs.forEach(function(t, i){
+    var b = document.createElement('div');
+    b.className = 'skill-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="sk-icon">'+t.icon+'</div><div class="sk-name">'+t.name+'</div><div class="sk-ex">'+t.ex+'</div>';
+    b.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.skill-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    grid.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   5. TRACING / HANDOFF LOGGING SIMULATION
+   ============================================================ */
+(function(){
+  var flow = document.getElementById('traceFlow');
+  var log = document.getElementById('traceLog');
+  var runBtn = document.getElementById('traceRun');
+
+  var nodes = [
+    { key:'analyst', label:'📋 Requirement Analyst' },
+    { key:'testgen', label:'🧪 Test Generator' },
+    { key:'validator', label:'✅ Validator' }
+  ];
+  nodes.forEach(function(n, i){
+    var el = document.createElement('span');
+    el.className = 'flow-node';
+    el.id = 'trace-node-' + n.key;
+    el.textContent = n.label;
+    flow.appendChild(el);
+    if(i < nodes.length - 1){
+      var arrow = document.createElement('span');
+      arrow.className = 'flow-arrow';
+      arrow.textContent = '→';
+      flow.appendChild(arrow);
+    }
+  });
+
+  var steps = [
+    { delay:0,    fn:function(){
+        setNode('analyst','gate'); setNode('testgen',''); setNode('validator','');
+        log.textContent = '{ agent: "requirement-analyst", trace_id: "trc-882a", tokens: 640, duration_ms: 410, tool_calls: 0, output_hash: "a1f9..." }';
+      }},
+    { delay:900,  fn:function(){
+        setNode('analyst','good'); setNode('testgen','gate');
+        log.textContent += '\n{ agent: "test-generator", trace_id: "trc-882a", parent: "requirement-analyst", tokens: 1180, duration_ms: 1330, tool_calls: 1, output_hash: "7c2e..." }';
+      }},
+    { delay:1800, fn:function(){
+        setNode('testgen','good'); setNode('validator','gate');
+        log.textContent += '\n{ agent: "validator", trace_id: "trc-882a", parent: "test-generator", tokens: 520, duration_ms: 690, tool_calls: 1, output_hash: "e04b..." }';
+      }},
+    { delay:2600, fn:function(){
+        setNode('validator','good');
+        log.textContent += '\n[trace complete] trc-882a — 3 handoffs, 2340 tokens, 2430ms total, 2 tool calls. Every hop is re-runnable from its own hash.';
+        runBtn.disabled = false;
+      }}
+  ];
+
+  function setNode(key, cls){
+    var el = document.getElementById('trace-node-' + key);
+    el.className = 'flow-node' + (cls ? ' ' + cls : '');
+  }
+
+  runBtn.addEventListener('click', function(){
+    runBtn.disabled = true;
+    steps.forEach(function(s){ setTimeout(s.fn, s.delay); });
+  });
+})();
+
+/* ============================================================
+   6. COST VISIBILITY PICKER
+   ============================================================ */
+(function(){
+  var tasks = [
+    { icon:'🔍', name:'Single grounded query', ex:'1 call, 1 source', input:'~800 tokens', output:'~150 tokens', tools:'0', cost:'~$0.004' },
+    { icon:'🧩', name:'Agent + tool call', ex:'1 agent, 2 tool calls', input:'~2,200 tokens', output:'~400 tokens', tools:'2', cost:'~$0.02' },
+    { icon:'🔗', name:'Multi-agent pipeline', ex:'4 stages, chained', input:'~9,000 tokens', output:'~1,800 tokens', tools:'6', cost:'~$0.11' }
+  ];
+  var grid = document.getElementById('costGrid');
+  var detail = document.getElementById('costDetail');
+  var active = 0;
+  function render(){
+    var t = tasks[active];
+    detail.innerHTML =
+      '<b style="font-size:14px;">'+t.icon+' '+t.name+'</b>'+
+      '<div class="contract-field"><span class="fname">Input tokens</span><span class="pill pill-neutral">'+t.input+'</span></div>'+
+      '<div class="contract-field"><span class="fname">Output tokens</span><span class="pill pill-neutral">'+t.output+'</span></div>'+
+      '<div class="contract-field"><span class="fname">Tool calls</span><span class="pill pill-neutral">'+t.tools+'</span></div>'+
+      '<div class="contract-field"><span class="fname">Estimated cost</span><span class="pill pill-good">'+t.cost+'</span></div>'+
+      (active === 2 ? '<p style="margin-top:12px;font-size:12.8px;color:var(--text-faint);">Cost doesn\'t just add per stage — each handoff repeats context, which is exactly what Module 21\'s token-economics model accounts for.</p>' : '');
+  }
+  tasks.forEach(function(t, i){
+    var b = document.createElement('div');
+    b.className = 'skill-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="sk-icon">'+t.icon+'</div><div class="sk-name">'+t.name+'</div><div class="sk-ex">'+t.ex+'</div>';
+    b.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.skill-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    grid.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   7. HANDS-ON CHECKLIST
+   ============================================================ */
+initChecklist([
+  'Classify at least one real knowledge source as approved or restricted',
+  'Configure a restricted file/folder access policy (e.g. deny secrets/, .env)',
+  'Confirm a tool call requires human approval before executing',
+  'Add trace logging at an agent handoff and inspect the resulting log',
+  'Estimate the token cost for one agent task'
+], 'handsonChecklist', 'handsonFill', 'handsonLabel', 'handsonDone');
+
+/* ============================================================
+   8. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:'What determines whether a connected source is "restricted," regardless of how useful it would be?', options:[
+        'Whether it\'s written in English',
+        'Whether it contains PII, third-party IP, or other sensitive data — not how helpful it is',
+        'How large the file is',
+        'Whether it was created this year'
+      ], correct:1, explain:'Restriction is about data sensitivity (PII, IP, secrets) — usefulness for grounding doesn\'t override that classification.' },
+    { q:'Which of these is NOT one of the four enterprise admin control levers covered?', options:[
+        'Audit logs',
+        'Access scoping',
+        'Restricted file/folder access',
+        'Automatic deletion of all logs after 24 hours'
+      ], correct:3, explain:'The four levers are admin controls, audit logs, access scoping, and restricted file/folder access — not blanket log deletion, which would undermine auditability.' },
+    { q:'In the safe execution flow, what happens between "sandboxed execution" and the tool actually running?', options:[
+        'Nothing — sandboxing is the last step',
+        'A human approval gate',
+        'The agent retries automatically',
+        'The request is sent to a different model'
+      ], correct:1, explain:'A human approval gate sits between sandboxed execution and actually running the tool — consequential actions don\'t auto-execute.' },
+    { q:'How does Module 12\'s "Select" step in context engineering connect to GDPR\'s data minimization principle?', options:[
+        'They\'re unrelated',
+        'Selecting only the relevant context for a task is itself a form of data minimization',
+        'GDPR requires selecting the largest possible context',
+        'Data minimization only applies to output, never to input context'
+      ], correct:1, explain:'Deliberately scoping context to what\'s relevant (rather than everything available) is a practical way of satisfying data minimization.' },
+    { q:'Why does cost compound faster in a multi-agent pipeline than in a single grounded query?', options:[
+        'It doesn\'t — cost is always the same per call',
+        'Each handoff can repeat context and adds its own tokens and tool calls, stacking across stages',
+        'Multi-agent pipelines never use tools',
+        'Pipelines are billed at a flat rate regardless of usage'
+      ], correct:1, explain:'Every stage in a pipeline carries its own input/output tokens and tool calls, and handoffs often repeat context — costs stack rather than average out.' }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.innerHTML = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — Day 4 complete.'
+      : score >= questions.length - 1
+      ? 'Nice work — solid grasp of governance, security, and observability.'
+      : 'Worth a re-skim of the sections above before Day 5.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>

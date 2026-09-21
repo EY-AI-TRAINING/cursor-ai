@@ -1,0 +1,29 @@
+# Example — retrieval scoping contract for the knowledge-grounded agent.
+# Adapt the paths to your repo and corpus. This file is the CONTRACT:
+# the MCP connection scope and the guardrail rule are the ENFORCEMENT.
+agent: knowledge-grounded
+version: 0.1.0-draft
+
+allow_paths:
+  - /src
+  - /knowledge/sds-excerpt-rate-limiting.md
+  - /knowledge/defect-log.md
+  - /knowledge/runbook-api-gateway.md
+
+allow_collections:
+  - repo
+  - knowledge-files
+
+deny:
+  - /knowledge/drafts
+  - chat-history
+  - node_modules
+  - .env
+
+require_citation: true
+
+citation_format:
+  docs: "<path> › <section>"
+  code: "<path>:<line>"
+  defects: "DEF-###"
+  standards: "<rule-path> › <section>"

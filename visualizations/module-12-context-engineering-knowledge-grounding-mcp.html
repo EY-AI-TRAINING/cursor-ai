@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 12 — Context Engineering, Knowledge Grounding &amp; MCP</title>
+<meta name="description" content="Interactive walkthrough: context engineering (selecting, structuring, and scoping context); the five grounding sources; MCP resources vs. tools and connections to external systems; retrieval strategies (semantic search, structured lookups, graph traversal); hallucination risk in engineering contexts; 'no unsupported facts' guardrails and citing sources; and choosing between direct repository context, rules/skills, or MCP based on the task.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%A0%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.6px;font-weight:600;color:var(--text-faint);padding:8px 10px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:640px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* ===================== Chat bubbles ===================== */
+.chatbubble{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:14px 16px;font-size:14px;position:relative;}
+.chatbubble.user{background:var(--surface-3);}
+.chatbubble .who{font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-bottom:6px;text-transform:uppercase;}
+
+/* ===================== Diff blocks ===================== */
+.diff-block{font-family:var(--mono);font-size:12.8px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;margin-top:10px;}
+.diff-line{padding:2px 6px;border-radius:3px;}
+.diff-add{background:rgba(52,211,153,0.12);color:var(--good);}
+.diff-del{background:rgba(251,113,133,0.12);color:var(--danger);text-decoration:line-through;}
+.diff-ctx{color:var(--text-faint);}
+
+/* ===================== Code editor mockup ===================== */
+.code-editor{background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:16px 18px;font-family:var(--mono);font-size:13px;line-height:1.85;overflow-x:auto;}
+.code-line{display:flex;white-space:pre;border-radius:4px;transition:opacity .15s ease, background .15s ease;}
+.line-num{color:var(--text-faint);width:22px;flex:0 0 auto;text-align:right;margin-right:16px;user-select:none;}
+.code-text{color:var(--text);}
+.code-kw{color:var(--accent-soft);}
+.code-str{color:var(--good);}
+.code-meta{color:var(--text-faint);font-style:italic;}
+
+/* ===================== Accordion table ===================== */
+.acc-table{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:6px;}
+.acc-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:14px 18px;cursor:pointer;border-top:1px solid var(--border-soft);background:var(--surface);transition:background .15s;}
+.acc-row:first-child{border-top:none;}
+.acc-row:hover{background:var(--surface-2);}
+.acc-row .dim{font-weight:700;font-size:14px;font-family:var(--mono);}
+.acc-detail{display:none;padding:0 18px 16px;background:var(--surface);border-top:1px solid var(--border-soft);}
+.acc-detail.single.show{display:block;padding-top:14px;animation:fadein .3s ease;}
+.acc-caret{color:var(--text-faint);transition:transform .2s;}
+.acc-row.open .acc-caret{transform:rotate(180deg);}
+
+/* ===================== Stepper (shared pattern) ===================== */
+.stepper{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+.step-btn{flex:1;min-width:150px;text-align:left;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;}
+.step-btn:hover{border-color:var(--accent-soft);}
+.step-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));box-shadow:0 0 0 1px rgba(168,85,247,0.3);}
+.step-num{font-family:var(--mono);color:var(--accent-2);font-size:12px;}
+.step-title{font-weight:700;margin-top:6px;font-size:14.5px;}
+.step-bar{height:5px;border-radius:3px;background:var(--surface-3);margin-top:12px;overflow:hidden;}
+.step-bar-fill{height:100%;background:var(--grad-1);}
+.step-detail{padding:22px;}
+.step-detail .example{margin-top:14px;padding:12px 14px;background:var(--bg-2);border-left:3px solid var(--accent-2);border-radius:8px;font-family:var(--mono);font-size:13px;color:var(--text-dim);}
+
+/* ===================== Skill / option picker ===================== */
+.skill-grid{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+.skill-btn{flex:1;min-width:160px;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;text-align:left;transition:all .15s;}
+.skill-btn:hover{border-color:var(--accent-soft);}
+.skill-btn.active{border-color:var(--accent);background:linear-gradient(160deg, rgba(168,85,247,0.14), var(--surface));}
+.skill-btn .sk-icon{font-size:20px;}
+.skill-btn .sk-name{font-weight:700;font-size:14px;margin-top:6px;font-family:var(--mono);}
+.skill-btn .sk-ex{font-size:12px;color:var(--text-faint);margin-top:2px;}
+
+/* ===================== Scenario / hands-on ===================== */
+.scenario-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;}
+.scenario-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
+.scenario-item:hover{background:var(--surface-2);}
+.scenario-item.checked{background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.25);}
+.scenario-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.scenario-item.checked .scenario-box{background:var(--accent);border-color:var(--accent);color:#fff;}
+.scenario-label{font-size:14px;font-family:var(--mono);}
+.scenario-item.fb-good .scenario-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.scenario-item.fb-bad .scenario-box{background:var(--danger);border-color:var(--danger);color:#3a0a10;}
+.scenario-fb-tag{margin-left:auto;font-size:11.5px;font-family:var(--mono);color:var(--text-faint);}
+.scenario-result{margin-top:16px;padding:14px 16px;border-radius:10px;display:none;}
+.scenario-result.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Checklist ===================== */
+.checklist{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);text-decoration:line-through;}
+.check-label{font-size:14px;}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Flow / gate visual ===================== */
+.flow-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.flow-node{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);font-size:12.8px;font-family:var(--mono);white-space:nowrap;transition:all .2s ease;}
+.flow-node.gate{border-color:var(--warn);background:rgba(245,158,11,0.1);color:var(--warn);font-weight:700;}
+.flow-node.good{border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.1);color:var(--good);}
+a.flow-node{text-decoration:none;color:var(--text);cursor:pointer;}
+a.flow-node:hover{border-color:var(--accent-soft);}
+.flow-arrow{color:var(--text-faint);font-size:16px;}
+
+/* ===================== Contract cards ===================== */
+.contract-field{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--border-soft);font-size:13px;}
+.contract-field:first-child{border-top:none;}
+.contract-field .fname{font-family:var(--mono);color:var(--text);}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){ .section{padding:60px 16px;} .acc-row{grid-template-columns:1fr auto;} .flow-row{gap:6px;} }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="module-11-use-case-lab-1-reusable-agents-prompts-skills.html" class="brand"><span class="brand-badge">🧠</span> Module 12</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#context-engineering">Context engineering</a>
+      <a href="#grounding-sources">Grounding sources</a>
+      <a href="#mcp">MCP</a>
+      <a href="#retrieval">Retrieval strategies</a>
+      <a href="#hallucination">Hallucination risk</a>
+      <a href="#guardrails">Guardrails</a>
+      <a href="#choosing">Choosing a source</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-11-use-case-lab-1-reusable-agents-prompts-skills.html" class="prev-link">← Module 11</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 4 · Module 12</div>
+    <h1>Context Engineering, Knowledge<br>Grounding &amp; MCP</h1>
+    <p class="hero-sub">Day 3 gave your agents an anatomy. Day 4 starts with what they actually know: how to select, structure, and scope the right context, ground every claim in a real source instead of a guess, and use MCP to keep safe retrieval separate from consequential action.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 90 min</span>
+      <span class="pill pill-neutral">🎯 No unsupported facts</span>
+      <span class="pill pill-neutral">🔌 Repo context · rules/skills · MCP</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. CONTEXT ENGINEERING -->
+<!-- ============================================================ -->
+<section class="section" id="context-engineering">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / Context engineering</span>
+      <h2>Selecting, structuring, and scoping context</h2>
+      <p>"More context" isn't the goal — the <em>right</em> context is. Context engineering is three deliberate moves, in order.</p>
+    </div>
+    <div class="card reveal">
+      <div class="stepper" id="ceStepper"></div>
+      <div class="card-soft step-detail" id="ceDetail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. GROUNDING SOURCES -->
+<!-- ============================================================ -->
+<section class="section" id="grounding-sources">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / Grounding sources</span>
+      <h2>Five places truth can come from</h2>
+      <p>Every claim a grounded agent makes should trace back to one of these — not to the model's training data.</p>
+    </div>
+    <div class="card reveal">
+      <div class="skill-grid" id="groundGrid"></div>
+      <div class="card-soft" id="groundDetail" style="padding:18px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. MCP OVERVIEW -->
+<!-- ============================================================ -->
+<section class="section" id="mcp">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / MCP overview</span>
+      <h2>Resources retrieve. Tools act.</h2>
+      <p>MCP connects agents to external systems through two very differently-trusted surfaces. Keeping them separate is the whole point.</p>
+    </div>
+    <div class="card reveal">
+      <div class="skill-grid" id="mcpTabGrid"></div>
+      <div id="mcpPanel"></div>
+      <div class="card-soft" style="padding:16px;margin-top:16px;">
+        <b style="font-size:13px;">🔌 Connections</b>
+        <p class="hint" style="margin-top:6px;">MCP servers are how these two surfaces reach real systems:</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+          <span class="pill pill-neutral">Jira / Azure DevOps</span>
+          <span class="pill pill-neutral">Confluence / internal wiki</span>
+          <span class="pill pill-neutral">GitHub / GitLab</span>
+          <span class="pill pill-neutral">Repository filesystem</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. RETRIEVAL STRATEGIES -->
+<!-- ============================================================ -->
+<section class="section" id="retrieval">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Retrieval strategies</span>
+      <h2>Three ways to find the right knowledge</h2>
+      <p>Same question, different strategy, different best-fit source. Pick one to see it worked through.</p>
+    </div>
+    <div class="card reveal">
+      <div class="skill-grid" id="retrievalGrid"></div>
+      <div class="card-soft" id="retrievalDetail" style="padding:18px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. HALLUCINATION RISK -->
+<!-- ============================================================ -->
+<section class="section" id="hallucination">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Hallucination risk</span>
+      <h2>Confident and wrong is worse than uncertain</h2>
+      <p>In engineering contexts, an invented API behavior or a fabricated requirement can silently break production. Compare an ungrounded response against a grounded one, for the same question.</p>
+    </div>
+    <div class="card reveal">
+      <div class="skill-grid" id="halluTabGrid"></div>
+      <div id="halluPanel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. GUARDRAILS -->
+<!-- ============================================================ -->
+<section class="section" id="guardrails">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / 'No unsupported facts' guardrails</span>
+      <h2>Sort the response: grounded, or not?</h2>
+      <p>Click each one. A grounded claim cites a real, checkable source. An unsupported claim just sounds plausible.</p>
+    </div>
+    <div class="card reveal">
+      <div class="scenario-list" id="guardScenarios"></div>
+      <div class="scenario-result" id="guardResult"></div>
+      <div class="card-soft" style="padding:16px;margin-top:18px;">
+        <b style="font-size:13px;">Citation format</b>
+        <div class="code-editor" style="margin-top:10px;">
+          <div class="code-line"><span class="line-num">1</span><span class="code-text code-meta">// every factual claim ends with its source</span></div>
+          <div class="code-line"><span class="line-num">2</span><span class="code-text">Tokens expire after 15 minutes and are single-use.</span></div>
+          <div class="code-line"><span class="line-num">3</span><span class="code-text code-str">[source: SRS §3.2, docs/adr/002-token-policy.md]</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. CHOOSING A SOURCE -->
+<!-- ============================================================ -->
+<section class="section" id="choosing">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Choosing direct context, rules/skills, or MCP</span>
+      <h2>Same question: which source, and why</h2>
+      <p>Click a task to see which context source actually fits — and why the other two wouldn't.</p>
+    </div>
+    <div class="card reveal">
+      <div class="acc-table" id="chooseAccTable"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. HANDS-ON -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">Hands-on</span>
+      <h2>Walkthrough of a context-grounding and MCP configuration</h2>
+      <p>Two checklists: setting it up, then proving it actually behaves the way you configured it.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card reveal">
+        <b style="font-size:14px;">⚙️ Setup</b>
+        <div class="checklist" id="setupChecklist"></div>
+        <div class="progress-track"><div class="progress-fill" id="setupFill"></div></div>
+        <div class="progress-label" id="setupLabel">0 / 5</div>
+        <div class="setup-done" id="setupDone">✅ Grounding configured — resources connected, citations required, tools gated separately.</div>
+      </div>
+      <div class="card reveal">
+        <b style="font-size:14px;">🔍 Verify</b>
+        <div class="checklist" id="verifyChecklist"></div>
+        <div class="progress-track"><div class="progress-fill" id="verifyFill"></div></div>
+        <div class="progress-label" id="verifyLabel">0 / 4</div>
+        <div class="setup-done" id="verifyDone">✅ Verified — in-scope answers cite real sources, out-of-scope questions get declined, and actions still need approval.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 9. QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">Knowledge check</span>
+      <h2>Quick check before Use Case Lab 2</h2>
+      <p>Five questions from what you just built.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/5</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">Day 4 starts here: what your agents are allowed to know</h3>
+    <ul>
+      <li>Context engineering is three deliberate moves — select, structure, and scope — not "paste in everything."</li>
+      <li>Grounded claims trace back to one of five sources: repository code, SRS/SDS documents, standards, historical defects, or enterprise knowledge.</li>
+      <li>MCP separates Resources (read-only retrieval) from Tools (actions) — that separation is the guardrail, not an implementation detail.</li>
+      <li>Retrieval strategy should match the question: semantic search, structured lookup, or graph traversal.</li>
+      <li>A "no unsupported facts" guardrail means citing sources for every claim and declining out-of-scope questions instead of guessing.</li>
+      <li>The right context source depends on the task: direct repository context, a repo-independent rule/skill, or an MCP connection to an external system.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-11-use-case-lab-1-reusable-agents-prompts-skills.html" class="btn">← Module 11: Use Case Lab 1</a>
+    <a href="#" class="btn">↑ Back to top</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 12 — Context Engineering, Knowledge Grounding &amp; MCP · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["context engineering","grounding","MCP resource","MCP tool","citation","hallucination risk","semantic search","structured lookup","graph traversal","no unsupported facts","SRS/SDS","defect log","enterprise knowledge","scope","structure"];
+  function fill(el, count){
+    if(!el) return;
+    for(var i=0;i<count;i++){
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      var w = [];
+      for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+      row.textContent = w.join(' · ');
+      row.style.top = (Math.random()*100) + '%';
+      row.style.animationDuration = (28 + Math.random()*22) + 's';
+      row.style.animationDelay = (-Math.random()*30) + 's';
+      el.appendChild(row);
+    }
+  }
+  fill(document.getElementById('heroStream'), 8);
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ---------- Shared: checklist factory ---------- */
+function initChecklist(items, listId, fillId, labelId, doneId, labelSuffix){
+  var list = document.getElementById(listId);
+  var fill = document.getElementById(fillId);
+  var label = document.getElementById(labelId);
+  var done = document.getElementById(doneId);
+  var checked = new Array(items.length).fill(false);
+  list.innerHTML = '';
+  items.forEach(function(text, i){
+    var row = document.createElement('div');
+    row.className = 'check-item';
+    row.innerHTML = '<span class="check-box">✓</span><span class="check-label">'+text+'</span>';
+    row.addEventListener('click', function(){
+      checked[i] = !checked[i];
+      row.classList.toggle('checked', checked[i]);
+      update();
+    });
+    list.appendChild(row);
+  });
+  function update(){
+    var count = checked.filter(Boolean).length;
+    fill.style.width = (count / items.length * 100) + '%';
+    label.textContent = count + ' / ' + items.length + ' ' + (labelSuffix || 'checked');
+    done.classList.toggle('show', count === items.length);
+  }
+  update();
+}
+
+/* ============================================================
+   1. CONTEXT ENGINEERING STEPPER
+   ============================================================ */
+(function(){
+  var steps = [
+    { title:'Select', body:'Pick the specific files, docs, and sources actually relevant to this task — not the whole repo, not every doc in the wiki.',
+      example:'Task: "Fix the password-reset token bug." Select: AuthService.ts, TokenStore.ts, SRS §3.2. Not: the entire auth module, the full SRS.' },
+    { title:'Structure', body:'Order and label what you selected so the agent can tell a requirement from a code excerpt from a defect note — structure prevents the sources from blurring together.',
+      example:'"## Requirement (SRS §3.2)\\n...\\n## Current implementation (TokenStore.ts)\\n...\\n## Known defect (DEF-118)\\n..."' },
+    { title:'Scope', body:'Set the boundary explicitly: what the agent is grounded to answer from, and what it must decline rather than guess at.',
+      example:'"Answer only from the sources above. If the answer isn\'t in them, say so — don\'t infer from general knowledge."' }
+  ];
+  var stepper = document.getElementById('ceStepper');
+  var detail = document.getElementById('ceDetail');
+  var active = 0;
+  function render(){
+    stepper.querySelectorAll('.step-btn').forEach(function(b,i){ b.classList.toggle('active', i===active); });
+    var s = steps[active];
+    detail.innerHTML =
+      '<b style="font-size:15px;">'+(active+1)+'. '+s.title+'</b>'+
+      '<p style="margin-top:10px;font-size:13.8px;color:var(--text-dim);">'+s.body+'</p>'+
+      '<div class="example">'+s.example.replace(/\\n/g,'<br>')+'</div>';
+  }
+  steps.forEach(function(s, i){
+    var b = document.createElement('div');
+    b.className = 'step-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="step-num">STEP '+(i+1)+'</div><div class="step-title">'+s.title+'</div><div class="step-bar"><div class="step-bar-fill" style="width:'+(((i+1)/steps.length)*100)+'%"></div></div>';
+    b.addEventListener('click', function(){ active = i; render(); });
+    stepper.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   2. GROUNDING SOURCES PICKER
+   ============================================================ */
+(function(){
+  var sources = [
+    { icon:'📂', name:'Repository code', desc:'The actual implementation — what the system really does right now, not what a doc says it should do.', ex:'AuthService.ts, TokenStore.ts, test files' },
+    { icon:'📄', name:'SRS/SDS documents', desc:'The approved requirement and design specs — the durable source of truth from Module 9\'s SDD approach.', ex:'SRS §3.2, docs/sds/auth-design.md' },
+    { icon:'📐', name:'Standards', desc:'Team/repo conventions that don\'t live in any single file — how errors are handled, how APIs are versioned.', ex:'.cursor/rules/error-handling.mdc' },
+    { icon:'🐛', name:'Historical defect log', desc:'What has actually gone wrong before — grounds the agent in real failure modes, not hypothetical ones.', ex:'DEF-118: token reuse allowed a replay attack' },
+    { icon:'🏢', name:'Enterprise knowledge', desc:'Org-wide knowledge outside this one repo — architecture decisions, security policy, prior incident reports.', ex:'Confluence: "Enterprise Auth Standards v3"' }
+  ];
+  var grid = document.getElementById('groundGrid');
+  var detail = document.getElementById('groundDetail');
+  var active = 0;
+  function render(){
+    var s = sources[active];
+    detail.innerHTML =
+      '<b style="font-size:14px;">'+s.icon+' '+s.name+'</b>'+
+      '<p style="margin-top:10px;font-size:13.3px;color:var(--text-dim);">'+s.desc+'</p>'+
+      '<div class="code-editor" style="margin-top:12px;"><div class="code-line"><span class="line-num">1</span><span class="code-text code-meta">'+s.ex+'</span></div></div>';
+  }
+  sources.forEach(function(s, i){
+    var b = document.createElement('div');
+    b.className = 'skill-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="sk-icon">'+s.icon+'</div><div class="sk-name">'+s.name+'</div><div class="sk-ex">click to inspect</div>';
+    b.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.skill-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    grid.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   3. MCP RESOURCES vs TOOLS TABS
+   ============================================================ */
+(function(){
+  var tabs = [
+    { icon:'📄', name:'Resources', ex:'Read-only retrieval' },
+    { icon:'🔧', name:'Tools', ex:'Actions that change state' }
+  ];
+  var grid = document.getElementById('mcpTabGrid');
+  var panel = document.getElementById('mcpPanel');
+  var active = 0;
+
+  function flowHtml(nodes){
+    var html = '<div class="flow-row">';
+    nodes.forEach(function(n, i){
+      html += '<span class="flow-node'+(n.cls?' '+n.cls:'')+'">'+n.label+'</span>';
+      if(i < nodes.length - 1) html += '<span class="flow-arrow">→</span>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  var resourcesHtml =
+    '<div class="card-soft" style="padding:16px;">' +
+    flowHtml([{label:'🤖 Agent'},{label:'🔌 MCP server'},{label:'📄 Resource (read-only)'}]) +
+    '<p style="margin-top:14px;font-size:13.3px;color:var(--text-dim);">Resources hand the agent <b>knowledge</b> — a file, a doc, a ticket\'s fields. Reading a resource can\'t change anything, so it needs no approval gate. This is where grounding happens.</p>' +
+    '</div>';
+
+  var toolsHtml =
+    '<div class="card-soft" style="padding:16px;">' +
+    flowHtml([{label:'🤖 Agent'},{label:'🔌 MCP server'},{label:'🔧 Tool call'},{label:'🚪 Approval gate', cls:'gate'},{label:'✅ Executed', cls:'good'}]) +
+    '<p style="margin-top:14px;font-size:13.3px;color:var(--text-dim);">Tools let the agent <b>act</b> — create a ticket, open a PR, write a file. Because that\'s consequential, it goes through an explicit gate. Retrieval and action deliberately don\'t share a path.</p>' +
+    '</div>';
+
+  function render(){ panel.innerHTML = active === 0 ? resourcesHtml : toolsHtml; }
+  tabs.forEach(function(t, i){
+    var b = document.createElement('div');
+    b.className = 'skill-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="sk-icon">'+t.icon+'</div><div class="sk-name">'+t.name+'</div><div class="sk-ex">'+t.ex+'</div>';
+    b.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.skill-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    grid.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   4. RETRIEVAL STRATEGIES PICKER
+   ============================================================ */
+(function(){
+  var strategies = [
+    { icon:'🧭', name:'Semantic search', q:'"Where do we handle failed login attempts?"', result:'Embedding similarity surfaces LoginAttemptGuard.ts and RateLimiter.java even though neither file has "failed login" in its name.', best:'Fuzzy, concept-level questions with no exact keyword.' },
+    { icon:'🔑', name:'Structured lookup', q:'"What\'s the status of ticket AUTH-482?"', result:'An exact key/id query against Jira via MCP returns the ticket\'s fields directly — no ambiguity, no ranking.', best:'Exact IDs: ticket numbers, REQ-ids, file paths.' },
+    { icon:'🕸️', name:'Graph traversal', q:'"Which tests cover REQ-3.2?"', result:'Follows the requirement → implementation → test edges in the traceability graph from Module 9 to return the exact linked tests.', best:'Relationship questions: "what depends on this," "what covers that."' }
+  ];
+  var grid = document.getElementById('retrievalGrid');
+  var detail = document.getElementById('retrievalDetail');
+  var active = 0;
+  function render(){
+    var s = strategies[active];
+    detail.innerHTML =
+      '<b style="font-size:14px;">'+s.icon+' '+s.name+'</b>'+
+      '<div class="chatbubble user" style="margin-top:12px;"><div class="who">query</div>'+s.q+'</div>'+
+      '<div class="chatbubble" style="margin-top:10px;"><div class="who">result</div>'+s.result+'</div>'+
+      '<p style="margin-top:10px;font-size:12.8px;"><span class="pill pill-neutral">best for</span> <span style="color:var(--text-dim);">'+s.best+'</span></p>';
+  }
+  strategies.forEach(function(s, i){
+    var b = document.createElement('div');
+    b.className = 'skill-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="sk-icon">'+s.icon+'</div><div class="sk-name">'+s.name+'</div><div class="sk-ex">click to inspect</div>';
+    b.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.skill-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    grid.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   5. HALLUCINATION RISK COMPARISON
+   ============================================================ */
+(function(){
+  var scenarios = [
+    { icon:'✅', name:'In-scope question', ex:'"What\'s the token expiry for password reset?"',
+      ungrounded:'The token typically expires after 24 hours, which is standard for password reset flows.',
+      grounded:'Tokens expire after 15 minutes and are single-use. <span class="pill pill-good" style="margin-left:4px;">source: SRS §3.2</span>' },
+    { icon:'❓', name:'Out-of-scope question', ex:'"What\'s our refund policy?"',
+      ungrounded:'Refunds are generally processed within 5–7 business days for most standard transactions.',
+      grounded:'I don\'t have a grounded source for refund policy in the connected repository, SRS/SDS, or standards. I won\'t guess — check with the billing team\'s documentation. <span class="pill pill-warn" style="margin-left:4px;">declined</span>' }
+  ];
+  var grid = document.getElementById('halluTabGrid');
+  var panel = document.getElementById('halluPanel');
+  var active = 0;
+  function render(){
+    var s = scenarios[active];
+    panel.innerHTML =
+      '<div class="grid-2" style="margin-top:16px;">'+
+        '<div class="card-soft" style="padding:16px;border:1px solid rgba(251,113,133,0.3);">'+
+          '<span class="pill pill-bad">✗ ungrounded LLM</span>'+
+          '<div class="chatbubble" style="margin-top:12px;"><div class="who">response</div>'+s.ungrounded+'</div>'+
+          '<p class="hint" style="margin-top:10px;">Confident, fluent, and invented — no source, no way to check it.</p>'+
+        '</div>'+
+        '<div class="card-soft" style="padding:16px;border:1px solid rgba(52,211,153,0.3);">'+
+          '<span class="pill pill-good">✓ grounded agent</span>'+
+          '<div class="chatbubble" style="margin-top:12px;"><div class="who">response</div>'+s.grounded+'</div>'+
+          '<p class="hint" style="margin-top:10px;">Either cites a real source, or declines instead of guessing.</p>'+
+        '</div>'+
+      '</div>';
+  }
+  scenarios.forEach(function(s, i){
+    var b = document.createElement('div');
+    b.className = 'skill-btn' + (i === active ? ' active' : '');
+    b.innerHTML = '<div class="sk-icon">'+s.icon+'</div><div class="sk-name">'+s.name+'</div><div class="sk-ex">'+s.ex+'</div>';
+    b.addEventListener('click', function(){
+      active = i;
+      grid.querySelectorAll('.skill-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      render();
+    });
+    grid.appendChild(b);
+  });
+  render();
+})();
+
+/* ============================================================
+   6. GUARDRAILS SCENARIO SORTING
+   ============================================================ */
+(function(){
+  var items = [
+    { label:'"Per SRS §3.2, password reset tokens expire after 15 minutes." ', good:true },
+    { label:'"The system uses bcrypt for password hashing."', good:false },
+    { label:'"I couldn\'t find rate-limit docs — here\'s what RateLimiter.java actually implements: ..."', good:true },
+    { label:'"This has always been the standard way to do OAuth in enterprise apps."', good:false },
+    { label:'"Per docs/adr/003-hashing.md, this ADR selected Argon2id for password hashing."', good:true }
+  ];
+  var list = document.getElementById('guardScenarios');
+  var result = document.getElementById('guardResult');
+  var checkedCount = 0;
+
+  items.forEach(function(item, i){
+    var row = document.createElement('div');
+    row.className = 'scenario-item';
+    row.innerHTML = '<span class="scenario-box">?</span><span class="scenario-label">'+item.label+'</span><span class="scenario-fb-tag"></span>';
+    row.addEventListener('click', function(){
+      if(row.classList.contains('fb-good') || row.classList.contains('fb-bad')) return;
+      row.classList.add('checked');
+      var isGood = item.good;
+      row.classList.add(isGood ? 'fb-good' : 'fb-bad');
+      row.querySelector('.scenario-box').textContent = isGood ? '✓' : '✗';
+      row.querySelector('.scenario-fb-tag').textContent = isGood ? 'grounded — cites a source' : 'unsupported claim';
+      checkedCount++;
+      if(checkedCount === items.length){
+        result.classList.add('show');
+        result.style.background = 'rgba(52,211,153,0.1)';
+        result.style.border = '1px solid rgba(52,211,153,0.3)';
+        result.innerHTML = '<b style="color:var(--good);">All sorted.</b> <span style="color:var(--text-dim);">Notice the unsupported ones aren\'t false, necessarily — "the system uses bcrypt" might even be true. The problem is it\'s stated as fact with nothing backing it up.</span>';
+      }
+    });
+    list.appendChild(row);
+  });
+})();
+
+/* ============================================================
+   7. CHOOSING A SOURCE — ACCORDION
+   ============================================================ */
+(function(){
+  var tasks = [
+    { q:'"What does the existing PaymentService class actually look like?"', answer:'Direct repository context', reason:'It\'s already open and indexed in the editor — the fastest, most accurate source for "what does the code do right now." No MCP round-trip needed.' },
+    { q:'"What\'s our team\'s convention for handling errors?"', answer:'Rules / skills', reason:'A convention isn\'t tied to one file or one repo state — it\'s persistent guidance the agent should always have, which is exactly what a repo-level rule is for.' },
+    { q:'"What did QA log as defects against this endpoint last quarter?"', answer:'MCP', reason:'That data lives in an external system (the defect tracker), not in the repo or in a static rule — MCP is the connection that reaches it.' },
+    { q:'"Summarize the acceptance criteria in the SRS for REQ-3.2."', answer:'Direct repository context — or MCP, depending on where the SRS lives', reason:'If the SRS is a file in the repo, it\'s direct context. If it lives in Confluence, it\'s an MCP resource. Same task, different source, based on where the truth actually is.' }
+  ];
+  var wrap = document.getElementById('chooseAccTable');
+  tasks.forEach(function(t){
+    var row = document.createElement('div');
+    row.className = 'acc-row';
+    row.innerHTML = '<span class="dim">'+t.q+'</span><span class="pill pill-neutral">'+t.answer+'</span><span class="acc-caret">▾</span>';
+    var detail = document.createElement('div');
+    detail.className = 'acc-detail single';
+    detail.innerHTML = '<p style="font-size:13.3px;color:var(--text-dim);">'+t.reason+'</p>';
+    row.addEventListener('click', function(){
+      var isOpen = detail.classList.contains('show');
+      wrap.querySelectorAll('.acc-detail').forEach(function(d){ d.classList.remove('show'); });
+      wrap.querySelectorAll('.acc-row').forEach(function(rr){ rr.classList.remove('open'); });
+      if(!isOpen){ detail.classList.add('show'); row.classList.add('open'); }
+    });
+    wrap.appendChild(row);
+    wrap.appendChild(detail);
+  });
+  wrap.querySelectorAll('.acc-row')[0].click();
+})();
+
+/* ============================================================
+   8. HANDS-ON CHECKLISTS
+   ============================================================ */
+initChecklist([
+  'Connect an MCP server scoped to the repository as a read-only resource',
+  'Connect a second resource for SRS/SDS documents',
+  'Configure the agent to cite a source for every factual claim',
+  'Add a \'no unsupported facts\' guardrail so the agent declines instead of guessing',
+  'Confirm tool calls (actions) require a separate approval gate from resource reads'
+], 'setupChecklist', 'setupFill', 'setupLabel', 'setupDone');
+
+initChecklist([
+  'Ask an in-scope question and confirm the citation matches a real source',
+  'Ask an out-of-scope question and confirm the agent declines rather than invents',
+  'Try a semantic-search-style query and a structured-lookup-style query against the same source',
+  'Confirm a tool call (e.g., creating a ticket) still requires explicit approval'
+], 'verifyChecklist', 'verifyFill', 'verifyLabel', 'verifyDone');
+
+/* ============================================================
+   9. QUIZ
+   ============================================================ */
+(function(){
+  var questions = [
+    { q:'What are the three moves of context engineering, in order?', options:[
+        'Write, test, deploy',
+        'Select, structure, and scope context',
+        'Search, summarize, and cite',
+        'Fetch, cache, and discard'
+      ], correct:1, explain:'Context engineering means selecting the relevant sources, structuring them so the agent can tell them apart, then scoping the explicit boundary of what it may answer from.' },
+    { q:'Which of these is NOT one of the five grounding sources covered in this module?', options:[
+        'Historical defect log',
+        'SRS/SDS documents',
+        'Social media discussions',
+        'Repository code'
+      ], correct:2, explain:'The five grounding sources are repository code, SRS/SDS documents, standards, historical defects, and enterprise knowledge — not social media.' },
+    { q:'In MCP, what is the key difference between a Resource and a Tool?', options:[
+        'Resources are for admins only; Tools are for everyone',
+        'Resources are read-only retrieval; Tools perform actions and need their own approval gate',
+        'There is no real difference — they\'re interchangeable terms',
+        'Tools are always faster than Resources'
+      ], correct:1, explain:'Resources hand the agent knowledge (read-only). Tools let it act — create, write, execute — which is why they sit behind a separate approval gate.' },
+    { q:'Why does a \'no unsupported facts\' guardrail matter in engineering contexts specifically?', options:[
+        'It makes responses shorter',
+        'A hallucinated API behavior or fabricated requirement can silently break production or tests, so claims need to be checkable',
+        'It\'s only a legal requirement, not a technical one',
+        'It prevents the agent from using MCP at all'
+      ], correct:1, explain:'Unlike casual chat, an engineering claim that\'s wrong can ship as a bug — grounding and citation make claims checkable before they\'re trusted.' },
+    { q:'For "what\'s our team\'s error-handling convention," which context source best fits — and why?', options:[
+        'MCP, because it\'s always the most powerful option',
+        'Direct repository context, because conventions live in one file',
+        'Rules/skills, because a convention is persistent guidance that isn\'t tied to one file or repo state',
+        'None of these — the agent should just guess based on common practice'
+      ], correct:2, explain:'A team convention is exactly what a repo-level rule is for: persistent, always-available guidance, not something re-derived from a single file each time.' }
+  ];
+  var container = document.getElementById('quizQuestions');
+  var answers = {};
+
+  function render(){
+    container.innerHTML = '';
+    questions.forEach(function(item, qi){
+      var block = document.createElement('div');
+      block.className = 'quiz-q';
+      var optsHtml = '<div class="quiz-opts">';
+      item.options.forEach(function(opt, oi){
+        optsHtml += '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+opt+'</div>';
+      });
+      optsHtml += '</div><div class="quiz-explain" id="explain-'+qi+'"></div>';
+      block.innerHTML = '<div class="quiz-q-title">'+(qi+1)+'. '+item.q+'</div>'+optsHtml;
+      container.appendChild(block);
+    });
+    container.querySelectorAll('.quiz-opt').forEach(function(el){
+      el.addEventListener('click', function(){
+        var qi = el.dataset.q;
+        container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+        el.classList.add('selected');
+        answers[qi] = parseInt(el.dataset.o, 10);
+      });
+    });
+  }
+
+  document.getElementById('quizCheck').addEventListener('click', function(){
+    var score = 0;
+    questions.forEach(function(item, qi){
+      var opts = container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]');
+      var chosen = answers[qi];
+      opts.forEach(function(el){
+        el.style.pointerEvents = 'none';
+        var oi = parseInt(el.dataset.o, 10);
+        if(oi === item.correct){ el.classList.add('correct'); }
+        else if(oi === chosen){ el.classList.add('incorrect'); }
+      });
+      if(chosen === item.correct) score++;
+      var ex = document.getElementById('explain-'+qi);
+      ex.innerHTML = 'ℹ️ ' + item.explain;
+      ex.classList.add('show');
+    });
+    document.getElementById('quizScoreText').textContent = score + '/' + questions.length;
+    document.getElementById('quizScoreMsg').textContent = score === questions.length
+      ? 'Perfect score — solid grounding on grounding.'
+      : score >= questions.length - 1
+      ? 'Nice work — solid grasp of context engineering and MCP.'
+      : 'Worth a re-skim of the sections above before moving on.';
+    document.getElementById('quizScore').classList.add('show');
+    document.getElementById('quizCheck').style.display = 'none';
+  });
+
+  document.getElementById('quizRetry').addEventListener('click', function(){
+    answers = {};
+    document.getElementById('quizScore').classList.remove('show');
+    document.getElementById('quizCheck').style.display = 'inline-flex';
+    render();
+  });
+
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>
