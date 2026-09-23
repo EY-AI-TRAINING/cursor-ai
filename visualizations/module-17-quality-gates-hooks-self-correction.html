@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 17 — Quality Gates, Hooks &amp; Self-Correction</title>
+<meta name="description" content="Interactive walkthrough: automated PASS/FAIL gate criteria between agent stages, correction-loop routing and downstream reruns, hooks for validation, policy, logging and lifecycle control, human-in-the-loop checkpoint placement, bounded retries, gate decision logging and fail-safe behaviour — all on the Module 16 Requirement-to-Test pipeline.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%82%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --warn:#b45309; --danger:#e11d48; --good:#059669;
+  --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--warn:#b45309;--danger:#e11d48;--good:#059669;
+    --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:40px;max-width:780px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.card h3{font-size:18px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-4{grid-template-columns:1fr !important;}}
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;text-decoration:none;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);letter-spacing:.04em;text-transform:uppercase;}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+.dim{color:var(--text-dim);}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.fb{margin-top:12px;font-size:13.5px;min-height:20px;}
+.fb .ok{color:var(--good);font-weight:700;} .fb .no{color:var(--danger);font-weight:700;} .fb .mid{color:var(--warn);font-weight:700;}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+/* Top nav */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.6px;font-weight:600;color:var(--text-faint);padding:8px 10px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+@media (max-width:640px){.prev-link{display:none;}}
+
+/* Hero */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:680px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* Console */
+.console{font-family:var(--mono);font-size:12.3px;background:#070a12;color:#cfd5f2;border:1px solid var(--border-soft);border-radius:10px;padding:14px;min-height:240px;max-height:360px;overflow:auto;line-height:1.7;}
+:root[data-theme="light"] .console{background:#12162a;}
+.console .l{animation:fadein .25s ease;white-space:pre-wrap;}
+.console .ok{color:#34d399;} .console .err{color:#fb7185;} .console .wr{color:#fbbf24;} .console .mt{color:#7d86b3;} .console .in{color:#67e8f9;}
+.toggle{display:flex;align-items:center;gap:10px;font-size:13.5px;cursor:pointer;padding:6px 0;}
+.toggle input{width:18px;height:18px;accent-color:var(--accent);}
+.code{font-family:var(--mono);font-size:12.4px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:14px;white-space:pre;overflow:auto;line-height:1.65;}
+.code .kw{color:var(--accent-soft);} .code .mk{color:var(--accent-2);background:rgba(34,211,238,0.12);border-radius:3px;cursor:help;} .code .cm{color:var(--text-faint);} .code .st{color:var(--good);}
+.code .mk.hl{outline:2px solid var(--accent-2);}
+
+.table-scroll{overflow-x:auto;}
+/* Checklists */
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;transition:all .15s;margin-top:1px;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);}
+.check-label{font-size:14px;}
+.check-label small{display:block;font-size:12.3px;color:var(--danger);margin-top:3px;}
+.check-label small.q{color:var(--text-dim);}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* Quiz */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* Footer */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){ .section{padding:60px 16px;} .hero{padding:56px 16px 44px;} .card{padding:18px;} }
+@media (prefers-reduced-motion: reduce){ .token-row{animation:none;} .reveal{opacity:1;transform:none;transition:none;} }
+
+/* ===================== Module 17 specific ===================== */
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media (max-width:820px){.grid-3{grid-template-columns:1fr;}}
+.artifact{font-family:var(--mono);font-size:12.2px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:14px;white-space:pre;overflow:auto;line-height:1.6;}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface-2);flex-wrap:wrap;}
+.seg button{font-family:var(--sans);font-size:13px;font-weight:600;border:none;background:transparent;color:var(--text-dim);padding:9px 14px;cursor:pointer;}
+.seg button.on{background:var(--grad-2);color:#0a0d16;}
+select.sel{font-family:var(--sans);font-size:13.5px;padding:9px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);max-width:100%;}
+input[type=range]{width:100%;accent-color:var(--accent);}
+
+/* Airport strip */
+.airport{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:36px;}
+.ap{padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);}
+.ap .ico{font-size:22px;} .ap b{display:block;font-size:13.5px;margin-top:6px;} .ap span{font-size:12.5px;color:var(--text-dim);}
+.ap .m{display:block;font-family:var(--mono);font-size:11px;color:var(--accent-2);margin-top:6px;}
+@media (max-width:820px){.airport{grid-template-columns:1fr 1fr;}}
+
+/* Control-layer diagram */
+.diagram-wrap{overflow-x:auto;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:14px;padding:10px;}
+.ctl-svg{min-width:780px;width:100%;height:auto;display:block;}
+.ctl-svg .st rect{fill:var(--surface);stroke:var(--border);stroke-width:1.5;}
+.ctl-svg .st text{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--text);}
+.ctl-svg .st .s{font-family:var(--mono);font-size:10px;font-weight:400;fill:var(--text-faint);}
+.ctl-svg .gt{cursor:pointer;}
+.ctl-svg .gt polygon{fill:rgba(245,158,11,0.18);stroke:var(--warn);stroke-width:1.6;transition:all .15s;}
+.ctl-svg .gt:hover polygon,.ctl-svg .gt.on polygon{fill:var(--warn);}
+.ctl-svg .gt text{font-family:var(--mono);font-size:10.5px;font-weight:700;fill:var(--text);pointer-events:none;}
+.ctl-svg .e{stroke:var(--text-faint);stroke-width:1.5;fill:none;}
+.ctl-svg .loop{stroke:var(--danger);stroke-width:1.5;fill:none;stroke-dasharray:5 4;}
+.ctl-svg .lbl{font-family:var(--mono);font-size:10.5px;fill:var(--text-dim);}
+.ctl-svg .lbl-r{font-family:var(--mono);font-size:10.5px;fill:var(--danger);paint-order:stroke;stroke:var(--bg-2);stroke-width:5px;stroke-linejoin:round;}
+.ctl-svg .hookband{fill:rgba(168,85,247,0.10);stroke:var(--accent);stroke-dasharray:4 3;}
+.ctl-svg .hookt{font-family:var(--mono);font-size:11px;fill:var(--accent-soft);paint-order:stroke;stroke:var(--bg-2);stroke-width:4px;stroke-linejoin:round;}
+.ctl-svg .logl{stroke:var(--accent-2);stroke-width:1.2;stroke-dasharray:2 4;}
+.ctl-svg .logbox{fill:rgba(34,211,238,0.08);stroke:var(--accent-2);}
+.ctl-svg .hitl rect{fill:rgba(34,211,238,0.10);stroke:var(--accent-2);stroke-width:1.6;}
+.ctl-svg .hitl text{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--text);}
+
+/* Sorter */
+.sort-card{padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);margin-bottom:10px;}
+.sort-card p{font-size:14px;margin-bottom:10px;}
+.sort-card.ok{border-color:rgba(52,211,153,0.5);} .sort-card.no{border-color:rgba(251,113,133,0.5);}
+
+/* Ladder */
+.ladder{display:flex;flex-direction:column;gap:8px;}
+.rung{display:grid;grid-template-columns:54px 1fr 110px 90px;gap:10px;align-items:center;padding:12px 14px;border-radius:10px;border:1px solid var(--border-soft);background:var(--surface-2);font-size:13.5px;transition:all .25s;}
+.rung .lv{font-family:var(--mono);font-weight:800;color:var(--text-faint);}
+.rung .cost{font-family:var(--mono);font-size:11.5px;color:var(--text-faint);}
+.rung .res{font-family:var(--mono);font-size:12px;font-weight:700;text-align:right;}
+.rung.pass{border-color:rgba(52,211,153,0.5);} .rung.pass .res{color:var(--good);}
+.rung.fail{border-color:rgba(251,113,133,0.6);background:rgba(251,113,133,0.07);} .rung.fail .res{color:var(--danger);}
+.rung.skip{opacity:.4;} .rung.run{border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(34,211,238,0.12);}
+.rung small{display:block;color:var(--text-dim);font-size:12px;}
+@media (max-width:640px){.rung{grid-template-columns:40px 1fr 70px;} .rung .cost{display:none;}}
+.verdict{margin-top:12px;padding:12px 14px;border-radius:10px;font-size:13.5px;}
+.verdict.good{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);}
+.verdict.bad{background:rgba(251,113,133,0.1);border:1px solid rgba(251,113,133,0.3);}
+.verdict.warn{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);}
+.opts{display:flex;flex-direction:column;gap:6px;}
+.opt{font-family:var(--sans);text-align:left;font-size:13px;padding:9px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;}
+.opt:hover{border-color:var(--accent-soft);}
+.opt.right{border-color:var(--good);background:rgba(52,211,153,0.12);} .opt.wrong{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.outcomes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;}
+.outcomes .card-soft{padding:14px;font-size:13px;color:var(--text-dim);}
+.outcomes b{display:block;font-family:var(--mono);font-size:14px;margin-bottom:4px;}
+@media (max-width:820px){.outcomes{grid-template-columns:1fr;}}
+
+/* Pipeline strip for reruns */
+.pstrip{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px;}
+.ps{padding:12px 8px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);text-align:center;font-size:12.5px;font-weight:600;transition:all .3s;}
+.ps small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--text-faint);font-weight:500;margin-top:3px;}
+.ps.reuse{opacity:.5;border-style:dashed;}
+.ps.rerun{border-color:var(--accent-2);background:rgba(34,211,238,0.12);}
+.ps.retry{border-color:var(--warn);background:rgba(245,158,11,0.14);}
+.ps.halt{border-color:var(--danger);background:rgba(251,113,133,0.10);}
+@media (max-width:640px){.pstrip{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;} .ps{font-size:10.5px;padding:8px 2px;}}
+
+/* Hook sim */
+.acts{display:flex;flex-direction:column;gap:6px;}
+.act{font-family:var(--mono);font-size:12.3px;text-align:left;padding:9px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center;}
+.act:hover{border-color:var(--accent-soft);}
+.act .dec{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;}
+.d-allow{background:rgba(52,211,153,0.15);color:var(--good);} .d-deny{background:rgba(251,113,133,0.15);color:var(--danger);} .d-ask{background:rgba(245,158,11,0.15);color:var(--warn);} .d-obs{background:rgba(168,85,247,0.15);color:var(--accent-soft);}
+.hook-flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:center;margin-bottom:12px;}
+.hook-flow .n{padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);font-size:12px;text-align:center;min-height:62px;display:flex;flex-direction:column;justify-content:center;}
+.hook-flow .n b{font-family:var(--mono);font-size:11.5px;display:block;}
+.hook-flow .ar{color:var(--text-faint);}
+.rvh{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px;}
+.meter{height:14px;border-radius:7px;background:var(--surface-3);overflow:hidden;margin-top:6px;}
+.meter i{display:block;height:100%;transition:width .4s ease;}
+.slips{display:flex;flex-wrap:wrap;gap:3px;margin-top:10px;}
+.slips span{width:12px;height:12px;border-radius:3px;background:var(--good);opacity:.75;}
+.slips span.x{background:var(--danger);opacity:1;}
+
+/* HITL */
+.cand{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);margin-bottom:8px;cursor:pointer;font-size:13.3px;}
+.cand.on{border-color:var(--accent-2);background:rgba(34,211,238,0.10);}
+.cand .q{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);white-space:nowrap;}
+.cand .sw{width:34px;height:20px;border-radius:10px;background:var(--surface-3);position:relative;flex:0 0 auto;transition:background .2s;}
+.cand .sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--text-faint);transition:all .2s;}
+.cand.on .sw{background:var(--accent-2);} .cand.on .sw::after{left:17px;background:#fff;}
+.mx2{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;font-size:12.5px;}
+.mx2 .h{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;}
+.mx2 .q2{padding:12px;border-radius:10px;border:1px solid var(--border-soft);background:var(--surface-2);min-height:96px;}
+.mx2 .q2 b{display:block;font-size:13px;margin-bottom:4px;}
+.mx2 .q2.hi{border-color:var(--accent-2);}
+.q2.red{background:rgba(251,113,133,0.08);} .q2.amb{background:rgba(245,158,11,0.08);} .q2.grn{background:rgba(52,211,153,0.08);}
+
+/* Bounds */
+.rtable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.3px;}
+.rtable th,.rtable td{text-align:left;padding:8px;border-top:1px solid var(--border-soft);white-space:nowrap;}
+.rtable th{color:var(--text-faint);font-size:11px;font-weight:600;border-top:none;}
+.rtable tr{animation:fadein .3s ease;}
+.rtable td.dec{white-space:normal;min-width:240px;}
+.rtable tr.stop td{background:rgba(245,158,11,0.10);}
+.rtable tr.bad td{background:rgba(251,113,133,0.10);}
+.rtable tr.good td{background:rgba(52,211,153,0.10);}
+.rtable .same{color:var(--danger);font-weight:700;}
+
+/* Fail-safe + gate log */
+.fs-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+@media (max-width:640px){.fs-pair{grid-template-columns:1fr;}}
+.fs{padding:14px;border-radius:12px;border:1px solid var(--border);font-size:13.3px;}
+.fs.open{background:rgba(251,113,133,0.07);border-color:rgba(251,113,133,0.4);}
+.fs.safe{background:rgba(52,211,153,0.07);border-color:rgba(52,211,153,0.4);}
+.fs b{display:block;margin-bottom:6px;font-size:13.5px;}
+.json{font-family:var(--mono);font-size:12.2px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:14px;white-space:pre;overflow:auto;line-height:1.7;}
+.json .k{color:var(--accent-2);cursor:pointer;border-bottom:1px dotted var(--accent-2);}
+.json .k.on{background:rgba(34,211,238,0.18);}
+.json .v{color:var(--text-dim);}
+
+/* Hands-on */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border-soft);margin-bottom:12px;}
+.tabs button{font-family:var(--mono);font-size:12px;border:none;background:none;color:var(--text-faint);padding:9px 12px;cursor:pointer;border-bottom:2px solid transparent;}
+.tabs button.on{color:var(--accent-2);border-bottom-color:var(--accent-2);}
+.task{padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);margin-bottom:10px;}
+.task .hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.task .hd b{font-size:14px;}
+.task .ans{display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--bg-2);font-size:13px;color:var(--text-dim);}
+.task.open .ans{display:block;animation:fadein .3s ease;}
+.task.done{border-color:rgba(52,211,153,0.5);}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="#" class="brand"><span class="brand-badge">🛂</span> Module 17</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#control-layer">Control layer</a>
+      <a href="#criteria">PASS/FAIL criteria</a>
+      <a href="#loops">Correction loops</a>
+      <a href="#hooks">Hooks</a>
+      <a href="#hitl">Human checkpoints</a>
+      <a href="#bounds">Bounded retries</a>
+      <a href="#failsafe">Logging &amp; fail-safe</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-16-use-case-lab-3-multi-agent-requirement-to-test.html" class="prev-link">← Module 16</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 5 · Module 17</div>
+    <h1>Quality Gates, Hooks<br>&amp; Self-Correction</h1>
+    <p class="hero-sub">In Module 16 <b>you were the gate</b>. You read each status, decided whether to continue, pasted findings back, and counted retries yourself. This module replaces that manual work with automated controls that run the same way every time and log every decision.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 30 min + walkthrough</span>
+      <span class="pill pill-neutral">🛂 Gates · 🪝 Hooks · 🔁 Loops · 🧑 Checkpoints</span>
+      <span class="pill pill-neutral">🧯 When a check itself fails: stop, don't continue</span>
+    </div>
+    <div class="airport">
+      <div class="ap"><span class="ico">🛂</span><b>Gate = boarding-pass check</b><span>Between areas: is this output allowed to move to the next stage?</span><span class="m">PASS · FAIL · NEEDS_HUMAN</span></div>
+      <div class="ap"><span class="ico">🪝</span><b>Hook = metal detector</b><span>Runs on every action of a given type, no matter which agent does it.</span><span class="m">allow · deny · ask + log</span></div>
+      <div class="ap"><span class="ico">🔁</span><b>Loop = "go back and fix it"</b><span>Sends the failure to whoever owns it, with a clear list of what's wrong.</span><span class="m">patch · rerun downstream</span></div>
+      <div class="ap"><span class="ico">🧑</span><b>Checkpoint = supervisor sign-off</b><span>A person decides the unusual cases, and the log records who decided and why.</span><span class="m">approve · reject + reason</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- CONTROL LAYER -->
+<!-- ============================================================ -->
+<section class="section" id="control-layer">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">Architecture overview</span>
+      <h2>The control layer on the Module 16 pipeline</h2>
+      <p>Four mechanisms all "stop bad things", and they're easy to mix up. Each answers a different question. Click a <b style="color:var(--warn)">◆ gate</b> to see its criteria from <code>gates.yaml</code>.</p>
+    </div>
+    <div class="diagram-wrap reveal">
+      <svg class="ctl-svg" id="ctlSvg" viewBox="0 0 1000 330" role="img" aria-label="Five pipeline stages with gates G1 to G5 between them, correction loops back to the Test Generator, hooks inside every agent, a human checkpoint and a gate log">
+        <defs>
+          <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6d76a0"/></marker>
+          <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fb7185"/></marker>
+        </defs>
+        <!-- correction loops -->
+        <path class="loop" d="M560 102 C560 44, 472 44, 472 98" marker-end="url(#a2)"/>
+        <path class="loop" d="M750 102 C750 26, 472 26, 472 98"/>
+        <path class="loop" d="M940 102 C940 8, 472 8, 472 98"/>
+        <path class="loop" d="M370 102 C370 56, 280 56, 280 98" marker-end="url(#a2)"/>
+        <text x="655" y="72" text-anchor="middle" class="lbl-r">FAIL + findings (round ≤ 2) → Test Generator</text>
+        <text x="258" y="52" class="lbl-r">retry</text>
+        <!-- stages -->
+        <g class="st"><rect x="20" y="100" width="130" height="56" rx="10"/><text x="85" y="124" text-anchor="middle">1 · Req. Validator</text><text x="85" y="142" text-anchor="middle" class="s">read-only</text></g>
+        <g class="st"><rect x="210" y="100" width="130" height="56" rx="10"/><text x="275" y="124" text-anchor="middle">2 · Seq. Builder</text><text x="275" y="142" text-anchor="middle" class="s">read-only</text></g>
+        <g class="st"><rect x="400" y="100" width="130" height="56" rx="10"/><text x="465" y="124" text-anchor="middle">3 · Test Generator</text><text x="465" y="142" text-anchor="middle" class="s">writes tests/</text></g>
+        <g class="st"><rect x="590" y="100" width="130" height="56" rx="10"/><text x="655" y="124" text-anchor="middle">4 · API Validator</text><text x="655" y="142" text-anchor="middle" class="s">runs tests</text></g>
+        <g class="st"><rect x="780" y="100" width="130" height="56" rx="10"/><text x="845" y="124" text-anchor="middle">5 · Reviewer</text><text x="845" y="142" text-anchor="middle" class="s">fresh context</text></g>
+        <!-- edges -->
+        <path class="e" d="M150 128 L166 128"/><path class="e" d="M194 128 L208 128" marker-end="url(#a1)"/>
+        <path class="e" d="M340 128 L356 128"/><path class="e" d="M384 128 L398 128" marker-end="url(#a1)"/>
+        <path class="e" d="M530 128 L546 128"/><path class="e" d="M574 128 L588 128" marker-end="url(#a1)"/>
+        <path class="e" d="M720 128 L736 128"/><path class="e" d="M764 128 L778 128" marker-end="url(#a1)"/>
+        <path class="e" d="M910 128 L926 128"/>
+        <!-- gates -->
+        <g class="gt" data-g="G1"><polygon points="180,106 202,128 180,150 158,128"/><text x="180" y="132" text-anchor="middle">G1</text></g>
+        <g class="gt" data-g="G2"><polygon points="370,106 392,128 370,150 348,128"/><text x="370" y="132" text-anchor="middle">G2</text></g>
+        <g class="gt" data-g="G3"><polygon points="560,106 582,128 560,150 538,128"/><text x="560" y="132" text-anchor="middle">G3</text></g>
+        <g class="gt" data-g="G4"><polygon points="750,106 772,128 750,150 728,128"/><text x="750" y="132" text-anchor="middle">G4</text></g>
+        <g class="gt" data-g="G5"><polygon points="940,106 962,128 940,150 918,128"/><text x="940" y="132" text-anchor="middle">G5</text></g>
+        <!-- G1 to owner -->
+        <path class="e" d="M180 150 L180 176" marker-end="url(#a1)"/>
+        <text x="180" y="190" text-anchor="middle" class="lbl">FAIL → 🧑 req owner</text>
+        <!-- HITL -->
+        <path class="e" d="M940 150 L940 196" marker-end="url(#a1)"/>
+        <g class="hitl"><rect x="856" y="198" width="138" height="42" rx="10"/><text x="925" y="224" text-anchor="middle">🧑 HITL → ✅ commit</text></g>
+        <!-- hooks band -->
+        <rect class="hookband" x="20" y="206" width="830" height="30" rx="8"/>
+        <text x="435" y="226" text-anchor="middle" class="hookt">🪝 hooks inside every agent: block out-of-scope writes · deny secrets · log tool calls · format after edit</text>
+        <!-- gate log -->
+        <line class="logl" x1="180" y1="150" x2="180" y2="280"/><line class="logl" x1="370" y1="150" x2="370" y2="280"/><line class="logl" x1="560" y1="150" x2="560" y2="280"/><line class="logl" x1="750" y1="150" x2="750" y2="280"/><line class="logl" x1="940" y1="240" x2="940" y2="280"/>
+        <rect class="logbox" x="20" y="280" width="970" height="34" rx="8"/>
+        <text x="505" y="302" text-anchor="middle" class="lbl">📒 gate_log.jsonl: every verdict, gates_version, input hash, checks[], decided_by, reason</text>
+      </svg>
+    </div>
+    <div class="grid-2 reveal" style="margin-top:20px;grid-template-columns:1fr 1.2fr;">
+      <div class="card">
+        <div class="row" style="justify-content:space-between;"><span class="tag" id="gName">gates.yaml</span><span class="pill pill-warn" id="gOnFail">on_fail</span></div>
+        <div class="artifact" id="gYaml" style="margin-top:10px;min-height:170px;"></div>
+        <p class="dim" id="gNote" style="font-size:13.3px;margin-top:10px;"></p>
+      </div>
+      <div class="card">
+        <span class="tag">Which mechanism fits? Pick one for each case</span>
+        <div id="sorter" style="margin-top:12px;"></div>
+        <div class="row" style="justify-content:space-between;"><span class="progress-label" id="sortScore">0 / 6</span><button class="btn btn-sm" id="sortReset">↺ Reset</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 1. CRITERIA -->
+<!-- ============================================================ -->
+<section class="section" id="criteria">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">§1 · Automated PASS/FAIL criteria</span>
+      <h2>Run the cheapest checks first, and stop at the first FAIL</h2>
+      <p>Pick an artifact and run it through Gate G3's checks, starting with the cheapest. Watch where it stops and what that saves. Then try the unsafe option: letting the LLM judge overrule a failure from one of the scripted checks.</p>
+    </div>
+    <div class="grid-2" style="grid-template-columns:1fr 1.5fr;">
+      <div class="card reveal">
+        <div class="ctrl"><label class="tag" for="ladScen">Artifact under test</label>
+          <select class="sel" id="ladScen" style="margin-top:8px;width:100%;">
+            <option value="clean">Clean suite: 6 tests, all markers present</option>
+            <option value="noenv">Stage ended without a handoff envelope</option>
+            <option value="marker">test_cancel_creates_refund is missing @ac</option>
+            <option value="run">Collects fine, but 2 tests fail in the sandbox (test defects)</option>
+            <option value="judge">Collection error, but the LLM judge calls it "excellent"</option>
+          </select>
+        </div>
+        <label class="toggle" style="margin-top:10px;"><input type="checkbox" id="ladOverrule"> Let an L4 "PASS" overrule an earlier FAIL <span style="color:var(--danger);font-weight:700">(unsafe)</span></label>
+        <button class="btn btn-primary" id="ladRun" style="margin-top:12px;width:100%;justify-content:center;">▶ Evaluate Gate G3</button>
+        <div class="verdict" id="ladVerdict" style="display:none;"></div>
+      </div>
+      <div class="card reveal">
+        <div class="ladder" id="ladder"></div>
+        <div class="row" style="justify-content:space-between;margin-top:12px;">
+          <span class="progress-label" id="ladCost">spent: 0 ms · 0 tokens</span>
+          <span class="progress-label">L5 (a human) happens at the commit checkpoint, not in every gate</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card reveal" style="margin-top:20px;">
+      <span class="tag">Rewrite each vague criterion so a script could check it</span>
+      <div class="grid-2" id="rewrite" style="margin-top:14px;"></div>
+    </div>
+    <div class="outcomes reveal">
+      <div class="card-soft"><b style="color:var(--good)">PASS</b>All criteria are met. Go to the next stage.</div>
+      <div class="card-soft"><b style="color:var(--danger)">FAIL</b>The criteria were checked and not met, and the producing stage can fix it. Start a correction loop (§2).</div>
+      <div class="card-soft"><b style="color:var(--warn)">NEEDS_HUMAN</b>The gate can't decide: the input is ambiguous, a check crashed, or it's a policy question. Go to a human checkpoint (§4).</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. CORRECTION LOOPS -->
+<!-- ============================================================ -->
+<section class="section" id="loops">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">§2 · Correction-loop patterns</span>
+      <h2>Who retries? What feedback? What reruns?</h2>
+      <p>A gate failure is only useful if it goes to the stage that <b>caused</b> the problem. For each failure, pick who should retry. The strip then shows which stages re-run and which reuse their saved output. As in a build system, a stage re-runs only when one of its inputs changed.</p>
+    </div>
+    <div class="grid-2" style="grid-template-columns:1fr 1.2fr;">
+      <div class="card reveal">
+        <span class="tag">Failure</span>
+        <div class="seg" id="rtSeg" style="margin-top:10px;"></div>
+        <div id="rtDesc" style="margin-top:14px;font-size:14px;min-height:64px;"></div>
+        <div class="opts" id="rtOpts" style="margin-top:10px;"></div>
+      </div>
+      <div class="card reveal">
+        <span class="tag">Rerun plan</span>
+        <div class="pstrip" id="pstrip"></div>
+        <div class="fb" id="rtFb"></div>
+        <div class="legend" style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-dim);margin-top:12px;">
+          <span>⟲ reused (saved output)</span><span style="color:var(--warn)">↻ retry owner</span><span style="color:var(--accent-2)">▶ re-run (depends on it)</span><span style="color:var(--danger)">■ halted</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2 reveal" style="margin-top:20px;grid-template-columns:1fr 1.2fr;">
+      <div class="card">
+        <span class="tag">Build the feedback to send back</span>
+        <p class="dim" style="font-size:13.5px;margin:8px 0 10px;">G4 failed on <code>test_cancel_shipped_order_rejected</code>. Choose what goes into the feedback sent to the Test Generator.</p>
+        <label class="toggle"><input type="checkbox" class="fbk" data-k="findings" checked> <code>findings[]</code>: test, AC-ID, criterion, observed vs. expected</label>
+        <label class="toggle"><input type="checkbox" class="fbk" data-k="artifact" checked> <code>artifact_to_modify</code>: patch the existing file, don't regenerate it</label>
+        <label class="toggle"><input type="checkbox" class="fbk" data-k="dnc" checked> <code>do_not_change</code>: tests with no findings, and the markers</label>
+        <label class="toggle"><input type="checkbox" class="fbk" data-k="prev" checked> <code>previous_attempt_summaries</code></label>
+        <button class="btn btn-primary btn-sm" id="fbRun" style="margin-top:10px;">▶ Simulate the next round</button>
+      </div>
+      <div class="card">
+        <span class="tag">findings.json → test-generator (round 1 of 2)</span>
+        <div class="artifact" id="fbJson" style="margin-top:10px;max-height:260px;"></div>
+        <div class="verdict" id="fbVerdict" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. HOOKS -->
+<!-- ============================================================ -->
+<section class="section" id="hooks">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">§3 · Hooks for validation, policy, logging, lifecycle</span>
+      <h2>Stand in the Test Generator's shoes and try things</h2>
+      <p>A hook is a script you own. Cursor runs it automatically at a set point in the agent's work, such as before a shell command or after a file edit. It can <b>allow</b>, <b>deny</b>, or <b>ask</b>, and it writes a log line each time. The model can't ignore it or forget it. Click an action to see which hook fires and what it decides.</p>
+    </div>
+    <div class="grid-2" style="grid-template-columns:1fr 1.3fr;">
+      <div class="card reveal">
+        <span class="tag">Agent attempts…</span>
+        <div class="acts" id="acts" style="margin-top:10px;"></div>
+        <label class="toggle" style="margin-top:12px;"><input type="checkbox" id="hookCrash"> 💥 Simulate a crash in the hook script</label>
+      </div>
+      <div class="card reveal">
+        <div class="hook-flow" id="hookFlow">
+          <div class="n"><b>agent</b><span id="hfAct">—</span></div><span class="ar">➜</span>
+          <div class="n"><b id="hfEvt">event</b><span id="hfScript">—</span></div><span class="ar">➜</span>
+          <div class="n"><b>decision</b><span id="hfDec">—</span></div>
+        </div>
+        <div class="dim" id="hfMsg" style="font-size:13.5px;min-height:44px;"></div>
+        <span class="tag" style="display:block;margin-top:14px;">runs/hook_log.jsonl</span>
+        <div class="console" id="hookLog" style="margin-top:8px;min-height:170px;"><span class="mt">// every hook decision appends one line</span></div>
+      </div>
+    </div>
+
+    <div class="card reveal" style="margin-top:20px;">
+      <div class="row" style="justify-content:space-between;">
+        <span class="tag">Rule vs. hook: 50 attempts to read .env late in a long session</span>
+        <button class="btn btn-sm" id="rvhRun">▶ Run 50 attempts</button>
+      </div>
+      <label class="ctrl" style="display:block;margin-top:12px;"><span style="font-size:13px;font-weight:600;">Session length (how much context has filled up): <span class="mono" id="ctxVal">70%</span></span>
+        <input type="range" id="ctxRange" min="10" max="100" value="70"></label>
+      <div class="rvh">
+        <div><b style="font-size:14px;">📜 Rule only: "never read .env"</b>
+          <div class="meter"><i id="ruleBar" style="background:var(--warn)"></i></div>
+          <span class="progress-label" id="ruleLbl"></span><div class="slips" id="ruleSlips"></div></div>
+        <div><b style="font-size:14px;">🪝 Rule + beforeReadFile hook</b>
+          <div class="meter"><i id="hookBar" style="background:var(--good);width:100%"></i></div>
+          <span class="progress-label">It runs every time and blocks every attempt</span><div class="slips" id="hookSlips"></div></div>
+      </div>
+      <p class="hint" style="margin-top:12px;">Use both. The rule tells the model <i>why</i> (it guides the model and uses context tokens). The hook guarantees the outcome (it's enforced outside the model and costs no tokens). The rule-only adherence numbers are illustrative, not measured.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. HITL -->
+<!-- ============================================================ -->
+<section class="section" id="hitl">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">§4 · Human-in-the-loop checkpoints</span>
+      <h2>Protection vs. approval fatigue</h2>
+      <p>People are the slowest and most expensive check, and the one with the final say. If you add too many checkpoints, people start approving without reading, and the checkpoints stop protecting anything. Switch checkpoints on and watch both meters.</p>
+    </div>
+    <div class="grid-2" style="grid-template-columns:1.2fr 1fr;">
+      <div class="card reveal">
+        <span class="tag">Candidate checkpoints on the Lab 3 pipeline</span>
+        <div id="cands" style="margin-top:12px;"></div>
+      </div>
+      <div class="card reveal">
+        <span class="tag">Effect</span>
+        <div style="margin-top:12px;"><b style="font-size:13.5px;">🛡 Risk actually covered</b><div class="meter"><i id="protBar" style="background:var(--good)"></i></div><span class="progress-label" id="protLbl"></span></div>
+        <div style="margin-top:14px;"><b style="font-size:13.5px;">😩 Approvals per person per day</b><div class="meter"><i id="fatBar" style="background:var(--danger)"></i></div><span class="progress-label" id="fatLbl"></span></div>
+        <div class="verdict warn" id="hitlVerdict" style="margin-top:16px;"></div>
+        <div class="mx2" style="margin-top:18px;">
+          <div></div><div class="h">easy to undo</div><div class="h">hard to undo</div>
+          <div class="h" style="writing-mode:vertical-rl;transform:rotate(180deg);">high impact</div>
+          <div class="q2 amb" data-q="hi-rev"><b>⚠ Gate + alert</b>or a checkpoint</div>
+          <div class="q2 red" data-q="hi-irr"><b>🧑 Always a checkpoint</b>merge, deploy, delete, external messages</div>
+          <div class="h" style="writing-mode:vertical-rl;transform:rotate(180deg);">low impact</div>
+          <div class="q2 grn" data-q="lo-rev"><b>🤖 Automate + log</b>test edits, sandbox runs</div>
+          <div class="q2 amb" data-q="lo-irr"><b>⚠ Checkpoint on first use</b>then automate with an audit log</div>
+        </div>
+      </div>
+    </div>
+    <div class="card reveal" style="margin-top:20px;">
+      <div class="row" style="justify-content:space-between;">
+        <span class="tag">What the approver sees</span>
+        <div class="seg" id="pkSeg"><button class="on" data-v="packet">📋 Decision packet</button><button data-v="chat">💬 Raw chat transcript</button></div>
+      </div>
+      <div class="artifact" id="pkView" style="margin-top:12px;white-space:pre-wrap;"></div>
+      <p class="hint" id="pkHint" style="margin-top:10px;"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. BOUNDS -->
+<!-- ============================================================ -->
+<section class="section" id="bounds">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">§5 · Bounded retries</span>
+      <h2>A retry counter alone isn't enough</h2>
+      <p>Correction loops go wrong in predictable ways. Pick one, choose which guards are on, and step through the rounds. The progress, invariant, and budget checks often stop a loop earlier than the retry limit would.</p>
+    </div>
+    <div class="grid-2" style="grid-template-columns:1fr 1.6fr;">
+      <div class="card reveal">
+        <div class="ctrl"><label class="tag" for="bScen">Loop failure mode</label>
+          <select class="sel" id="bScen" style="margin-top:8px;width:100%;">
+            <option value="noprog">No progress: the same fix every round</option>
+            <option value="osc">Oscillation: fixing A breaks B, fixing B breaks A</option>
+            <option value="drift">Goal drift: "passes" by deleting assertions</option>
+            <option value="budget">Budget blow-out: each round costs more</option>
+          </select>
+        </div>
+        <label class="ctrl" style="display:block;margin-top:12px;"><span style="font-size:13px;font-weight:600;">max_rounds: <span class="mono" id="mrVal">4</span></span><input type="range" id="mrRange" min="1" max="8" value="4"></label>
+        <label class="toggle"><input type="checkbox" class="bg" id="gProg" checked> Progress check (same hash, or findings not decreasing)</label>
+        <label class="toggle"><input type="checkbox" class="bg" id="gInv" checked> Invariants (assertion count doesn't drop, no new skip)</label>
+        <label class="toggle"><input type="checkbox" class="bg" id="gBud" checked> Token budget per run (100k)</label>
+        <label class="toggle"><input type="checkbox" class="bg" id="gMax" checked> Enforce max_rounds</label>
+        <button class="btn btn-primary" id="bRun" style="margin-top:12px;width:100%;justify-content:center;">▶ Run correction loop</button>
+      </div>
+      <div class="card reveal">
+        <div class="table-scroll"><table class="rtable" id="bTable"></table></div>
+        <div class="verdict" id="bVerdict" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. LOGGING + FAIL-SAFE -->
+<!-- ============================================================ -->
+<section class="section" id="failsafe">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">§6 · Logging gate decisions · fail-safe behaviour</span>
+      <h2>If a check fails to run, the answer is never PASS</h2>
+      <p>The gate log answers the auditor's question: <i>"Why was this allowed through, and who or what decided?"</i> Click a field in the entry below to see why it's there. Then break part of the control system and compare failing open (letting it through) with failing safe (stopping).</p>
+    </div>
+    <div class="grid-2" style="grid-template-columns:1.3fr 1fr;">
+      <div class="card reveal">
+        <span class="tag">runs/req-2481-run-03/gate_log.jsonl (append-only)</span>
+        <div class="json" id="glJson" style="margin-top:10px;"></div>
+      </div>
+      <div class="card reveal">
+        <span class="tag" id="glKey">field</span>
+        <p id="glWhy" style="margin-top:10px;font-size:14.5px;"></p>
+      </div>
+    </div>
+    <div class="card reveal" style="margin-top:20px;">
+      <div class="row" style="justify-content:space-between;">
+        <span class="tag">What broke?</span>
+        <select class="sel" id="fsSel"></select>
+      </div>
+      <div class="fs-pair">
+        <div class="fs open"><b>🚪 Fail-open (dangerous)</b><span id="fsOpen"></span></div>
+        <div class="fs safe"><b>🧯 Fail-safe (required)</b><span id="fsSafe"></span></div>
+      </div>
+      <div class="artifact" id="fsLog" style="margin-top:12px;font-size:11.5px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. HANDS-ON -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">§7 · Hands-on walkthrough</span>
+      <h2>A gate and hook configuration, file by file</h2>
+      <p>This walkthrough adds one gate and four hooks to the Module 16 pipeline. Read the files, then work through the six tasks. Open the model answer only after you've committed to your own.</p>
+    </div>
+    <div class="grid-2" style="grid-template-columns:1.2fr 1fr;">
+      <div class="card reveal">
+        <div class="tabs" id="tabs">
+          <button class="on" data-f="f-hooks">.cursor/hooks.json</button>
+          <button data-f="f-policy">shell-policy.sh</button>
+          <button data-f="f-gate">run-stage-gate.sh</button>
+          <button data-f="f-gates">gates.yaml (G3)</button>
+        </div>
+        <div class="artifact" id="tabView" style="min-height:360px;max-height:460px;"></div>
+        <p class="hint" style="margin-top:10px;">Hook event names, payload fields, and response keys have changed between Cursor releases, so check the current Cursor Hooks docs before copying these. What matters here is the pattern: an allow-list, a deny-list, "ask" as the default for anything else, a log line per decision, and deny if the hook itself errors.</p>
+      </div>
+      <div class="reveal">
+        <div id="tasks"></div>
+        <div class="progress-track"><div class="progress-fill" id="taskFill"></div></div>
+        <span class="progress-label" id="taskLabel">0 / 6 done</span>
+        <div class="setup-done" id="taskDone">✅ Walkthrough complete. In Module 18 you'll apply all of this to the Lab 3 pipeline.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">Knowledge check</span>
+      <h2>Quick check before Lab 4</h2>
+      <p>Seven questions on this module's material.</p>
+    </div>
+    <div class="card reveal">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/7</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">From "you are the gate" to controls that run on their own</h3>
+    <ul>
+      <li>A gate checks a stage's <b>output</b> between stages. Its criteria are objective, observable, actionable, cheapest first, and versioned. It returns PASS, FAIL, or NEEDS_HUMAN.</li>
+      <li>An LLM judge never overrules a failure from a scripted check. Stop at the first FAIL.</li>
+      <li>Send each FAIL to the stage that caused it, with structured findings. Have it patch its output rather than regenerate it, and re-run only the stages downstream of it.</li>
+      <li>A hook checks an <b>action</b> inside the agent's work, and always runs. Use rules to explain, and hooks to enforce and log.</li>
+      <li>Put human checkpoints where the impact is high or the action can't be undone, and give approvers a decision packet, not a chat transcript. Too many checkpoints lead to approval fatigue.</li>
+      <li>Bound every loop with max rounds, a progress check, invariants, and a budget. Log every decision, and if a check fails to run, stop (NEEDS_HUMAN or deny), never PASS.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-16-use-case-lab-3-multi-agent-requirement-to-test.html" class="btn">← Module 16: Use Case Lab 3</a>
+    <a href="#" class="btn">↑ Back to top</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 17 — Quality Gates, Hooks &amp; Self-Correction Fundamentals · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<!-- ===================== Walkthrough files (plain text) ===================== -->
+<script type="text/plain" id="f-hooks">{
+  "version": 1,
+  "hooks": {
+    "beforeReadFile":       [{ "command": ".cursor/hooks/deny-secrets.sh" }],
+    "beforeShellExecution": [{ "command": ".cursor/hooks/shell-policy.sh" }],
+    "afterFileEdit":        [{ "command": ".cursor/hooks/after-edit-log-and-scope.sh" }],
+    "stop":                 [{ "command": ".cursor/hooks/run-stage-gate.sh" }]
+  }
+}
+
+# Project level: .cursor/hooks.json   (user level: ~/.cursor/hooks.json)
+# Each hook receives the event as JSON on stdin and answers on stdout.</script>
+<script type="text/plain" id="f-policy">#!/usr/bin/env bash
+# Reads the hook event JSON on stdin; replies allow / deny / ask on stdout.
+# Fail-safe: any unexpected error → deny.
+set -euo pipefail
+trap 'echo "{\"permission\":\"deny\",\"userMessage\":\"shell-policy hook error — denied (fail-safe)\"}"; exit 0' ERR
+
+input="$(cat)"
+cmd="$(jq -r '.command // empty' <<<"$input")"
+log() { jq -nc --arg c "$cmd" --arg d "$1" \
+  '{ts:now|todate, hook:"shell-policy", command:$c, decision:$d}' >> runs/hook_log.jsonl; }
+
+case "$cmd" in
+  *"git push"*|*"rm -rf"*|*"curl "*|*"wget "*)
+    log deny;  echo '{"permission":"deny","agentMessage":"Blocked by pipeline policy: no push, deletes, or network calls."}' ;;
+  "pytest"*|"ruff"*|"python -m pytest"*)
+    log allow; echo '{"permission":"allow"}' ;;
+  "pip install"*|"uv add"*)
+    log ask;   echo '{"permission":"ask","userMessage":"Agent wants to add a dependency — approve?"}' ;;
+  *)
+    log ask;   echo '{"permission":"ask"}' ;;   # default: unknown commands need a human
+esac</script>
+<script type="text/plain" id="f-gate">on stop:
+  1. read runs/<run_id>/current_stage + envelope
+  2. evaluate gates.yaml checks for that stage
+       L1 → L2 → L3   (stop at first FAIL)
+  3. append decision to gate_log.jsonl                      ← §6
+  4. PASS               → mark stage done; orchestrator starts next stage
+     FAIL               → if round < max AND progress made
+                             → write findings.json
+                             → follow-up message to the agent
+                          else → ESCALATE (decision packet)   ← §2, §5
+     NEEDS_HUMAN / error → halt, decision packet               ← §4, §6</script>
+<script type="text/plain" id="f-gates">version: 1.0.0
+gates:
+  G3_tests_collect_and_conform:     # after Test Generator
+    checks:
+      - cmd: pytest --collect-only -q tests/test_req_*.py   # exit 0
+      - cmd: ruff check tests/
+      - every test has @pytest.mark.ac and @pytest.mark.seq
+      - changed paths ⊆ ["tests/**", "runs/**"]
+    on_fail: retry_producer         # stage 3, with findings
+    max_rounds: 2                   # counter shared with G4</script>
+
+<script>
+(function(){
+"use strict";
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function txt(id){ return $(id).textContent.replace(/^\n/, ''); }
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement, btn = $('themeToggle'), stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next); btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream ---------- */
+(function(){
+  var words = ["G1","G2","G3","G4","G5","PASS","FAIL","NEEDS_HUMAN","beforeShellExecution","afterFileEdit","beforeReadFile","stop","max_rounds: 2","gate_log.jsonl","do_not_change","fail-safe","decided_by","gates.yaml"];
+  var el = $('heroStream');
+  for(var i=0;i<8;i++){
+    var row = document.createElement('div'); row.className = 'token-row';
+    var w = []; for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+    row.textContent = w.join(' · ');
+    row.style.top = (Math.random()*100)+'%';
+    row.style.animationDuration = (28+Math.random()*22)+'s';
+    row.style.animationDelay = (-Math.random()*30)+'s';
+    el.appendChild(row);
+  }
+})();
+
+/* ---------- Nav active + reveal ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]'), links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(es){ es.forEach(function(en){ if(en.isIntersecting) setActive(en.target.id); }); }, {rootMargin:'-40% 0px -55% 0px'});
+    sections.forEach(function(s){ io.observe(s); });
+    var io2 = new IntersectionObserver(function(es){ es.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io2.unobserve(en.target); } }); }, {threshold:0.1});
+    items.forEach(function(i){ io2.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ============================================================
+   Control layer: gate details + mechanism sorter
+   ============================================================ */
+(function(){
+  var gates = {
+    G1:{name:'G1_requirement_ready', after:'Requirement Validator', onfail:'route_to_human',
+      yaml:'G1_requirement_ready:\n  checks:\n    - envelope.status == "PASS"\n    - every AC has classification == TESTABLE\n  on_fail: route_to_human',
+      note:'If the input is the problem, the agent can’t fix it by retrying. A FAIL here goes straight to the requirement owner, with no retry loop.'},
+    G2:{name:'G2_sequence_coverage', after:'Sequence Builder', onfail:'retry_producer · max 1',
+      yaml:'G2_sequence_coverage:\n  checks:\n    - schema: schemas/test_sequence.schema.json\n    - set(ac_ids in sequence) ==\n      set(ac_ids in 01_validated_requirement.md)\n    - no scenario without ac_ids\n  on_fail: retry_producer        # stage 2\n  max_rounds: 1',
+      note:'This is the coverage matrix you fixed by hand in Module 16, now checked by a script comparing two sets of IDs.'},
+    G3:{name:'G3_tests_collect_and_conform', after:'Test Generator', onfail:'retry_producer · max 2',
+      yaml:'G3_tests_collect_and_conform:\n  checks:\n    - cmd: pytest --collect-only -q tests/test_req_*.py\n    - cmd: ruff check tests/\n    - every test has @pytest.mark.ac and .seq\n    - changed paths ⊆ ["tests/**", "runs/**"]\n  on_fail: retry_producer        # stage 3, with findings\n  max_rounds: 2',
+      note:'Every check here is a script (structural or static), so none of them needs an LLM. The "changed paths" check catches a generator that edits the spec or the product code.'},
+    G4:{name:'G4_no_test_defects', after:'API Validator', onfail:'retry_producer · shared counter',
+      yaml:'G4_no_test_defects:\n  checks:\n    - count(failures where class == TEST_DEFECT) == 0\n    - count(failures where class == ENVIRONMENT) == 0\n  allow: PRODUCT_DEFECT failures (flagged → reviewer)\n  on_fail: retry_producer        # stage 3\n  max_rounds: 2                  # shared counter with G3',
+      note:'Product defects are allowed through but flagged for the Reviewer. Environment failures do not count as a PASS. G4 shares its retry counter with G3, so the Generator gets 2 attempts in total, not 2 per gate.'},
+    G5:{name:'G5_review_verdict', after:'Reviewer', onfail:'retry_producer → then HITL',
+      yaml:'G5_review_verdict:\n  checks:\n    - verdict in [APPROVE, ESCALATE]\n  on_fail: retry_producer        # REQUEST_CHANGES → stage 3\n  then: hitl_commit_approval     # always, APPROVE and ESCALATE',
+      note:'Neither APPROVE nor ESCALATE commits anything automatically. Both go to a person for commit approval.'}
+  };
+  var svg = $('ctlSvg');
+  function show(g){
+    var d = gates[g];
+    svg.querySelectorAll('.gt').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-g') === g); });
+    $('gName').textContent = 'gates.yaml · '+d.name+' (after '+d.after+')';
+    $('gOnFail').textContent = 'on_fail: '+d.onfail;
+    $('gYaml').textContent = d.yaml; $('gNote').textContent = d.note;
+  }
+  svg.addEventListener('click', function(e){ var g = e.target.closest('.gt'); if(g) show(g.getAttribute('data-g')); });
+  show('G3');
+
+  var mech = {gate:'🛂 Gate', hook:'🪝 Hook', loop:'🔁 Loop', hitl:'🧑 Checkpoint'};
+  var cases = [
+    {t:'Stop the Test Generator from running <code>git push</code>.', a:'hook', why:'It controls an action inside the agent’s work, so use a beforeShellExecution hook.'},
+    {t:'Check that every AC-ID has at least one test before the API Validator runs.', a:'gate', why:'It judges a stage’s output between stages, so it’s a gate (G3/G4 criteria).'},
+    {t:'Send test-defect findings back to the Test Generator, with at most 2 rounds.', a:'loop', why:'This is what happens after a FAIL: send it to whoever caused it, with structured feedback and a round limit.'},
+    {t:'Approve committing the generated tests to the repo.', a:'hitl', why:'A commit is hard to undo and has real impact, so a named person decides and the approval is logged.'},
+    {t:'Run <code>ruff format</code> on every file the agent edits.', a:'hook', why:'An afterFileEdit hook does this automatically every time.'},
+    {t:'The Reviewer returns ESCALATE because of an open product defect.', a:'hitl', why:'An escalation needs a business decision, which a person has to make.'}
+  ];
+  var ans = {};
+  function render(){
+    $('sorter').innerHTML = cases.map(function(c, i){
+      var st = ans[i] ? (ans[i] === c.a ? ' ok' : ' no') : '';
+      var fb = ans[i] ? '<div class="fb" style="margin-top:8px;">'+(ans[i] === c.a ? '<span class="ok">✓</span> ' : '<span class="no">✗ '+mech[c.a]+'.</span> ')+c.why+'</div>' : '';
+      return '<div class="sort-card'+st+'"><p>'+c.t+'</p><div class="row" data-i="'+i+'">'+Object.keys(mech).map(function(k){ return '<button class="btn btn-sm" data-m="'+k+'"'+(ans[i]?' disabled':'')+'>'+mech[k]+'</button>'; }).join('')+'</div>'+fb+'</div>';
+    }).join('');
+    var right = Object.keys(ans).filter(function(i){ return ans[i] === cases[i].a; }).length;
+    $('sortScore').textContent = right+' / '+cases.length+' correct'+(Object.keys(ans).length < cases.length ? ' · '+(cases.length-Object.keys(ans).length)+' left' : '');
+  }
+  $('sorter').addEventListener('click', function(e){ var b = e.target.closest('button[data-m]'); if(!b) return; ans[+b.parentNode.getAttribute('data-i')] = b.getAttribute('data-m'); render(); });
+  $('sortReset').addEventListener('click', function(){ ans = {}; render(); });
+  render();
+})();
+
+/* ============================================================
+   §1 Gate check ladder + criterion rewrite
+   ============================================================ */
+(function(){
+  var levels = [
+    {lv:'L1', n:'Structural', d:'envelope present · schema valid · files exist', ms:5, tok:0},
+    {lv:'L2', n:'Static', d:'collect-only · ruff · markers · changed paths', ms:2100, tok:0},
+    {lv:'L3', n:'Execution', d:'run tests in the sandbox', ms:38000, tok:0},
+    {lv:'L4', n:'Rubric (LLM)', d:'independent judge, written rubric, fresh context', ms:9000, tok:8200}
+  ];
+  var scen = {
+    clean:[['PASS','ok'],['PASS','6 collected · markers ✔ · paths ✔'],['PASS','6 passed'],['PASS','rubric 5/5']],
+    noenv:[['FAIL','no handoff envelope in 03_generation_notes.md'],null,null,['PASS','"looks thorough"']],
+    marker:[['PASS','ok'],['FAIL','test_cancel_creates_refund: missing @pytest.mark.ac'],null,['PASS','"well structured"']],
+    run:[['PASS','ok'],['PASS','6 collected'],['FAIL','2 failed: TEST_DEFECT (error.reason not in schema)'],['PASS','"clear, readable tests"']],
+    judge:[['PASS','ok'],['FAIL','E  fixture ’make_order’ not found (collection error)'],null,['PASS','"Excellent coverage, idiomatic PyTest"']]
+  };
+  function renderIdle(){
+    $('ladder').innerHTML = levels.map(function(l){ return '<div class="rung" id="r-'+l.lv+'"><span class="lv">'+l.lv+'</span><span><b>'+l.n+'</b><small>'+l.d+'</small></span><span class="cost">'+(l.tok ? l.tok.toLocaleString()+' tok' : (l.ms < 1000 ? l.ms+' ms' : (l.ms/1000)+' s'))+'</span><span class="res">—</span></div>'; }).join('');
+    $('ladCost').textContent = 'spent: 0 ms · 0 tokens';
+  }
+  var timers = [];
+  $('ladRun').addEventListener('click', function(){
+    timers.forEach(clearTimeout); timers = []; renderIdle();
+    var key = $('ladScen').value, s = scen[key], over = $('ladOverrule').checked;
+    var v = $('ladVerdict'); v.style.display = 'none';
+    var ms = 0, tok = 0, failedAt = -1, step = 0;
+    levels.forEach(function(l, i){
+      var runIt = failedAt < 0 || over;
+      if(!runIt) return;
+      var r = s[i] || ['PASS',''];
+      if(failedAt < 0 && r[0] === 'FAIL') failedAt = i;
+      (function(i, r, delay){
+        timers.push(setTimeout(function(){
+          var el = $('r-'+levels[i].lv); el.className = 'rung run';
+          timers.push(setTimeout(function(){
+            el.className = 'rung '+(r[0] === 'PASS' ? 'pass' : 'fail');
+            el.querySelector('.res').textContent = r[0];
+            el.querySelector('small').textContent = r[1];
+            ms += levels[i].ms; tok += levels[i].tok;
+            $('ladCost').textContent = 'spent: '+(ms < 1000 ? ms+' ms' : (ms/1000).toFixed(1)+' s')+' · '+tok.toLocaleString()+' tokens';
+          }, 380));
+        }, delay));
+      })(i, r, step*520);
+      step++;
+    });
+    timers.push(setTimeout(function(){
+      levels.forEach(function(l, i){ var el = $('r-'+l.lv); if(!/pass|fail/.test(el.className)) { el.className = 'rung skip'; el.querySelector('.res').textContent = 'skipped'; } });
+      v.style.display = 'block';
+      if(failedAt < 0){ v.className = 'verdict good'; v.innerHTML = '<b>G3: PASS.</b> Every level passed. The scripted checks ran first and in order, and the LLM rubric was only an extra check on top.'; }
+      else if(over && key !== 'clean'){ v.className = 'verdict bad'; v.innerHTML = '<b>Unsafe: G3 recorded PASS because the LLM judge said so.</b> A scripted check had already shown the artifact is broken ('+esc(s[failedAt][1])+'). An LLM judge gives probabilistic answers and can be won over by output that only looks right. Never let L4 overrule an L1–L3 FAIL.'; }
+      else {
+        var saved = levels.slice(failedAt+1).reduce(function(a, l){ return a + l.tok; }, 0);
+        v.className = 'verdict warn'; v.innerHTML = '<b>G3: FAIL at '+levels[failedAt].lv+'.</b> '+esc(s[failedAt][1])+'. The later levels were skipped'+(saved ? ', saving '+saved.toLocaleString()+' judge tokens' : '')+'. The failure message names the exact problem, so the Generator can act on it.';
+      }
+    }, step*520 + 450));
+  });
+  renderIdle();
+
+  var rw = [
+    {p:'Objective', bad:'"The tests are reasonable."', o:['The generator is confident the tests are reasonable','pytest --collect-only exits 0 and ruff check passes','The reviewer thinks the tests look clean'], a:1},
+    {p:'Observable', bad:'"The agent says all ACs are covered."', o:['The agent’s envelope contains covered: true','Every AC-ID appears in at least one @pytest.mark.ac in tests/','The agent was asked twice and said yes both times'], a:1},
+    {p:'Actionable on FAIL', bad:'"FAIL."', o:['FAIL: please try again','FAIL: quality too low','FAIL: AC-3 has no test; SEQ-3 unmapped (G2 coverage check)'], a:2},
+    {p:'Versioned', bad:'"The criteria are in the QA lead’s head."', o:['A wiki page someone updates','gates.yaml in the repo, changed only through a reviewed PR, with gates_version logged','Pinned message in the team chat'], a:1}
+  ];
+  $('rewrite').innerHTML = rw.map(function(r, i){
+    return '<div class="card-soft" style="padding:14px;"><span class="pill pill-neutral">'+r.p+'</span><p style="margin:10px 0;font-size:14px;"><span style="color:var(--danger)">✗</span> '+esc(r.bad)+'</p><div class="opts" data-i="'+i+'">'+r.o.map(function(o, oi){ return '<button class="opt" data-o="'+oi+'">'+esc(o)+'</button>'; }).join('')+'</div></div>';
+  }).join('');
+  $('rewrite').addEventListener('click', function(e){
+    var b = e.target.closest('.opt'); if(!b) return;
+    var box = b.parentNode, r = rw[+box.getAttribute('data-i')];
+    box.querySelectorAll('.opt').forEach(function(x){ var oi = +x.getAttribute('data-o'); x.classList.remove('right','wrong'); if(oi === r.a) x.classList.add('right'); else if(x === b) x.classList.add('wrong'); });
+  });
+})();
+
+/* ============================================================
+   §2 Routing + downstream reruns, feedback builder
+   ============================================================ */
+(function(){
+  var stages = ['Validator','Builder','Generator','API Val.','Reviewer'];
+  var fails = [
+    {k:'own', label:'G4 · wrong field', d:'<b>G4 FAIL:</b> <code>test_cancel_shipped_order_rejected</code> asserts <code>body["errorCode"]</code>, but the spec defines <code>error.code</code>. Classified as TEST_DEFECT.',
+      opts:['Retry stage 3 (Test Generator) with findings','Retry stage 2 (Sequence Builder)','Re-run the whole pipeline','NEEDS_HUMAN → requirement owner'], a:0, plan:['reuse','reuse','retry','rerun','rerun'],
+      why:'The problem is in the Generator’s own output, so the Generator patches the failing test. Stages 4–5 depend on its output and re-run. Stages 1–2 are reused unchanged.'},
+    {k:'up', label:'G3 · bad upstream input', d:'<b>G3 FAIL:</b> the Generator couldn’t write the test for SEQ-4 because <code>02_test_sequence.json</code> has no <code>expect</code> list for SEQ-4.',
+      opts:['Retry stage 3 with findings','Retry stage 2 (Sequence Builder), since stage 3 got a bad input','Skip SEQ-4 and continue','Retry stage 1'], a:1, plan:['reuse','retry','rerun','rerun','rerun'],
+      why:'Stage 3 failed because it was given an incomplete input. Retrying the Generator would just produce the same failure, so send it back to the Builder (stage K=2) and re-run stages 2 through 5.'},
+    {k:'human', label:'G1 · ambiguous input', d:'<b>G1 FAIL:</b> AC-4 ("triggers a refund") is classified NEEDS_CLARIFICATION. Nobody but the owner knows how a refund can be observed.',
+      opts:['Retry stage 1 until it says TESTABLE','Let stage 1 rewrite AC-4','NEEDS_HUMAN: the requirement owner answers, then re-run from stage 1','Skip AC-4'], a:2, plan:['halt','reuse','reuse','reuse','reuse'],
+      why:'The input itself is the problem, so retrying won’t help and the agent must not make up an answer. The owner answers the question, and the run starts again from stage 1 because the source changed.'},
+    {k:'env', label:'G4 · sandbox 503', d:'<b>G4:</b> every test fails with <code>503 Service Unavailable</code> from <code>sandbox-api:8080</code>. Classified as ENVIRONMENT.',
+      opts:['Retry stage 3: the tests must be wrong','Retry the infrastructure once with backoff, then NEEDS_HUMAN','Mark the tests PASS since it isn’t their fault','Retry stage 4 five times'], a:1, plan:['reuse','reuse','reuse','retry','halt'],
+      why:'Don’t blame the agent for an infrastructure problem. Retry stage 4 once with backoff. If it fails again, halt with NEEDS_HUMAN. The Generator’s round counter isn’t touched.'}
+  ];
+  var cur = 0;
+  $('rtSeg').innerHTML = fails.map(function(f, i){ return '<button data-i="'+i+'"'+(i===0?' class="on"':'')+'>'+f.label+'</button>'; }).join('');
+  function strip(plan){
+    var icon = {reuse:'⟲ reused', retry:'↻ retry', rerun:'▶ re-run', halt:'■ halt', idle:'·'};
+    $('pstrip').innerHTML = stages.map(function(s, i){ var p = plan ? plan[i] : 'idle'; return '<div class="ps '+p+'">'+(i+1)+' · '+s+'<small>'+icon[p]+'</small></div>'; }).join('');
+  }
+  function show(i){
+    cur = i; var f = fails[i];
+    $('rtSeg').querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', +b.getAttribute('data-i') === i); });
+    $('rtDesc').innerHTML = f.d;
+    $('rtOpts').innerHTML = f.opts.map(function(o, oi){ return '<button class="opt" data-o="'+oi+'">'+esc(o)+'</button>'; }).join('');
+    $('rtFb').innerHTML = '<span class="dim">Pick who retries to see the rerun plan.</span>'; strip(null);
+  }
+  $('rtSeg').addEventListener('click', function(e){ var b = e.target.closest('button'); if(b) show(+b.getAttribute('data-i')); });
+  $('rtOpts').addEventListener('click', function(e){
+    var b = e.target.closest('.opt'); if(!b) return;
+    var f = fails[cur], oi = +b.getAttribute('data-o');
+    $('rtOpts').querySelectorAll('.opt').forEach(function(x){ var j = +x.getAttribute('data-o'); x.classList.remove('right','wrong'); if(j === f.a) x.classList.add('right'); else if(x === b) x.classList.add('wrong'); });
+    strip(f.plan);
+    $('rtFb').innerHTML = (oi === f.a ? '<span class="ok">✓ Correct.</span> ' : '<span class="no">✗ Not quite.</span> ') + f.why;
+  });
+  show(0);
+
+  function feedbackJson(on){
+    var o = {gate:'G4_no_test_defects', round:1, max_rounds:2, route_to:'test-generator'};
+    if(on.artifact) o.artifact_to_modify = 'tests/test_req_2481_order_cancellation.py';
+    if(on.findings) o.findings = [{id:'F-1', test:'test_cancel_shipped_order_rejected', ac_id:'AC-2', criterion:'asserted fields must exist in response schema', observed:"asserts body['errorCode']", expected:"body['error']['code'] per openapi.yaml#/components/schemas/Error", 'class':'TEST_DEFECT'}];
+    else o.message = 'G4 failed. Try again.';
+    if(on.dnc) o.do_not_change = ['tests with no findings', 'ac/seq markers'];
+    if(on.prev) o.previous_attempt_summaries = ['round 0: fixture make_order missing → fixed'];
+    return JSON.stringify(o, null, 2);
+  }
+  function getOn(){ var on = {}; document.querySelectorAll('.fbk').forEach(function(c){ on[c.getAttribute('data-k')] = c.checked; }); return on; }
+  function refresh(){ $('fbJson').textContent = feedbackJson(getOn()); $('fbVerdict').style.display = 'none'; }
+  document.querySelectorAll('.fbk').forEach(function(c){ c.addEventListener('change', refresh); });
+  $('fbRun').addEventListener('click', function(){
+    var on = getOn(), problems = [], v = $('fbVerdict');
+    if(!on.findings) problems.push('<b>"Try again" with no findings:</b> the Generator can’t tell what’s wrong, so it changes something at random and G4 fails the same way.');
+    if(!on.artifact) problems.push('<b>No artifact_to_modify:</b> the Generator rewrites the whole file, the markers change, and 3 new findings appear in tests that were already passing.');
+    if(!on.dnc) problems.push('<b>No do_not_change:</b> fixing F-1 also "tidies up" <code>test_customer_cancels_own_paid_order</code>, which breaks it. That’s a regression.');
+    if(!on.prev) problems.push('<b>No previous_attempt_summaries:</b> the Generator tries the make_order fixture approach again, even though it already failed once.');
+    v.style.display = 'block';
+    if(!problems.length){ v.className = 'verdict good'; v.innerHTML = '<b>Round 1 → G4 PASS.</b> Only the failing assertion was changed. Everything else was left as is, and the previous fix was not repeated. The loop succeeded after one retry.'; }
+    else { v.className = 'verdict '+(problems.length > 1 ? 'bad' : 'warn'); v.innerHTML = '<b>Round 1 → G4 FAIL again.</b><ul style="margin:8px 0 0;padding-left:18px;">'+problems.map(function(p){ return '<li style="margin-bottom:4px;">'+p+'</li>'; }).join('')+'</ul>'; }
+  });
+  refresh();
+})();
+
+/* ============================================================
+   §3 Hook simulator + rule vs hook
+   ============================================================ */
+(function(){
+  var acts = [
+    {a:'cat .env', evt:'beforeReadFile', script:'deny-secrets.sh', dec:'deny', msg:'Denied: secrets are injected at runtime and never read into context (Module 14). Category: <b>policy</b>.'},
+    {a:'pytest --collect-only tests/', evt:'beforeShellExecution', script:'shell-policy.sh', dec:'allow', msg:'On the allow-list, so it runs with no human needed. Category: <b>policy</b> (allow path).'},
+    {a:'git push origin main', evt:'beforeShellExecution', script:'shell-policy.sh', dec:'deny', msg:'Blocked by pipeline policy: no pushing, deleting, or network calls. The agent gets the message and continues without it. Category: <b>policy</b>.'},
+    {a:'pip install requests', evt:'beforeShellExecution', script:'shell-policy.sh', dec:'ask', msg:'Adding a dependency is a supply-chain decision, so the hook asks a human: "Agent wants to add a dependency — approve?" Category: <b>policy</b>.'},
+    {a:'curl https://api.example.com', evt:'beforeShellExecution', script:'shell-policy.sh', dec:'deny', msg:'Network calls to anything other than the sandbox are denied. Category: <b>policy</b>.'},
+    {a:'edit tests/test_req_2481_order_cancellation.py', evt:'afterFileEdit', script:'after-edit-log-and-scope.sh', dec:'observe', msg:'Inside the allowed scope. The hook runs <code>ruff format</code>, runs <code>pytest --collect-only</code> on that file, and logs the path. Categories: <b>validation + logging</b>.'},
+    {a:'edit gates.yaml', evt:'afterFileEdit', script:'after-edit-log-and-scope.sh', dec:'flag', msg:'Outside the allowed scope, and an attempt to change the gate itself (gate gaming). The edit is reverted and flagged, and G3’s "changed paths" check will FAIL. Category: <b>policy</b>.'},
+    {a:'mcp: jira.create_issue', evt:'beforeMCPExecution', script:'mcp-allowlist.sh', dec:'deny', msg:'This stage has read-only access, so write tools are not on its MCP allow-list. Category: <b>policy</b>.'},
+    {a:'(agent finishes)', evt:'stop', script:'run-stage-gate.sh', dec:'gate', msg:'Lifecycle hook: runs Gate G3, writes <code>gate_log.jsonl</code>, and on FAIL sends a follow-up message with the findings, within the round limit. Category: <b>lifecycle control</b>.'}
+  ];
+  var cls = {allow:'d-allow', deny:'d-deny', ask:'d-ask', observe:'d-obs', flag:'d-deny', gate:'d-obs'};
+  $('acts').innerHTML = acts.map(function(a, i){ return '<button class="act" data-i="'+i+'"><span>$ '+esc(a.a)+'</span><span class="dec '+cls[a.dec]+'">'+a.evt+'</span></button>'; }).join('');
+  var n = 0;
+  $('acts').addEventListener('click', function(e){
+    var b = e.target.closest('.act'); if(!b) return;
+    var a = acts[+b.getAttribute('data-i')], crash = $('hookCrash').checked;
+    var dec = a.dec, msg = a.msg;
+    if(crash){
+      if(a.evt.indexOf('before') === 0){ dec = 'deny'; msg = '💥 The hook script threw an error. Its <code>trap … ERR</code> handler returns <b>deny</b>. When a policy hook fails, the action is blocked, never allowed.'; }
+      else if(a.evt === 'stop'){ dec = 'NEEDS_HUMAN'; msg = '💥 The gate script crashed, so there is no verdict. That counts as <b>NEEDS_HUMAN</b>, not PASS. The stage halts and a decision packet goes to a person.'; }
+      else { dec = 'error'; msg = '💥 The after-edit hook failed. It can’t undo an edit that already happened, so the pipeline <b>quarantines the edited file</b> and blocks the stage gate until the hook runs cleanly.'; }
+    }
+    $('hfAct').textContent = a.a; $('hfEvt').textContent = a.evt; $('hfScript').textContent = a.script;
+    $('hfDec').innerHTML = '<span class="dec '+(cls[dec]||'d-deny')+'" style="font-family:var(--mono);font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;">'+dec.toUpperCase()+'</span>';
+    $('hfMsg').innerHTML = msg;
+    n++;
+    var line = document.createElement('div'); line.className = 'l '+(dec === 'allow' || dec === 'observe' || dec === 'gate' ? 'ok' : dec === 'ask' ? 'wr' : 'err');
+    line.textContent = '{"ts":"11:0'+(n%10)+':'+(10+n*7%50)+'Z","run_id":"req-2481-run-03","event":"'+a.evt+'","target":"'+a.a.replace(/"/g,'')+'","decision":"'+dec+'"'+(crash?',"error":"hook_exception"':'')+'}';
+    var log = $('hookLog'); if(n === 1) log.innerHTML = ''; log.appendChild(line); log.scrollTop = log.scrollHeight;
+  });
+
+  function adherence(ctx){ return Math.max(0.82, 0.995 - Math.pow(ctx/100, 2)*0.17); }
+  function upd(){ var c = +$('ctxRange').value; $('ctxVal').textContent = c+'%'; var a = adherence(c); $('ruleBar').style.width = (a*100)+'%'; $('ruleLbl').textContent = '≈ '+(a*100).toFixed(1)+'% adherence at this session length (probabilistic)'; }
+  $('ctxRange').addEventListener('input', upd); upd();
+  var seed = 7; function rnd(){ seed = (seed*16807) % 2147483647; return (seed-1)/2147483646; }
+  $('rvhRun').addEventListener('click', function(){
+    seed = 7 + +$('ctxRange').value;
+    var a = adherence(+$('ctxRange').value), rs = '', hs = '', slips = 0;
+    for(var i=0;i<50;i++){ var x = rnd() > a; if(x) slips++; rs += '<span'+(x?' class="x"':'')+'></span>'; hs += '<span></span>'; }
+    $('ruleSlips').innerHTML = rs; $('hookSlips').innerHTML = hs;
+    $('ruleLbl').textContent = slips+' / 50 attempts read .env (red), '+(slips ? 'and the secrets are now in context and in the transcript' : 'this time, but nothing guarantees the next run');
+  });
+})();
+
+/* ============================================================
+   §4 HITL: protection vs fatigue
+   ============================================================ */
+(function(){
+  var cands = [
+    {t:'Before commit / PR of generated tests', q:'hi-irr', per:5, risk:30, need:true},
+    {t:'G1 NEEDS_HUMAN: requirement owner clarifies', q:'hi-irr', per:1, risk:20, need:true},
+    {t:'Reviewer ESCALATE (product defect / conflict)', q:'hi-irr', per:1, risk:20, need:true},
+    {t:'After loop exhaustion (round limit hit)', q:'hi-rev', per:0.5, risk:15, need:true},
+    {t:'Control-plane failure (gate/hook crashed)', q:'hi-rev', per:0.2, risk:15, need:true},
+    {t:'Approve every test-file edit', q:'lo-rev', per:120, risk:0, need:false},
+    {t:'Approve every pytest run in the sandbox', q:'lo-rev', per:80, risk:0, need:false},
+    {t:'Approve every gate PASS', q:'lo-rev', per:25, risk:0, need:false}
+  ];
+  var on = cands.map(function(c){ return false; });
+  function render(){
+    $('cands').innerHTML = cands.map(function(c, i){ return '<div class="cand'+(on[i]?' on':'')+'" data-i="'+i+'"><span>'+esc(c.t)+'</span><span class="row" style="gap:10px;flex-wrap:nowrap;"><span class="q">~'+c.per+'/day</span><span class="sw"></span></span></div>'; }).join('');
+    var per = 0, raw = 0;
+    cands.forEach(function(c, i){ if(on[i]){ per += c.per; raw += c.risk; } });
+    // Approval fatigue: past ~15 approvals/day, people rubber-stamp and effective protection collapses
+    var factor = per <= 15 ? 1 : Math.max(0.1, 15/per);
+    var eff = Math.round(raw * factor);
+    $('protBar').style.width = eff+'%'; $('protLbl').textContent = eff+'% of risk effectively covered'+(factor < 1 ? ' (would be '+raw+'% if people actually read each one)' : '');
+    $('fatBar').style.width = Math.min(100, per/2)+'%'; $('fatLbl').textContent = (Math.round(per*10)/10)+' approvals/day'+(per > 15 ? ' · rubber-stamp zone' : '');
+    var needOn = cands.filter(function(c, i){ return c.need && on[i]; }).length, noiseOn = cands.filter(function(c, i){ return !c.need && on[i]; }).length;
+    var v = $('hitlVerdict');
+    if(needOn === 5 && noiseOn === 0){ v.className = 'verdict good'; v.innerHTML = '<b>Well placed.</b> Two checkpoints happen as part of the normal flow: clarifying the requirement when needed, and approving the commit. The other three only fire on exceptions. Fewer than 8 approvals a day, so each one gets real attention.'; }
+    else if(noiseOn){ v.className = 'verdict bad'; v.innerHTML = '<b>Approval fatigue.</b> Low-impact, reversible actions like test edits and sandbox runs should be automated and logged, not approved one at a time. The important approvals now get buried among routine ones.'; }
+    else { v.className = 'verdict warn'; v.innerHTML = '<b>'+(5-needOn)+' high-risk transition'+(5-needOn===1?'':'s')+' uncovered.</b> Look for anything with high impact, anything hard to undo, and cases where the automation has shown it can’t reach a PASS.'; }
+    document.querySelectorAll('.q2').forEach(function(q){ q.classList.remove('hi'); });
+  }
+  $('cands').addEventListener('click', function(e){ var c = e.target.closest('.cand'); if(!c) return; var i = +c.getAttribute('data-i'); on[i] = !on[i]; render(); var q = document.querySelector('.q2[data-q="'+cands[i].q+'"]'); if(q) q.classList.add('hi'); });
+  render();
+
+  var packet = '## Approval requested: commit tests for REQ-2481 (run req-2481-run-03)\nDecision needed: APPROVE commit / REJECT / REQUEST CHANGES\nGate trail:     G1 ✔  G2 ✔  G3 ✔ (round 2)  G4 ✔  G5 ESCALATE\nCoverage:       AC-1..AC-4 → 6 tests · 5 pass · 1 fail (DEF-5520, product defect, 404 vs 403)\nDiff scope:     tests/test_req_2481_order_cancellation.py (+142), runs/req-2481-run-03/**\nRisk notes:     no files outside allowed scope; no secrets detected by hook scan\nCost:           61k tokens · 7m 40s · 2 correction rounds\nEvidence:       runs/req-2481-run-03/{traceability.md, 04_api_validation_report.md, gate_log.jsonl}';
+  var chat = '[10:58] test-generator: I’ll start by reading the sequence file and the existing fixtures…\n[10:58] test-generator: Reading tests/conftest.py (212 lines)…\n[10:59] test-generator: I notice there is no make_order fixture. Let me think about whether…\n[10:59] test-generator: Actually, a better approach might be to parametrize the status values…\n[11:00] api-validator: Running static conformance against openapi.yaml…\n[11:00] api-validator: … (1,840 more lines) …\n[11:07] reviewer: Overall I think the suite is in reasonable shape, although…\n\n→ Where is the verdict? Which gates passed? What changed on disk? What did it cost?';
+  function pk(v){
+    $('pkSeg').querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === v); });
+    $('pkView').textContent = v === 'packet' ? packet : chat;
+    $('pkHint').textContent = v === 'packet' ? 'One screen: the decision needed, the gate results, the scope of changes, risks, cost, and links to evidence. The approval is logged with the approver’s name, the time, and the reason, because an approval that isn’t recorded can’t be audited.' : 'A transcript forces the approver to rebuild the facts from a long chat. Most people will approve without reading it all, and at that point the checkpoint isn’t protecting anything.';
+  }
+  $('pkSeg').addEventListener('click', function(e){ var b = e.target.closest('button'); if(b) pk(b.getAttribute('data-v')); });
+  pk('packet');
+})();
+
+/* ============================================================
+   §5 Bounded correction loops
+   ============================================================ */
+(function(){
+  // Each round: findings, hash, assertions, tokens (this round)
+  var S = {
+    noprog:[[3,'a91f',14,12000],[1,'c07e',15,15000],[1,'c07e',15,17000],[1,'c07e',15,19000],[1,'c07e',15,21000],[1,'c07e',15,23000],[1,'c07e',15,25000],[1,'c07e',15,27000],[1,'c07e',15,29000]],
+    osc:[[2,'a91f',14,12000],[1,'b3d0',14,14000],[1,'e7a2',14,16000],[1,'b3d0',14,18000],[1,'e7a2',14,20000],[1,'b3d0',14,22000],[1,'e7a2',14,24000],[1,'b3d0',14,26000],[1,'e7a2',14,28000]],
+    drift:[[3,'a91f',14,12000],[0,'d4b2',9,15000]],
+    budget:[[5,'a91f',14,12000],[4,'b111',14,19000],[3,'c222',15,28000],[2,'d333',15,40000],[1,'e444',15,55000],[0,'f555',15,72000]]
+  };
+  var notes = {noprog:'F-1 fixed, F-2 remains', osc:'F-1 fixed → F-2 broke / F-2 fixed → F-1 broke', drift:'', budget:'findings decrease slowly'};
+  $('mrRange').addEventListener('input', function(){ $('mrVal').textContent = this.value; });
+  var timers = [];
+  $('bRun').addEventListener('click', function(){
+    timers.forEach(clearTimeout); timers = [];
+    var key = $('bScen').value, rounds = S[key], maxR = +$('mrRange').value;
+    var gP = $('gProg').checked, gI = $('gInv').checked, gB = $('gBud').checked, gM = $('gMax').checked;
+    var rows = [], seen = {}, cum = 0, prevF = null, prevA = null, end = null;
+    for(var r=0; r<rounds.length || (!gM && !gB && !gP); r++){
+      var d = rounds[Math.min(r, rounds.length-1)];
+      if(r >= rounds.length && !gM && !gB && !gP){ end = {cls:'bad', dec:'… round '+(r)+', '+(r+1)+', '+(r+2)+' … never stops', v:'bad', m:'<b>Runaway loop.</b> With no round limit, no progress check, and no budget, nothing stops it. It keeps spending tokens until someone notices.'}; rows.push(end); break; }
+      var f = d[0], h = d[1], a = d[2]; cum += d[3];
+      var row = {r:r, f:f, h:h, a:a, cum:cum, same: !!seen[h], dec:'', cls:''};
+      if(f === 0){
+        if(gI && prevA !== null && a < prevA){ row.dec = 'ESCALATE: invariant violated, assertions dropped '+prevA+' → '+a+' (goal drift). The gate would have said PASS.'; row.cls = 'stop'; end = {v:'warn', m:'<b>Caught goal drift.</b> The gate would have passed, because weakened tests still pass. The invariant check (assertion count must not drop, no new skip) stopped the loop at round '+r+'.'}; rows.push(row); break; }
+        row.dec = 'PASS'; row.cls = (prevA !== null && a < prevA) ? 'bad' : 'good';
+        end = row.cls === 'bad' ? {v:'bad', m:'<b>Shipped weakened tests.</b> G4 said PASS, but 5 assertions were deleted to get there. Without an invariant check, the loop "succeeded" by lowering the bar.'} : cum > 100000 ? {v:'warn', m:'<b>Converged at round '+r+', but spent '+cum.toLocaleString()+' tokens</b>, which is over the 100k budget. Nothing capped the cost because the budget guard was off.'}
+                                 : {v:'good', m:'<b>Converged at round '+r+'</b> within budget ('+cum.toLocaleString()+' tokens).'};
+        rows.push(row); break;
+      }
+      if(gB && cum > 100000){ row.dec = 'ESCALATE: token budget exhausted ('+cum.toLocaleString()+' > 100k)'; row.cls = 'stop'; end = {v:'warn', m:'<b>Stopped by the budget.</b> The loop was making progress, but each round sent more context. Send summaries rather than whole transcripts so rounds stay cheap.'}; rows.push(row); break; }
+      if(gP && r > 0 && (seen[h] || (prevF !== null && f >= prevF))){
+        row.dec = 'ESCALATE: no progress ('+(seen[h] ? 'repeated hash '+h : 'findings '+prevF+' → '+f)+')';
+        row.cls = 'stop'; end = {v:'warn', m:'<b>Stopped early by the progress check at round '+r+'</b>'+(gM && r < maxR ? ', with '+(maxR-r)+' round'+(maxR-r===1?'':'s')+' still left' : '')+'. More rounds would only have spent budget'+(key === 'osc' ? ' going back and forth between the same two versions' : '')+'.'}; rows.push(row); break;
+      }
+      if(gM && r >= maxR){ row.dec = 'ESCALATE: max_rounds ('+maxR+') reached'; row.cls = 'stop'; end = {v: gP ? 'warn' : 'bad', m:'<b>Stopped by the round limit</b> after spending '+cum.toLocaleString()+' tokens.'+(!gP ? ' A progress check would have stopped it sooner, as soon as the output stopped changing.' : '')}; rows.push(row); break; }
+      row.dec = r === 0 ? 'FAIL → retry' : 'FAIL → retry ('+(notes[key]||'')+')';
+      rows.push(row); seen[h] = 1; prevF = f; prevA = a;
+      if(r > 12) break;
+    }
+    if(!end){ end = {v:'bad', m:'<b>Ran out of scripted rounds without a verdict.</b> In a real run it would keep going. Turn on at least one guard.'}; }
+    var tb = $('bTable'); tb.innerHTML = '<tr><th>round</th><th>findings</th><th>hash</th><th>asserts</th><th>tokens (cum.)</th><th>decision</th></tr>';
+    var v = $('bVerdict'); v.style.display = 'none';
+    rows.forEach(function(row, i){
+      timers.push(setTimeout(function(){
+        var tr = document.createElement('tr'); tr.className = row.cls || '';
+        if(row.r === undefined){ tr.innerHTML = '<td colspan="6" class="dec" style="color:var(--danger);font-weight:700;">'+row.dec+'</td>'; }
+        else tr.innerHTML = '<td>'+row.r+'</td><td>'+row.f+'</td><td class="'+(row.same?'same':'')+'">'+row.h+'…</td><td>'+row.a+'</td><td>'+row.cum.toLocaleString()+'</td><td class="dec">'+esc(row.dec)+'</td>';
+        tb.appendChild(tr);
+        if(i === rows.length-1 && end){ v.className = 'verdict '+end.v; v.innerHTML = end.m; v.style.display = 'block'; }
+      }, i*420));
+    });
+  });
+})();
+
+/* ============================================================
+   §6 Gate log explainer + fail-safe comparator
+   ============================================================ */
+(function(){
+  var entry = [
+    ['ts','"2026-09-23T11:02:10Z"','When the verdict was made. Together with run_id, it orders every decision in the run.'],
+    ['run_id','"req-2481-run-03"','Links this verdict to the handoff log (Module 14) and the run folder.'],
+    ['gate','"G3_tests_collect_and_conform"','Which gate made the decision.'],
+    ['gates_version','"1.0.0"','A verdict only means something relative to the version of the criteria that produced it. If gates.yaml changes, old verdicts stay interpretable.'],
+    ['round','1','Where this verdict falls in the correction loop, so you can check the loop stayed within its limits.'],
+    ['input_ref','"tests/test_req_2481_order_cancellation.py#sha:c07e"','Proves exactly which artifact was judged. It’s also the hash the progress check compares between rounds.'],
+    ['decision','"FAIL"','PASS, FAIL, or NEEDS_HUMAN for gates. APPROVE or REJECT for human checkpoints.'],
+    ['checks','[{"id":"collect","result":"PASS"},{"id":"markers","result":"FAIL","detail":"test_refund missing @ac"}]','Shows which criterion failed, not just the overall verdict. The findings for the correction loop are built from this.'],
+    ['routed_to','"test-generator"','Where the correction loop sent the failure, so you can check it went to the stage that caused it.'],
+    ['decided_by','"automated"','"automated", "llm-judge@version", or "human:<role>". This keeps machine decisions and human decisions separately accountable.'],
+    ['reason','"(required for human overrides and ESCALATE)"','Mandatory whenever a person decides. For example: "DEF-5520 raised; failing test intentionally kept". An approval without a reason can’t be audited.']
+  ];
+  $('glJson').innerHTML = '{\n' + entry.map(function(e, i){ return '  <span class="k" data-i="'+i+'">"'+e[0]+'"</span>: <span class="v">'+esc(e[1])+'</span>'+(i < entry.length-1 ? ',' : ''); }).join('\n') + '\n}';
+  function show(i){
+    $('glJson').querySelectorAll('.k').forEach(function(k){ k.classList.toggle('on', +k.getAttribute('data-i') === i); });
+    $('glKey').textContent = 'field · '+entry[i][0]; $('glWhy').textContent = entry[i][2];
+  }
+  $('glJson').addEventListener('click', function(e){ var k = e.target.closest('.k'); if(k) show(+k.getAttribute('data-i')); });
+  show(3);
+
+  var fs = [
+    {t:'Gate script crashes', o:'The missing verdict is treated as PASS and the pipeline continues. Broken tests reach the Reviewer, and the log shows a gap.', s:'Verdict = <b>NEEDS_HUMAN</b>. The stage halts and the error is logged with the component and trace.', log:'{"gate":"G3","decision":"NEEDS_HUMAN","decided_by":"automated","error":"gate_script_exception: KeyError \'checks\'","action":"halt"}'},
+    {t:'LLM judge returns unparsable output', o:'Approval is assumed ("it didn’t say no").', s:'Retry once with a stricter output format. If it’s still unparsable, <b>NEEDS_HUMAN</b>.', log:'{"gate":"G5","decision":"NEEDS_HUMAN","decided_by":"llm-judge@2.1","error":"unparsable_verdict","retries":1}'},
+    {t:'Test runner / sandbox unreachable', o:'The execution checks are skipped and the gate passes on L1–L2 only.', s:'Classified as ENVIRONMENT. Retry the infrastructure once, then <b>halt</b>. The Generator isn’t blamed.', log:'{"gate":"G4","decision":"NEEDS_HUMAN","class":"ENVIRONMENT","error":"sandbox 503 ×2","routed_to":"human:platform"}'},
+    {t:'Policy hook errors or times out', o:'The action is allowed, because the hook "didn’t object".', s:'The action is <b>denied</b> (for before* policy hooks) and an alert is raised.', log:'{"hook":"shell-policy","event":"beforeShellExecution","decision":"deny","error":"hook_timeout 5s","command":"git push origin main"}'},
+    {t:'Logging sink unavailable', o:'The run continues with no audit trail.', s:'Log entries are buffered locally. The HITL and commit steps are <b>blocked until the trail is written</b>.', log:'{"component":"gate_log","status":"buffered_local","pending":3,"blocked":["HITL_commit"]}'},
+    {t:'Agent exceeds timeout mid-edit', o:'Partial edits stay in tests/ and the next stage reads half-written code.', s:'The partial artifact is <b>discarded or quarantined</b>. The next attempt writes a new file.', log:'{"stage":"test-generator","status":"TIMEOUT","quarantined":"runs/req-2481-run-03/quarantine/test_req_2481_*.py.partial"}'}
+  ];
+  $('fsSel').innerHTML = fs.map(function(f, i){ return '<option value="'+i+'">'+esc(f.t)+'</option>'; }).join('');
+  function fsShow(i){ var f = fs[i]; $('fsOpen').innerHTML = f.o; $('fsSafe').innerHTML = f.s; $('fsLog').textContent = '// gate_log.jsonl (fail-safe)\n'+f.log; }
+  $('fsSel').addEventListener('change', function(){ fsShow(+this.value); });
+  fsShow(0);
+})();
+
+/* ============================================================
+   §7 Hands-on: file tabs + tasks
+   ============================================================ */
+(function(){
+  function tab(id){ $('tabs').querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-f') === id); }); $('tabView').textContent = txt(id); }
+  $('tabs').addEventListener('click', function(e){ var b = e.target.closest('button'); if(b) tab(b.getAttribute('data-f')); });
+  tab('f-hooks');
+
+  var tasks = [
+    {t:'Criteria: sort each G3 check into the L1–L4 levels. Why does none need an LLM?', a:'Envelope/files → L1. <code>pytest --collect-only</code>, <code>ruff check</code>, the marker check, and changed-paths ⊆ allowed → all L2 (static, deterministic). There’s no L3 or L4 at G3. Every question G3 asks has a yes/no answer a script can compute, so adding an LLM would only make it slower, less reliable, and more expensive.'},
+    {t:'Routing: missing marker, 404-vs-403 product defect, sandbox 503. For each, who retries and what re-runs?', a:'Missing marker → G3 FAIL, the Test Generator patches it, stages 3→4→5 re-run. The 404 vs 403 → PRODUCT_DEFECT, no retry: it’s flagged, the test is kept, and the Reviewer ESCALATEs to a human. Sandbox 503 → ENVIRONMENT: retry stage 4 once with backoff, then NEEDS_HUMAN, and the Generator’s round counter isn’t touched.'},
+    {t:'Hooks: trace <code>cat .env</code>, <code>pytest</code>, <code>git push</code>, <code>pip install requests</code>.', a:'<code>cat .env</code> → beforeReadFile → deny. <code>pytest</code> → beforeShellExecution → allow (on the allow-list). <code>git push</code> → deny (explicit deny-list). <code>pip install requests</code> → ask (dependency decision). Each one writes a line to hook_log.jsonl.'},
+    {t:'Checkpoints: justify exactly two planned HITL checkpoints. Which tempting third one causes fatigue?', a:'The two planned ones are (1) requirement clarification when G1 returns NEEDS_HUMAN and (2) approving the commit or PR, which is high impact and hard to undo. ESCALATE, loop exhaustion, and control-plane failures send cases to a person only when they happen. The tempting third, "approve every test-file edit" or "every sandbox pytest run", is low impact, reversible, and frequent: exactly what causes approval fatigue. Automate and log those.'},
+    {t:'Bounds: in the §5 round table, at which round should the loop have stopped?', a:'At round 2. The artifact hash c07e is the same as in round 1 and the findings didn’t go down (1 → 1), so there was no progress. It should escalate even though the round limit hasn’t been reached. In the alternative run, round 1 should escalate because assertions dropped from 15 to 9 (goal drift), even though the gate would pass.'},
+    {t:'Fail-safe: rename <code>gates.yaml</code> on purpose. What must you see?', a:'The gate script can’t load its criteria, so the verdict must be NEEDS_HUMAN (never PASS). The stage halts, gate_log.jsonl has an entry with the error, and no downstream stage starts. If the pipeline continues, it’s failing open, and you need to fix the script’s error handling.'}
+  ];
+  var done = tasks.map(function(){ return false; });
+  $('tasks').innerHTML = tasks.map(function(t, i){
+    return '<div class="task" id="task'+i+'"><div class="hd"><b>'+(i+1)+'. '+t.t+'</b></div><div class="row" style="margin-top:10px;"><button class="btn btn-sm" data-show="'+i+'">Show model answer</button><button class="btn btn-sm" data-done="'+i+'">✓ Done</button></div><div class="ans">'+t.a+'</div></div>';
+  }).join('');
+  $('tasks').addEventListener('click', function(e){
+    var s = e.target.closest('[data-show]'), d = e.target.closest('[data-done]');
+    if(s){ var i = +s.getAttribute('data-show'); var el = $('task'+i); el.classList.toggle('open'); s.textContent = el.classList.contains('open') ? 'Hide model answer' : 'Show model answer'; }
+    if(d){ var j = +d.getAttribute('data-done'); done[j] = !done[j]; $('task'+j).classList.toggle('done', done[j]); d.textContent = done[j] ? '↺ Undo' : '✓ Done';
+      var n = done.filter(Boolean).length; $('taskFill').style.width = (n/tasks.length*100)+'%'; $('taskLabel').textContent = n+' / '+tasks.length+' done'; $('taskDone').classList.toggle('show', n === tasks.length); }
+  });
+})();
+
+/* ============================================================
+   Quiz
+   ============================================================ */
+(function(){
+  var qs = [
+    {q:'What is the difference between a quality gate and a hook?', o:['They are the same thing with different names','A gate judges a stage’s output between stages. A hook fires on an action inside an agent’s work.','A hook runs between stages, and a gate runs inside an agent','Gates use LLMs and hooks use humans'], a:1, e:'G3 checks that the generated tests collect and have AC markers. beforeShellExecution denies git push while the agent is working.'},
+    {q:'The deterministic L2 check fails, but the LLM judge rates the suite "excellent". What does the gate record?', o:['PASS, because the judge has the final word','Take the average of the two','FAIL. An LLM judge never overrules a failing deterministic check.','NEEDS_HUMAN every time'], a:2, e:'The script has already shown the artifact is broken. A probabilistic judge can be won over by output that only looks right.'},
+    {q:'The API Validator finds a test asserting a field that isn’t in the spec. Who retries, and what re-runs?', o:['The whole pipeline re-runs from stage 1','The Test Generator patches the test using structured findings, then stages 3→4→5 re-run and stages 1–2 are reused','The API Validator edits the test itself','The Reviewer decides'], a:1, e:'Send the failure to the stage that owns it, have that stage patch its output rather than regenerate it, and re-run only the stages downstream of it.'},
+    {q:'Why isn’t a rule saying "never read .env" enough on its own?', o:['Rules aren’t loaded in agent mode','A rule is guidance the model usually follows but can miss. A beforeReadFile hook enforces it every time and logs it.','Rules can’t mention file names','Hooks are cheaper to write'], a:1, e:'The rule explains why. The hook guarantees the outcome and costs no context tokens.'},
+    {q:'Which checkpoint would mostly cause approval fatigue?', o:['Approving the commit of generated tests','Resolving an ambiguous requirement (G1 NEEDS_HUMAN)','Approving every test-file edit in the sandbox','Handling a Reviewer ESCALATE'], a:2, e:'Test-file edits are low impact, reversible, and frequent. Automate them and log them.'},
+    {q:'A loop still has rounds left, but produces the same artifact hash twice. What should happen?', o:['Keep going until max_rounds','Escalate now: an identical hash means no progress','Increase max_rounds','Regenerate from scratch'], a:1, e:'The progress check takes priority over the remaining round count. More rounds would only spend budget or go back and forth.'},
+    {q:'The gate script crashes with an exception. What verdict is recorded?', o:['PASS: nothing was found wrong','NEEDS_HUMAN: halt, quarantine partial artifacts, and log the error','FAIL, then retry the producer','No entry. Just re-run it later'], a:1, e:'When the checker itself fails, the result is never PASS. Continuing without a verdict is failing open.'}
+  ];
+  var box = $('quizQuestions'), picks = qs.map(function(){ return -1; }), locked = false;
+  box.innerHTML = qs.map(function(q, qi){
+    return '<div class="quiz-q"><div class="quiz-q-title">'+(qi+1)+'. '+esc(q.q)+'</div><div class="quiz-opts">'+q.o.map(function(o, oi){ return '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+esc(o)+'</div>'; }).join('')+'</div><div class="quiz-explain" id="qe'+qi+'">'+esc(q.e)+'</div></div>';
+  }).join('');
+  box.addEventListener('click', function(e){
+    var el = e.target.closest('.quiz-opt'); if(!el || locked) return;
+    var qi = +el.getAttribute('data-q');
+    box.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+    el.classList.add('selected'); picks[qi] = +el.getAttribute('data-o');
+  });
+  $('quizCheck').addEventListener('click', function(){
+    locked = true; var score = 0;
+    qs.forEach(function(q, qi){
+      if(picks[qi] === q.a) score++;
+      box.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ var oi = +x.getAttribute('data-o'); if(oi === q.a) x.classList.add('correct'); else if(oi === picks[qi]) x.classList.add('incorrect'); });
+      $('qe'+qi).classList.add('show');
+    });
+    $('quizScoreText').textContent = score+'/'+qs.length;
+    $('quizScoreMsg').textContent = score === qs.length ? 'All correct. Module 18 applies all of this to your Lab 3 pipeline.' : score >= 5 ? 'Solid. Read the explanations for the ones you missed.' : 'Go back over the check ladder, the hook simulator, and the bounded-loop table, then try again.';
+    $('quizScore').classList.add('show'); $('quizCheck').style.display = 'none';
+  });
+  $('quizRetry').addEventListener('click', function(){
+    locked = false; picks = qs.map(function(){ return -1; });
+    box.querySelectorAll('.quiz-opt').forEach(function(x){ x.classList.remove('selected','correct','incorrect'); });
+    box.querySelectorAll('.quiz-explain').forEach(function(x){ x.classList.remove('show'); });
+    $('quizScore').classList.remove('show'); $('quizCheck').style.display = '';
+  });
+})();
+
+})();
+</script>
+</body>
+</html>

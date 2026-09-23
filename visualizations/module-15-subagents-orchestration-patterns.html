@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 15 — Subagents &amp; Orchestration Patterns</title>
+<meta name="description" content="Interactive walkthrough: sequential vs. parallel multi-agent pipelines with state handoff; designing Validator, Builder, Generator and Reviewer roles; subagent delegation with independent context; failure handling, retries, timeouts and bounded execution; choosing orchestration granularity; observability across handoffs and Cursor-native vs. external orchestration.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%BC%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Design tokens (shared system) ===================== */
+:root{
+  --bg:#0a0d16; --bg-2:#0d1120; --surface:#131a2c; --surface-2:#1a2338; --surface-3:#212b47;
+  --border:#2a3454; --border-soft:#1e2740; --text:#eef0fa; --text-dim:#a6aed0; --text-faint:#6d76a0;
+  --accent:#a855f7; --accent-2:#22d3ee; --accent-soft:#c084fc; --warn:#f59e0b; --danger:#fb7185; --good:#34d399;
+  --grad-1:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#db2777 100%);
+  --grad-2:linear-gradient(135deg,#22d3ee 0%,#818cf8 100%);
+  --shadow:0 20px 60px -20px rgba(0,0,0,0.6); --radius:16px; --radius-sm:10px;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fb; --bg-2:#eef0fa; --surface:#ffffff; --surface-2:#f7f8ff; --surface-3:#eef0fc;
+  --border:#dde1f5; --border-soft:#e7e9f7; --text:#181c30; --text-dim:#4b5278; --text-faint:#8790b5;
+  --accent:#8b2fd6; --accent-2:#0891b2; --accent-soft:#7c3aed; --warn:#b45309; --danger:#e11d48; --good:#059669;
+  --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6fb;--bg-2:#eef0fa;--surface:#ffffff;--surface-2:#f7f8ff;--surface-3:#eef0fc;
+    --border:#dde1f5;--border-soft:#e7e9f7;--text:#181c30;--text-dim:#4b5278;--text-faint:#8790b5;
+    --accent:#8b2fd6;--accent-2:#0891b2;--accent-soft:#7c3aed;--warn:#b45309;--danger:#e11d48;--good:#059669;
+    --shadow:0 20px 50px -25px rgba(30,20,60,0.25);
+  }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+  background-image:radial-gradient(ellipse 900px 500px at 15% -5%, rgba(168,85,247,0.16), transparent 60%),
+                    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(34,211,238,0.10), transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-0.02em;}
+p{margin:0;}
+a{color:inherit;}
+::selection{background:var(--accent);color:#fff;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);background:var(--surface-3);border:1px solid var(--border-soft);border-radius:5px;padding:0.1em 0.4em;font-size:0.9em;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section{padding:90px 20px;scroll-margin-top:76px;border-bottom:1px solid var(--border-soft);}
+.section-inner{max-width:1100px;margin:0 auto;}
+.section-head{margin-bottom:44px;max-width:760px;}
+.section-head h2{font-size:clamp(26px,4vw,38px);margin:14px 0 14px;}
+.section-head p{color:var(--text-dim);font-size:16.5px;}
+.section-num{font-family:var(--mono);color:var(--text-faint);font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-soft{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-sm);}
+.card h3{font-size:18px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 18px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:8px;text-decoration:none;}
+.btn:hover{border-color:var(--accent-soft);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad-1);border:none;color:#fff;box-shadow:0 8px 24px -8px rgba(168,85,247,0.6);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface-2);flex-wrap:wrap;}
+.seg button{font-family:var(--sans);font-size:13px;font-weight:600;border:none;background:transparent;color:var(--text-dim);padding:9px 14px;cursor:pointer;}
+.seg button.on{background:var(--grad-2);color:#0a0d16;}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:var(--mono);}
+.pill-good{background:rgba(52,211,153,0.12);color:var(--good);border:1px solid rgba(52,211,153,0.3);}
+.pill-bad{background:rgba(251,113,133,0.12);color:var(--danger);border:1px solid rgba(251,113,133,0.3);}
+.pill-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.3);}
+.pill-neutral{background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border);}
+.tag{font-family:var(--mono);font-size:11px;color:var(--text-faint);letter-spacing:.04em;text-transform:uppercase;}
+.hint{color:var(--text-faint);font-size:13px;font-style:italic;}
+.dim{color:var(--text-dim);}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+/* ===================== Top nav ===================== */
+.topnav{position:sticky;top:0;z-index:100;backdrop-filter:blur(14px) saturate(140%);background:color-mix(in srgb, var(--bg) 78%, transparent);border-bottom:1px solid var(--border-soft);}
+.topnav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 20px;}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;white-space:nowrap;text-decoration:none;}
+.brand-badge{width:26px;height:26px;border-radius:8px;background:var(--grad-1);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.prev-link{font-size:12.5px;color:var(--text-faint);text-decoration:none;white-space:nowrap;padding:8px 10px;border-radius:8px;}
+.prev-link:hover{color:var(--text);background:var(--surface-2);}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
+.navlinks::-webkit-scrollbar{display:none;}
+.navlinks a{white-space:nowrap;font-size:12.6px;font-weight:600;color:var(--text-faint);padding:8px 10px;border-radius:8px;text-decoration:none;transition:all .15s ease;}
+.navlinks a:hover{color:var(--text);background:var(--surface-2);}
+.navlinks a.active{color:var(--accent-2);background:rgba(34,211,238,0.1);}
+.theme-toggle{border:1px solid var(--border);background:var(--surface-2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;font-size:15px;}
+@media (max-width:640px){.prev-link{display:none;}}
+
+/* ===================== Hero ===================== */
+.hero{padding:76px 20px 60px;position:relative;overflow:hidden;border-bottom:1px solid var(--border-soft);}
+.hero-inner{max-width:1000px;margin:0 auto;position:relative;z-index:2;}
+.hero-kicker{color:var(--text-faint);font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;background:linear-gradient(135deg,var(--text) 30%,var(--accent-soft) 75%,var(--accent-2) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{margin-top:20px;font-size:18px;color:var(--text-dim);max-width:660px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}
+.token-stream{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0.5;mask-image:linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);}
+.token-row{position:absolute;white-space:nowrap;font-family:var(--mono);font-size:13px;color:var(--accent-soft);opacity:0.28;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(110vw);}to{transform:translateX(-60vw);}}
+
+/* Conductor metaphor strip */
+.orchestra{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:36px;}
+.orch{padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);}
+.orch b{display:block;font-size:13.5px;margin-top:6px;}
+.orch span{font-size:12.5px;color:var(--text-dim);}
+.orch .ico{font-size:22px;}
+@media (max-width:820px){.orchestra{grid-template-columns:1fr 1fr;}}
+
+/* ===================== 1. Topology / Gantt ===================== */
+.gantt{margin-top:18px;}
+.g-lane{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin-bottom:8px;}
+.g-name{font-family:var(--mono);font-size:12px;color:var(--text-dim);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.g-track{position:relative;height:30px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:8px;overflow:hidden;}
+.g-bar{position:absolute;top:4px;bottom:4px;width:0;border-radius:5px;transition-property:width;transition-timing-function:linear;display:flex;align-items:center;text-indent:8px;font-family:var(--mono);font-size:11px;color:#0a0d16;font-weight:700;white-space:nowrap;overflow:hidden;}
+.g-axis{display:grid;grid-template-columns:120px 1fr;gap:12px;margin-top:4px;}
+.g-ticks{position:relative;height:18px;font-family:var(--mono);font-size:10.5px;color:var(--text-faint);}
+.g-ticks span{position:absolute;transform:translateX(-50%);}
+.g-cursor{position:absolute;top:0;bottom:0;width:2px;background:var(--accent-2);left:0;opacity:0;box-shadow:0 0 12px var(--accent-2);}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;}
+.stat{padding:14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border-soft);}
+.stat .v{font-family:var(--mono);font-size:22px;font-weight:700;}
+.stat .l{font-size:12px;color:var(--text-faint);}
+@media (max-width:640px){.stat-row{grid-template-columns:1fr;} .g-lane,.g-axis{grid-template-columns:78px 1fr;gap:8px;}}
+.state-box{font-family:var(--mono);font-size:12.3px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:14px;min-height:260px;white-space:pre;overflow:auto;line-height:1.6;}
+.state-box .new{color:var(--good);animation:fadein .4s ease;}
+.state-box .k{color:var(--accent-2);}
+.callout{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:13.5px;border:1px solid var(--border-soft);background:var(--surface-2);color:var(--text-dim);}
+.callout b{color:var(--text);}
+
+/* ===================== 2. Roles ===================== */
+.role-card{cursor:pointer;text-align:left;font-family:var(--sans);color:var(--text);padding:18px;border-radius:14px;border:1px solid var(--border);background:var(--surface);transition:all .15s ease;}
+.role-card:hover{transform:translateY(-2px);border-color:var(--accent-soft);}
+.role-card.on{border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(34,211,238,0.15);}
+.role-card .ico{font-size:28px;}
+.role-card h3{font-size:16px;margin-top:8px;}
+.role-card p{font-size:12.8px;color:var(--text-dim);margin-top:4px;}
+.role-detail{margin-top:18px;}
+.contract{display:grid;grid-template-columns:150px 1fr;gap:0;border:1px solid var(--border-soft);border-radius:10px;overflow:hidden;margin-top:14px;}
+.contract div{padding:10px 14px;font-size:13.5px;border-top:1px solid var(--border-soft);}
+.contract div:nth-child(-n+2){border-top:none;}
+.contract .ck{font-family:var(--mono);font-size:12px;color:var(--text-faint);background:var(--surface-2);}
+@media (max-width:640px){.contract{grid-template-columns:1fr;} .contract .ck{border-top:1px solid var(--border-soft);}}
+.game{margin-top:22px;}
+.game-task{font-size:16px;font-weight:700;padding:16px;border-radius:12px;background:var(--bg-2);border:1px dashed var(--border);margin:12px 0;}
+.game-fb{margin-top:12px;font-size:13.5px;min-height:22px;}
+
+/* ===================== 3. Subagents / context ===================== */
+.ctx-wrap{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+.ctx-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--text-faint);}
+.ctx-bar{height:26px;border-radius:7px;background:var(--bg-2);border:1px solid var(--border-soft);overflow:hidden;display:flex;}
+.ctx-seg{height:100%;transition:width .35s ease;}
+.seg-sys{background:#818cf8;}
+.seg-task{background:var(--accent);}
+.seg-files{background:var(--warn);}
+.seg-sum{background:var(--good);}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-dim);margin-top:10px;}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
+.sub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.sub-box{padding:10px;border-radius:10px;border:1px dashed var(--border);background:var(--surface-2);transition:opacity .3s;}
+.sub-box.off{opacity:.2;}
+.sub-box .tag{display:block;margin-bottom:6px;}
+input[type=range]{width:100%;accent-color:var(--accent);}
+.warnline{margin-top:10px;font-size:13px;font-weight:600;min-height:20px;}
+.brief{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:stretch;margin-top:22px;}
+.brief .b{padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);font-size:13px;}
+.brief .b ul{margin:8px 0 0;padding-left:18px;color:var(--text-dim);}
+.brief .arr{display:flex;align-items:center;color:var(--text-faint);font-size:20px;}
+@media (max-width:820px){.brief{grid-template-columns:1fr;} .brief .arr{justify-content:center;transform:rotate(90deg);}}
+
+/* ===================== 4. Failure lab ===================== */
+.ctrl{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.ctrl label{font-size:12.5px;font-weight:600;color:var(--text-dim);}
+.ctrl select{font-family:var(--sans);font-size:13.5px;padding:9px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);}
+.toggle{display:flex;align-items:center;gap:10px;font-size:13.5px;cursor:pointer;padding:6px 0;}
+.toggle input{width:18px;height:18px;accent-color:var(--accent);}
+.console{font-family:var(--mono);font-size:12.3px;background:#070a12;color:#cfd5f2;border:1px solid var(--border-soft);border-radius:10px;padding:14px;min-height:300px;max-height:380px;overflow:auto;line-height:1.7;}
+:root[data-theme="light"] .console{background:#12162a;}
+.console .l{animation:fadein .25s ease;}
+.console .ok{color:#34d399;} .console .err{color:#fb7185;} .console .wr{color:#fbbf24;} .console .mt{color:#7d86b3;} .console .in{color:#67e8f9;}
+.budget{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.budget span{width:26px;height:10px;border-radius:3px;background:var(--surface-3);border:1px solid var(--border);}
+.budget span.used{background:var(--warn);border-color:var(--warn);}
+.budget span.okk{background:var(--good);border-color:var(--good);}
+.budget span.bad{background:var(--danger);border-color:var(--danger);}
+.verdict{margin-top:12px;padding:12px 14px;border-radius:10px;font-size:13.5px;display:none;}
+.verdict.show{display:block;animation:fadein .3s ease;}
+.verdict.good{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);}
+.verdict.bad{background:rgba(251,113,133,0.1);border:1px solid rgba(251,113,133,0.3);}
+.verdict.warn{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);}
+.policy-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;}
+.policy-table th,.policy-table td{text-align:left;padding:9px 10px;border-top:1px solid var(--border-soft);vertical-align:top;}
+.policy-table th{font-size:11.5px;font-family:var(--mono);color:var(--text-faint);font-weight:600;border-top:none;}
+.table-scroll{overflow-x:auto;}
+
+/* ===================== 5. Granularity ===================== */
+.chart-svg{width:100%;height:auto;display:block;}
+.chart-svg text{font-family:var(--mono);font-size:11px;fill:var(--text-faint);}
+.q-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border-soft);font-size:14px;}
+.q-item:first-child{border-top:none;}
+.yn{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex:0 0 auto;}
+.yn button{border:none;background:var(--surface-2);color:var(--text-dim);font-family:var(--sans);font-weight:600;font-size:12.5px;padding:6px 12px;cursor:pointer;}
+.yn button.on{background:var(--accent);color:#fff;}
+.ladder{display:flex;flex-direction:column-reverse;gap:8px;margin-top:10px;}
+.rung{padding:12px 14px;border-radius:10px;border:1px solid var(--border-soft);background:var(--surface-2);font-size:13.5px;opacity:.45;transition:all .25s ease;}
+.rung b{display:block;font-size:14px;color:var(--text);}
+.rung.on{opacity:1;border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(34,211,238,0.14);}
+.anti{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px;}
+.anti .card-soft{padding:14px;font-size:13px;color:var(--text-dim);}
+.anti b{color:var(--danger);display:block;margin-bottom:4px;font-size:13.5px;}
+@media (max-width:820px){.anti{grid-template-columns:1fr;}}
+
+/* ===================== 6. Observability ===================== */
+.wf-row{display:grid;grid-template-columns:170px 1fr;gap:12px;align-items:center;padding:4px 6px;border-radius:8px;cursor:pointer;}
+.wf-row:hover,.wf-row.on{background:var(--surface-2);}
+.wf-name{font-family:var(--mono);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wf-track{position:relative;height:18px;}
+.wf-bar{position:absolute;top:3px;bottom:3px;border-radius:4px;}
+.wf-bar.ok{background:var(--accent-2);} .wf-bar.fail{background:var(--danger);} .wf-bar.root{background:var(--surface-3);border:1px solid var(--border);} .wf-bar.wait{background:var(--warn);}
+@media (max-width:640px){.wf-row{grid-template-columns:110px 1fr;}}
+.span-json{font-family:var(--mono);font-size:12.2px;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:10px;padding:14px;white-space:pre;overflow:auto;line-height:1.6;min-height:260px;}
+.sort-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
+.bucket{min-height:180px;border:1px dashed var(--border);border-radius:12px;padding:12px;background:var(--bg-2);}
+.bucket h4{font-size:13px;margin-bottom:10px;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{font-family:var(--sans);font-size:12.8px;padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;transition:all .15s;text-align:left;}
+.chip:hover{border-color:var(--accent-soft);}
+.chip.right{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.chip.wrong{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+@media (max-width:640px){.sort-grid{grid-template-columns:1fr;}}
+
+/* ===================== 7. Hands-on pipeline diagram ===================== */
+.diagram-wrap{overflow-x:auto;background:var(--bg-2);border:1px solid var(--border-soft);border-radius:14px;padding:10px;}
+.pipe-svg{min-width:760px;width:100%;height:auto;display:block;}
+.pipe-svg .node rect{fill:var(--surface);stroke:var(--border);stroke-width:1.5;}
+.pipe-svg .node .t{font-family:var(--sans);font-weight:700;font-size:14px;fill:var(--text);}
+.pipe-svg .node .s{font-family:var(--mono);font-size:10.5px;fill:var(--text-faint);}
+.pipe-svg .node .o{font-family:var(--mono);font-size:10.5px;fill:var(--accent-2);}
+.pipe-svg .edge{stroke:var(--text-faint);stroke-width:1.6;fill:none;}
+.pipe-svg .retry{stroke:var(--danger);stroke-width:1.8;fill:none;stroke-dasharray:6 5;}
+.pipe-svg .gate{fill:var(--warn);}
+.pipe-svg .lbl{font-family:var(--mono);font-size:11px;fill:var(--text-dim);}
+.pipe-svg .lbl-r{font-family:var(--mono);font-size:11px;fill:var(--danger);}
+.pipe-svg .trace{stroke:var(--accent);stroke-width:2;stroke-dasharray:2 4;}
+.pipe-svg .tdot{fill:var(--accent);}
+.pipe-svg .hs circle{fill:var(--accent);stroke:var(--bg-2);stroke-width:3;}
+.pipe-svg .hs text{font-family:var(--mono);font-weight:700;font-size:12px;fill:#fff;}
+.pipe-svg .hs{cursor:pointer;}
+.pipe-svg .hl{transition:opacity .3s ease;}
+.pipe-svg.focus .hl{opacity:.18;}
+.pipe-svg.focus .hl.lit{opacity:1;}
+.pipe-svg .lit rect{stroke:var(--accent-2);stroke-width:2.5;}
+.step-card{margin-top:16px;}
+.step-card h3{font-size:18px;margin:8px 0;}
+.step-card .ask{margin-top:12px;padding:10px 12px;border-left:3px solid var(--accent-2);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:13.5px;}
+.dots{display:flex;gap:6px;}
+.dots span{width:8px;height:8px;border-radius:50%;background:var(--surface-3);}
+.dots span.on{background:var(--accent-2);}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.check-item:hover{background:var(--surface-2);}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;transition:all .15s;}
+.check-item.checked .check-box{background:var(--good);border-color:var(--good);color:#06281c;}
+.check-item.checked .check-label{color:var(--text-faint);text-decoration:line-through;}
+.check-label{font-size:14px;}
+.progress-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;margin:16px 0 8px;}
+.progress-fill{height:100%;background:var(--grad-2);width:0%;transition:width .4s ease;}
+.progress-label{font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.setup-done{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--good);font-size:13.5px;font-weight:600;}
+.setup-done.show{display:block;animation:fadein .3s ease;}
+
+/* ===================== Quiz ===================== */
+.quiz-q{margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border-bottom:none;}
+.quiz-q-title{font-weight:700;font-size:15px;margin-bottom:14px;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:13.8px;transition:all .12s;}
+.quiz-opt:hover{border-color:var(--accent-soft);}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(168,85,247,0.1);}
+.quiz-opt.correct{border-color:var(--good);background:rgba(52,211,153,0.12);}
+.quiz-opt.incorrect{border-color:var(--danger);background:rgba(251,113,133,0.12);}
+.quiz-explain{margin-top:10px;font-size:12.8px;color:var(--text-dim);display:none;padding:10px 12px;background:var(--bg-2);border-radius:8px;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:24px;display:none;}
+.quiz-score.show{display:block;}
+.quiz-score .big{font-size:40px;font-weight:800;font-family:var(--mono);background:var(--grad-1);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+/* ===================== Footer ===================== */
+.footer{padding:50px 20px 70px;text-align:center;}
+.footer .recap{max-width:760px;margin:0 auto 30px;text-align:left;}
+.recap ul{margin:14px 0 0;padding-left:20px;color:var(--text-dim);font-size:14.5px;line-height:1.9;}
+.footer-line{color:var(--text-faint);font-size:12.5px;font-family:var(--mono);}
+.footer-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+
+@media (max-width:640px){ .section{padding:60px 16px;} .hero{padding:56px 16px 44px;} }
+@media (prefers-reduced-motion: reduce){ .token-row{animation:none;} .reveal{opacity:1;transform:none;transition:none;} }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="#" class="brand"><span class="brand-badge">🎼</span> Module 15</a>
+    <div class="navlinks" id="navlinks">
+      <a href="#topology">Sequential vs. parallel</a>
+      <a href="#roles">Agent roles</a>
+      <a href="#subagents">Subagent delegation</a>
+      <a href="#failures">Failure handling</a>
+      <a href="#granularity">Granularity</a>
+      <a href="#observability">Observability</a>
+      <a href="#handson">Hands-on</a>
+      <a href="#quiz">Quiz</a>
+    </div>
+    <a href="module-14-governance-security-observability.html" class="prev-link">← Module 14</a>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="token-stream" id="heroStream" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Xebia — Cursor AI Training · Day 5 · Module 15</div>
+    <h1>Subagents &amp;<br>Orchestration Patterns</h1>
+    <p class="hero-sub">One agent is a soloist. A pipeline is an orchestra: each player has one part, a score says who plays when, and a conductor handles the moments when someone misses a cue. This module is about writing that score.</p>
+    <div class="hero-meta">
+      <span class="pill pill-neutral">⏱ 45 min</span>
+      <span class="pill pill-neutral">🧩 Roles, handoffs, delegation</span>
+      <span class="pill pill-neutral">🛟 Retries, timeouts, budgets</span>
+    </div>
+    <div class="orchestra">
+      <div class="orch"><span class="ico">🎼</span><b>The score</b><span>Pipeline topology: who runs when, in order or together</span></div>
+      <div class="orch"><span class="ico">🎻</span><b>The players</b><span>Agents with one role each: Validator, Builder, Generator, Reviewer</span></div>
+      <div class="orch"><span class="ico">📜</span><b>The sheet music</b><span>State handed from one stage to the next as a structured artifact</span></div>
+      <div class="orch"><span class="ico">🪄</span><b>The conductor</b><span>Orchestration: retries, timeouts, budgets, and the trace of every step</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 1. SEQUENTIAL VS PARALLEL -->
+<!-- ============================================================ -->
+<section class="section" id="topology">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">01 / Topology</span>
+      <h2>Sequential vs. parallel pipelines</h2>
+      <p>A <b>sequential</b> pipeline runs one stage at a time, and each stage waits for the one before it. A <b>parallel</b> pipeline splits independent work across agents and adds a merge step at the end. Run both and compare wall-clock time with total agent time.</p>
+    </div>
+
+    <div class="grid-2" style="grid-template-columns:1.4fr 1fr;">
+      <div class="card reveal">
+        <div class="row" style="justify-content:space-between;">
+          <div class="seg" id="topoSeg">
+            <button class="on" data-mode="seq">➡️ Sequential</button>
+            <button data-mode="par">🔀 Parallel fan-out</button>
+          </div>
+          <button class="btn btn-primary btn-sm" id="topoRun">▶ Run pipeline</button>
+        </div>
+        <div class="gantt" id="gantt"></div>
+        <div class="stat-row">
+          <div class="stat"><div class="v" id="stWall">0.0s</div><div class="l">Wall-clock time</div></div>
+          <div class="stat"><div class="v" id="stAgent">0.0s</div><div class="l">Total agent time (≈ cost)</div></div>
+          <div class="stat"><div class="v" id="stHand">0</div><div class="l">Handoffs so far</div></div>
+        </div>
+        <div class="callout" id="topoNote"></div>
+      </div>
+      <div class="card reveal">
+        <span class="tag">Shared state: the handoff envelope</span>
+        <p class="dim" style="font-size:13.5px;margin:8px 0 12px;">Agents don't share memory. Each stage reads the envelope, adds its own keys, and passes it on.</p>
+        <div class="state-box" id="stateBox"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. ROLES -->
+<!-- ============================================================ -->
+<section class="section" id="roles">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">02 / Roles</span>
+      <h2>Designing agent roles for a pipeline</h2>
+      <p>Give each agent one job, a fixed input, a fixed output, and a short list of tools. Pick a role to see its contract. When you can write a clear contract for a role, you have probably drawn its boundary in the right place.</p>
+    </div>
+
+    <div class="grid-4 reveal" id="roleCards"></div>
+    <div class="card role-detail reveal" id="roleDetail"></div>
+
+    <div class="card game reveal">
+      <span class="tag">Mini-game · Who owns this task?</span>
+      <div class="game-task" id="gameTask"></div>
+      <div class="row" id="gameBtns"></div>
+      <div class="game-fb" id="gameFb"></div>
+      <div class="row" style="justify-content:space-between;margin-top:10px;">
+        <span class="progress-label" id="gameScore">0 / 0</span>
+        <button class="btn btn-sm" id="gameNext" disabled>Next task →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. SUBAGENT DELEGATION -->
+<!-- ============================================================ -->
+<section class="section" id="subagents">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">03 / Delegation</span>
+      <h2>Subagents and independent context</h2>
+      <p>A subagent starts with an <b>empty context window</b>. It gets a brief, does the messy work (searching, reading, trying things), and returns only a short result. The parent's context stays small, so it keeps following its original instructions.</p>
+    </div>
+
+    <div class="card reveal">
+      <div class="grid-2" style="gap:28px;">
+        <div>
+          <label class="ctrl" style="margin:0;">
+            <span style="font-size:13px;font-weight:600;">Files the task needs to explore: <span class="mono" id="filesVal">30</span></span>
+            <input type="range" id="filesRange" min="5" max="80" value="30">
+          </label>
+        </div>
+        <div>
+          <span style="font-size:13px;font-weight:600;">Subagents to delegate to</span>
+          <div class="seg" id="subSeg" style="margin-top:8px;">
+            <button data-n="1" class="on">1</button><button data-n="2">2</button><button data-n="3">3</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap:28px;margin-top:22px;">
+        <div>
+          <h3>🧍 Everything in one chat</h3>
+          <div class="ctx-wrap">
+            <div class="ctx-label"><span>Parent context</span><span id="inlinePct">0%</span></div>
+            <div class="ctx-bar"><div class="ctx-seg seg-sys" id="iSys"></div><div class="ctx-seg seg-task" id="iTask"></div><div class="ctx-seg seg-files" id="iFiles"></div></div>
+          </div>
+          <div class="warnline" id="inlineWarn"></div>
+        </div>
+        <div>
+          <h3>🧑‍✈️ Parent + subagents</h3>
+          <div class="ctx-wrap">
+            <div class="ctx-label"><span>Parent context</span><span id="delPct">0%</span></div>
+            <div class="ctx-bar"><div class="ctx-seg seg-sys" id="dSys"></div><div class="ctx-seg seg-task" id="dTask"></div><div class="ctx-seg seg-sum" id="dSum"></div></div>
+          </div>
+          <div class="sub-grid" id="subGrid"></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#818cf8"></i>System prompt + rules</span>
+        <span><i style="background:var(--accent)"></i>Task and conversation</span>
+        <span><i style="background:var(--warn)"></i>Raw file contents and tool output</span>
+        <span><i style="background:var(--good)"></i>Subagent summaries returned</span>
+      </div>
+    </div>
+
+    <div class="brief reveal">
+      <div class="b"><span class="tag">1 · Brief (parent → subagent)</span>
+        <ul><li>Goal in one sentence</li><li>Constraints and files in scope</li><li>Expected output format</li><li>Stop condition</li></ul></div>
+      <div class="arr">➜</div>
+      <div class="b"><span class="tag">2 · Isolated work</span>
+        <ul><li>Fresh context: it can't see the parent's chat</li><li>Its own tools and permissions</li><li>Can run in parallel with other subagents</li></ul></div>
+      <div class="arr">➜</div>
+      <div class="b"><span class="tag">3 · Return (subagent → parent)</span>
+        <ul><li>A summary or artifact, not a transcript</li><li>Evidence: file paths and line numbers</li><li>Status: done, blocked, or needs input</li></ul></div>
+    </div>
+    <p class="hint reveal" style="margin-top:14px;">Because the subagent can't read the parent's conversation, a vague brief like "fix it like we discussed" won't work. The brief has to stand on its own.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. FAILURE HANDLING -->
+<!-- ============================================================ -->
+<section class="section" id="failures">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">04 / Resilience</span>
+      <h2>Failures, retries, timeouts, and bounded execution</h2>
+      <p>Every stage will fail at some point. What matters is whether the pipeline <b>recovers</b>, <b>stops safely</b>, or <b>hangs and burns budget</b>. Pick a failure, set a policy, and run the API Validator stage.</p>
+    </div>
+
+    <div class="grid-2" style="grid-template-columns:1fr 1.5fr;">
+      <div class="card reveal">
+        <div class="ctrl">
+          <label for="failType">Failure to inject</label>
+          <select id="failType">
+            <option value="transient">503: service briefly unavailable</option>
+            <option value="timeout">Call hangs with no response</option>
+            <option value="badoutput">Agent output fails schema check</option>
+            <option value="permanent">401: invalid credentials</option>
+            <option value="none">No failure (happy path)</option>
+          </select>
+        </div>
+        <div class="ctrl">
+          <label for="retryRange">Max retries: <span class="mono" id="retryVal">2</span></label>
+          <input type="range" id="retryRange" min="0" max="4" value="2">
+        </div>
+        <label class="toggle"><input type="checkbox" id="optTimeout" checked> Timeout per attempt (30s)</label>
+        <label class="toggle"><input type="checkbox" id="optBackoff" checked> Exponential backoff between retries</label>
+        <label class="toggle"><input type="checkbox" id="optFeedback" checked> Send the validator's error back on retry</label>
+        <label class="toggle"><input type="checkbox" id="optClassify" checked> Don't retry permanent errors</label>
+        <button class="btn btn-primary" id="failRun" style="margin-top:12px;width:100%;justify-content:center;">▶ Run stage</button>
+      </div>
+      <div class="card reveal">
+        <div class="row" style="justify-content:space-between;">
+          <span class="tag">stage: api_validator · run log</span>
+          <span class="tag" id="budgetLbl">attempt budget</span>
+        </div>
+        <div class="console" id="failConsole" style="margin-top:10px;"><span class="mt">// press Run stage</span></div>
+        <div class="budget" id="budget"></div>
+        <div class="verdict" id="failVerdict"></div>
+      </div>
+    </div>
+
+    <div class="card reveal" style="margin-top:20px;">
+      <span class="tag">Cheat sheet · match the policy to the failure</span>
+      <div class="table-scroll">
+      <table class="policy-table">
+        <tr><th>Failure</th><th>Retry?</th><th>How</th><th>When retries run out</th></tr>
+        <tr><td>Transient (503, rate limit)</td><td><span class="pill pill-good">yes</span></td><td>Back off: wait longer before each try</td><td>Escalate and halt downstream stages</td></tr>
+        <tr><td>Hang or slow tool</td><td><span class="pill pill-good">yes</span></td><td>Always set a timeout per attempt</td><td>Mark the stage timed out, keep partial logs</td></tr>
+        <tr><td>Bad output (schema, failing tests)</td><td><span class="pill pill-warn">with feedback</span></td><td>Include the validator's error in the next prompt</td><td>Hand off to a human along with the last attempt</td></tr>
+        <tr><td>Permanent (401, missing file, bad spec)</td><td><span class="pill pill-bad">no</span></td><td>Fail fast: retrying won't change the result</td><td>Stop right away and say what needs fixing</td></tr>
+      </table>
+      </div>
+      <p class="hint" style="margin-top:12px;">Bounded execution means every run has a limit: max attempts per stage, max steps or tool calls per agent, max wall-clock time, and max spend. A pipeline with no limits can loop forever.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. GRANULARITY -->
+<!-- ============================================================ -->
+<section class="section" id="granularity">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">05 / Granularity</span>
+      <h2>How many agents is too many?</h2>
+      <p>Each extra agent adds specialization, but it also adds a handoff, a new way to fail, and more tokens. Past a certain point, coordinating the agents costs more than the specialization gains. Drag the dial to find that point.</p>
+    </div>
+
+    <div class="grid-2" style="grid-template-columns:1.3fr 1fr;">
+      <div class="card reveal">
+        <label class="ctrl" style="margin-bottom:6px;">
+          <span style="font-size:13px;font-weight:600;">Agents in the pipeline: <span class="mono" id="nVal">3</span></span>
+          <input type="range" id="nRange" min="1" max="8" value="3">
+        </label>
+        <svg class="chart-svg" id="gChart" viewBox="0 0 600 270" role="img" aria-label="Specialization benefit, coordination overhead and net value versus number of agents"></svg>
+        <div class="legend" style="margin-top:4px;">
+          <span><i style="background:var(--accent-2)"></i>Specialization benefit</span>
+          <span><i style="background:var(--danger)"></i>Coordination overhead</span>
+          <span><i style="background:var(--good)"></i>Net value</span>
+        </div>
+        <div class="callout" id="nNote"></div>
+      </div>
+      <div class="card reveal">
+        <span class="tag">Decision helper · what does this task need?</span>
+        <div id="qList" style="margin-top:8px;"></div>
+        <div class="ladder" id="ladder"></div>
+      </div>
+    </div>
+
+    <div class="anti reveal">
+      <div class="card-soft"><b>🪆 Agent per function</b>If an agent only renames variables, it should be a step inside another agent, or a rule.</div>
+      <div class="card-soft"><b>🔁 Reviewer reviews the reviewer</b>Adding layers of checks makes each layer less accountable. Use one independent reviewer, then a human.</div>
+      <div class="card-soft"><b>🕸️ Everyone talks to everyone</b>A mesh of agents is very hard to trace. Stick to a pipeline or a single fan-out with one merge step.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. OBSERVABILITY + NATIVE VS EXTERNAL -->
+<!-- ============================================================ -->
+<section class="section" id="observability">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">06 / Observability</span>
+      <h2>Tracing handoffs, and where Cursor's orchestration ends</h2>
+      <p>One <code>trace_id</code> follows the whole run, and each agent's work is logged as a span inside it. Click a span to see what it recorded. Then sort which orchestration features Cursor provides and which need an external system.</p>
+    </div>
+
+    <div class="grid-2" style="grid-template-columns:1.3fr 1fr;">
+      <div class="card reveal">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px;">
+          <span class="tag">trace_id = 7f3a…c21 · REQ-2481</span>
+          <span class="tag">0s ─────── 94s</span>
+        </div>
+        <div id="waterfall"></div>
+        <p class="hint" style="margin-top:12px;">The red span is a failed attempt. It stays in the trace. Hiding retries would hide the real cost and delay of the run.</p>
+      </div>
+      <div class="card reveal">
+        <span class="tag">Span detail</span>
+        <div class="span-json" id="spanJson" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <div class="card reveal" style="margin-top:20px;">
+      <div class="row" style="justify-content:space-between;">
+        <span class="tag">Sorter · Cursor-native or external orchestration?</span>
+        <div class="row"><button class="btn btn-sm" id="sortCheck">Check</button><button class="btn btn-sm" id="sortReset">↺ Reset</button></div>
+      </div>
+      <p class="dim" style="font-size:13.5px;margin-top:8px;">Click a chip to move it: <b>unsorted → Cursor-native → External → unsorted</b>.</p>
+      <div class="chips" id="sortPool" style="margin-top:14px;min-height:40px;"></div>
+      <div class="sort-grid">
+        <div class="bucket"><h4>🟣 Cursor-native</h4><div class="chips" id="bNative"></div></div>
+        <div class="bucket"><h4>🔷 External workflow orchestration</h4><div class="chips" id="bExternal"></div></div>
+      </div>
+      <div class="game-fb" id="sortFb"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. HANDS-ON -->
+<!-- ============================================================ -->
+<section class="section" id="handson">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">07 / Hands-on</span>
+      <h2>Walkthrough: reading a sample pipeline diagram</h2>
+      <p>This is the Requirement-to-Test pipeline you'll build in Module 16. Step through the numbered points, or click them on the diagram. For each one, answer the question before moving on.</p>
+    </div>
+
+    <div class="diagram-wrap reveal">
+      <svg class="pipe-svg" id="pipeSvg" viewBox="0 0 1000 400" role="img" aria-label="Requirement to test pipeline with five agents, gates, a retry loop, human sign-off and a trace line">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6d76a0"/></marker>
+          <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fb7185"/></marker>
+        </defs>
+
+        <!-- Budget -->
+        <g class="hl" data-step="8">
+          <rect x="770" y="14" width="210" height="30" rx="8" fill="none" stroke="#f59e0b" stroke-dasharray="4 3"/>
+          <text x="875" y="34" text-anchor="middle" class="lbl">⏱ budget: 25 steps · 10 min · $2</text>
+        </g>
+
+        <!-- Input -->
+        <g class="hl node" data-step="1">
+          <rect x="20" y="14" width="150" height="40" rx="10"/>
+          <text x="95" y="39" text-anchor="middle" class="s">📄 REQ-2481.md</text>
+        </g>
+        <path class="edge hl" data-step="1" d="M95 54 L95 112" marker-end="url(#ah)"/>
+
+        <!-- Agents -->
+        <g class="hl node" data-step="2"><rect x="20" y="114" width="150" height="84" rx="12"/>
+          <text x="95" y="142" text-anchor="middle" class="t">Req. Validator</text>
+          <text x="95" y="162" text-anchor="middle" class="s">complete? testable?</text>
+          <text x="95" y="184" text-anchor="middle" class="o">validated_req.json</text></g>
+        <g class="hl node" data-step="3"><rect x="215" y="114" width="150" height="84" rx="12"/>
+          <text x="290" y="142" text-anchor="middle" class="t">Sequence Builder</text>
+          <text x="290" y="162" text-anchor="middle" class="s">derive test steps</text>
+          <text x="290" y="184" text-anchor="middle" class="o">sequence.md</text></g>
+        <g class="hl node" data-step="4"><rect x="410" y="114" width="150" height="84" rx="12"/>
+          <text x="485" y="142" text-anchor="middle" class="t">Test Generator</text>
+          <text x="485" y="162" text-anchor="middle" class="s">subagent · fresh ctx</text>
+          <text x="485" y="184" text-anchor="middle" class="o">tests/*.py</text></g>
+        <g class="hl node" data-step="5"><rect x="605" y="114" width="150" height="84" rx="12"/>
+          <text x="680" y="142" text-anchor="middle" class="t">API Validator</text>
+          <text x="680" y="162" text-anchor="middle" class="s">tests vs. OpenAPI</text>
+          <text x="680" y="184" text-anchor="middle" class="o">api_report.json</text></g>
+        <g class="hl node" data-step="6"><rect x="800" y="114" width="150" height="84" rx="12"/>
+          <text x="875" y="142" text-anchor="middle" class="t">Reviewer</text>
+          <text x="875" y="162" text-anchor="middle" class="s">independent ctx</text>
+          <text x="875" y="184" text-anchor="middle" class="o">review.md</text></g>
+
+        <!-- Edges + gates -->
+        <g class="hl" data-step="3">
+          <path class="edge" d="M170 156 L213 156" marker-end="url(#ah)"/>
+          <path class="edge" d="M365 156 L408 156" marker-end="url(#ah)"/>
+          <path class="edge" d="M560 156 L603 156" marker-end="url(#ah)"/>
+          <path class="edge" d="M755 156 L798 156" marker-end="url(#ah)"/>
+        </g>
+        <g class="hl" data-step="2">
+          <rect class="gate" x="186" y="149" width="12" height="12" transform="rotate(45 192 155)"/>
+          <rect class="gate" x="381" y="149" width="12" height="12" transform="rotate(45 387 155)"/>
+          <rect class="gate" x="576" y="149" width="12" height="12" transform="rotate(45 582 155)"/>
+          <rect class="gate" x="771" y="149" width="12" height="12" transform="rotate(45 777 155)"/>
+          <text x="192" y="104" text-anchor="middle" class="lbl">◆ gate</text>
+        </g>
+
+        <!-- Retry loop -->
+        <g class="hl" data-step="5">
+          <path class="retry" d="M680 198 C680 262, 485 262, 485 202" marker-end="url(#ahr)"/>
+          <text x="582" y="276" text-anchor="middle" class="lbl-r">FAIL → retry ≤ 2 with error feedback</text>
+        </g>
+
+        <!-- Human sign-off -->
+        <g class="hl" data-step="7">
+          <path class="edge" d="M875 198 L875 244" marker-end="url(#ah)"/>
+          <g class="node"><rect x="800" y="246" width="150" height="54" rx="12" style="stroke:#f59e0b"/>
+          <text x="875" y="270" text-anchor="middle" class="t">👤 Human sign-off</text>
+          <text x="875" y="289" text-anchor="middle" class="s">approve → commit</text></g>
+        </g>
+
+        <!-- Trace -->
+        <g class="hl" data-step="8">
+          <line class="trace" x1="20" y1="350" x2="950" y2="350"/>
+          <circle class="tdot" cx="95" cy="350" r="5"/><circle class="tdot" cx="290" cy="350" r="5"/><circle class="tdot" cx="485" cy="350" r="5"/><circle class="tdot" cx="680" cy="350" r="5"/><circle class="tdot" cx="875" cy="350" r="5"/>
+          <text x="20" y="378" class="lbl">trace_id=7f3a…  one span per agent · one log line per handoff</text>
+        </g>
+
+        <!-- Hotspots -->
+        <g class="hs" data-go="1"><circle cx="170" cy="22" r="13"/><text x="170" y="26" text-anchor="middle">1</text></g>
+        <g class="hs" data-go="2"><circle cx="30" cy="112" r="13"/><text x="30" y="116" text-anchor="middle">2</text></g>
+        <g class="hs" data-go="3"><circle cx="225" cy="112" r="13"/><text x="225" y="116" text-anchor="middle">3</text></g>
+        <g class="hs" data-go="4"><circle cx="420" cy="112" r="13"/><text x="420" y="116" text-anchor="middle">4</text></g>
+        <g class="hs" data-go="5"><circle cx="615" cy="112" r="13"/><text x="615" y="116" text-anchor="middle">5</text></g>
+        <g class="hs" data-go="6"><circle cx="810" cy="112" r="13"/><text x="810" y="116" text-anchor="middle">6</text></g>
+        <g class="hs" data-go="7"><circle cx="810" cy="246" r="13"/><text x="810" y="250" text-anchor="middle">7</text></g>
+        <g class="hs" data-go="8"><circle cx="770" cy="14" r="13"/><text x="770" y="18" text-anchor="middle">8</text></g>
+      </svg>
+    </div>
+
+    <div class="card step-card reveal">
+      <div class="row" style="justify-content:space-between;">
+        <span class="tag" id="stepTag">Step 0 / 8</span>
+        <div class="dots" id="stepDots"></div>
+      </div>
+      <h3 id="stepTitle">Press Start to walk through the pipeline</h3>
+      <p class="dim" id="stepBody">Each step highlights one part of the diagram and explains the design choice behind it.</p>
+      <div class="ask" id="stepAsk" style="display:none;"></div>
+      <div class="row" style="margin-top:16px;">
+        <button class="btn btn-sm" id="stepPrev" disabled>← Prev</button>
+        <button class="btn btn-primary btn-sm" id="stepNext">Start →</button>
+        <button class="btn btn-sm" id="stepAll">Show whole diagram</button>
+      </div>
+    </div>
+
+    <div class="card reveal" style="margin-top:20px;">
+      <span class="tag">Checklist · check any pipeline diagram for these</span>
+      <div id="hoList" style="margin-top:10px;"></div>
+      <div class="progress-track"><div class="progress-fill" id="hoFill"></div></div>
+      <span class="progress-label" id="hoLabel">0 / 8 checked</span>
+      <div class="setup-done" id="hoDone">✓ This diagram is ready for Module 16. You'll build the pipeline in the next lab.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- QUIZ -->
+<!-- ============================================================ -->
+<section class="section" id="quiz">
+  <div class="section-inner">
+    <div class="section-head reveal">
+      <span class="section-num">Knowledge check</span>
+      <h2>Quick check before the lab</h2>
+      <p>Six questions on this module's material.</p>
+    </div>
+    <div class="card reveal" id="quizCard">
+      <div id="quizQuestions"></div>
+      <button class="btn btn-primary" id="quizCheck">Check answers</button>
+      <div class="quiz-score" id="quizScore"><div class="big" id="quizScoreText">0/6</div><p id="quizScoreMsg" style="margin-top:8px;color:var(--text-dim);"></p><button class="btn" id="quizRetry" style="margin-top:14px;">↺ Try again</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="recap card reveal">
+    <span class="pill pill-neutral">📌 Recap</span>
+    <h3 style="margin-top:14px;font-size:20px;">Write the score before you hire the orchestra</h3>
+    <ul>
+      <li>Use a sequential pipeline when each stage needs the previous stage's output. Fan out in parallel only when branches are independent, and plan a merge step.</li>
+      <li>Agents share state through an explicit handoff artifact, not shared memory. Each stage adds its own keys to it.</li>
+      <li>Give every role a contract: its input, output, allowed tools, what it must not do, and its PASS/FAIL signal.</li>
+      <li>Subagents start with a fresh context. Give them a brief that stands on its own, and have them return a summary, not a transcript.</li>
+      <li>Retry transient errors with backoff, retry bad output with the error included, and fail fast on permanent errors. Set a limit on every run.</li>
+      <li>Use the smallest number of agents that does the job. One trace_id across all handoffs is what lets you debug and audit the run.</li>
+    </ul>
+  </div>
+  <div class="footer-nav">
+    <a href="module-14-governance-security-observability.html" class="btn">← Module 14: Governance, Security &amp; Observability</a>
+    <a href="#" class="btn">↑ Back to top</a>
+  </div>
+  <p class="footer-line" style="margin-top:26px;">Module 15 — Subagents &amp; Orchestration Patterns · Xebia — Cursor AI Training · AI-Assisted Software Engineering</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+
+/* ---------- Theme toggle ---------- */
+(function(){
+  var root = document.documentElement;
+  var btn = $('themeToggle');
+  var stored = null;
+  try { stored = localStorage.getItem('m1-theme'); } catch(e){}
+  if(stored){ root.setAttribute('data-theme', stored); btn.textContent = stored === 'light' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var current = root.getAttribute('data-theme');
+    var isLight = current === 'light' || (!current && window.matchMedia('(prefers-color-scheme: light)').matches);
+    var next = isLight ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    btn.textContent = next === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('m1-theme', next); } catch(e){}
+  });
+})();
+
+/* ---------- Token stream background ---------- */
+(function(){
+  var words = ["subagent","handoff","fan-out","fan-in","retry ≤ 2","timeout 30s","backoff","trace_id","span","Validator","Builder","Generator","Reviewer","bounded","fail fast","merge","brief","fresh context"];
+  var el = $('heroStream');
+  for(var i=0;i<8;i++){
+    var row = document.createElement('div');
+    row.className = 'token-row';
+    var w = [];
+    for(var j=0;j<7;j++) w.push(words[Math.floor(Math.random()*words.length)]);
+    row.textContent = w.join(' · ');
+    row.style.top = (Math.random()*100) + '%';
+    row.style.animationDuration = (28 + Math.random()*22) + 's';
+    row.style.animationDelay = (-Math.random()*30) + 's';
+    el.appendChild(row);
+  }
+})();
+
+/* ---------- Nav active state ---------- */
+(function(){
+  var sections = document.querySelectorAll('.section[id]');
+  var links = document.querySelectorAll('.navlinks a');
+  function setActive(id){ links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#'+id); }); }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ setActive(en.target.id); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  var items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in-view'); io.unobserve(en.target);} });
+    }, { threshold: 0.1 });
+    items.forEach(function(i){ io.observe(i); });
+  } else { items.forEach(function(i){ i.classList.add('in-view'); }); }
+})();
+
+/* ============================================================
+   1. Topology simulator
+   ============================================================ */
+(function(){
+  var MAX = 16, UNIT = 300; // 1 time unit = 1s of simulated time, 300ms of animation
+  var lanes = [
+    {id:'val', name:'Validator', color:'#a78bfa'},
+    {id:'bld', name:'Builder', color:'#818cf8'},
+    {id:'unit', name:'Gen · unit', color:'#22d3ee'},
+    {id:'api', name:'Gen · api', color:'#2dd4bf'},
+    {id:'e2e', name:'Gen · e2e', color:'#34d399'},
+    {id:'rev', name:'Reviewer', color:'#f472b6'}
+  ];
+  var plans = {
+    seq: [
+      {lane:'val', s:0, d:2, key:'requirement', val:'{ "id": "REQ-2481", "status": "valid", "criteria": 4 }'},
+      {lane:'bld', s:2, d:2.5, key:'sequence', val:'[ "auth", "create", "read", "update", "delete" ]'},
+      {lane:'unit', s:4.5, d:3, key:'tests.unit', val:'"tests/test_unit.py"'},
+      {lane:'api', s:7.5, d:2.5, key:'tests.api', val:'"tests/test_api.py"'},
+      {lane:'e2e', s:10, d:3.5, key:'tests.e2e', val:'"tests/test_e2e.py"'},
+      {lane:'rev', s:13.5, d:2, key:'review', val:'{ "verdict": "approved" }'}
+    ],
+    par: [
+      {lane:'val', s:0, d:2, key:'requirement', val:'{ "id": "REQ-2481", "status": "valid", "criteria": 4 }'},
+      {lane:'bld', s:2, d:2.5, key:'sequence', val:'[ "auth", "create", "read", "update", "delete" ]'},
+      {lane:'unit', s:4.5, d:3, key:'tests.unit', val:'"tests/test_unit.py"   ← branch-owned'},
+      {lane:'api', s:4.5, d:2.5, key:'tests.api', val:'"tests/test_api.py"    ← branch-owned'},
+      {lane:'e2e', s:4.5, d:3.5, key:'tests.e2e', val:'"tests/test_e2e.py"    ← branch-owned'},
+      {lane:'rev', s:8, d:2.5, key:'review', val:'{ "verdict": "approved", "merged": 3 }'}
+    ]
+  };
+  var notes = {
+    seq: '<b>Sequential:</b> easy to reason about and debug, since each stage sees everything before it. But the three test generators wait on each other even though none of them needs the others\' output.',
+    par: '<b>Parallel fan-out:</b> the three generators only need <code>sequence</code>, so they run together and wall-clock time drops by about 30%. Total agent time goes <i>up</i> a little, because the Reviewer also has to merge the branches. Each branch writes only its own keys, so they never write to the same state.'
+  };
+  var mode = 'seq', timers = [], clockTimer = null;
+  var gantt = $('gantt');
+
+  function build(){
+    var html = '';
+    lanes.forEach(function(l){
+      html += '<div class="g-lane"><div class="g-name">'+l.name+'</div><div class="g-track"><div class="g-bar" id="bar-'+l.id+'" style="background:'+l.color+'"></div></div></div>';
+    });
+    var ticks = '';
+    for(var t=0;t<=MAX;t+=2){ ticks += '<span style="left:'+(t/MAX*100)+'%">'+t+'s</span>'; }
+    html += '<div class="g-axis"><div></div><div class="g-ticks">'+ticks+'</div></div>';
+    gantt.innerHTML = html;
+  }
+  function stateText(done){
+    var lines = ['<span class="mt">// handoff envelope · REQ-2481</span>','{'];
+    done.forEach(function(p, i){
+      lines.push('  <span class="k">"'+p.key+'"</span>: '+esc(p.val)+(i<done.length-1?',':''));
+    });
+    lines.push('}');
+    return lines;
+  }
+  function renderState(done, newest){
+    var lines = stateText(done);
+    $('stateBox').innerHTML = lines.map(function(l, i){
+      var isNew = newest && i === lines.length-2;
+      return isNew ? '<span class="new">'+l+'</span>' : l;
+    }).join('\n');
+  }
+  function reset(){
+    timers.forEach(clearTimeout); timers = [];
+    if(clockTimer){ clearInterval(clockTimer); clockTimer = null; }
+    lanes.forEach(function(l){
+      var b = $('bar-'+l.id); b.style.transition = 'none'; b.style.width = '0'; b.textContent = '';
+    });
+    $('stWall').textContent = '0.0s'; $('stAgent').textContent = '0.0s'; $('stHand').textContent = '0';
+    $('topoNote').innerHTML = notes[mode];
+    renderState([], false);
+  }
+  function run(){
+    reset();
+    var plan = plans[mode];
+    var total = 0, agent = 0, done = [];
+    plan.forEach(function(p){ total = Math.max(total, p.s + p.d); agent += p.d; });
+    // Force reflow so transitions restart
+    void gantt.offsetWidth;
+    plan.forEach(function(p){
+      var b = $('bar-'+p.lane);
+      b.style.left = (p.s/MAX*100)+'%';
+      timers.push(setTimeout(function(){
+        b.style.transition = 'width '+(p.d*UNIT)+'ms linear';
+        b.style.width = (p.d/MAX*100)+'%';
+        b.textContent = p.d+'s';
+      }, p.s*UNIT));
+      timers.push(setTimeout(function(){
+        done.push(p);
+        renderState(done, true);
+        $('stHand').textContent = String(done.length);
+      }, (p.s+p.d)*UNIT));
+    });
+    var start = performance.now();
+    clockTimer = setInterval(function(){
+      var t = Math.min(total, (performance.now()-start)/UNIT);
+      $('stWall').textContent = t.toFixed(1)+'s';
+      var used = 0;
+      plan.forEach(function(p){ used += Math.max(0, Math.min(p.d, t - p.s)); });
+      $('stAgent').textContent = used.toFixed(1)+'s';
+      if(t >= total){ clearInterval(clockTimer); clockTimer = null; $('stAgent').textContent = agent.toFixed(1)+'s'; }
+    }, 50);
+  }
+  document.querySelectorAll('#topoSeg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#topoSeg button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on'); mode = b.getAttribute('data-mode'); reset();
+    });
+  });
+  $('topoRun').addEventListener('click', run);
+  build(); reset();
+})();
+
+/* ============================================================
+   2. Roles + mini-game
+   ============================================================ */
+(function(){
+  var roles = [
+    {id:'val', ico:'🔍', name:'Validator', blurb:'Checks the input before anyone else builds on it.',
+      mission:'Decide whether the input is complete, unambiguous, and testable.',
+      input:'Raw requirement + acceptance-criteria template',
+      output:'<code>validated_req.json</code>: status, gaps[], clarified criteria',
+      tools:'Read-only: docs, specs, knowledge base (MCP)',
+      never:'Invent missing requirements or write code',
+      gate:'FAIL if any criterion is untestable, and halt the pipeline'},
+    {id:'bld', ico:'🧱', name:'Builder', blurb:'Turns a validated input into a structured plan.',
+      mission:'Turn validated intent into an ordered plan: a sequence, a design, or scaffolding.',
+      input:'<code>validated_req.json</code>',
+      output:'<code>sequence.md</code>: ordered steps with pre- and postconditions',
+      tools:'Read codebase, write to plan files only',
+      never:'Generate final tests or change production code',
+      gate:'FAIL if a criterion has no step covering it'},
+    {id:'gen', ico:'⚙️', name:'Generator', blurb:'Produces the artifact: code, tests, or docs.',
+      mission:'Produce the executable artifact from the plan.',
+      input:'<code>sequence.md</code> + code conventions (rules / skills)',
+      output:'<code>tests/*.py</code> that can run as-is',
+      tools:'Write within <code>tests/</code>, run the test command',
+      never:'Edit the requirement or the plan to make its own output pass',
+      gate:'FAIL if tests don\'t collect/run or don\'t trace back to a step'},
+    {id:'rev', ico:'✅', name:'Reviewer', blurb:'Independently judges the result against the criteria.',
+      mission:'Judge the output against the original criteria, from a fresh context.',
+      input:'Artifacts + original requirement (not the Generator\'s reasoning)',
+      output:'<code>review.md</code>: verdict, findings, traceability matrix',
+      tools:'Read-only + run tests; no write access',
+      never:'Fix the code itself. It reports, and the Generator retries',
+      gate:'APPROVE → human sign-off; REJECT → back with findings'}
+  ];
+  var cards = $('roleCards'), detail = $('roleDetail');
+  cards.innerHTML = roles.map(function(r){
+    return '<button class="role-card" data-id="'+r.id+'"><span class="ico">'+r.ico+'</span><h3>'+r.name+'</h3><p>'+r.blurb+'</p></button>';
+  }).join('');
+  function show(id){
+    var r = roles.filter(function(x){ return x.id === id; })[0];
+    cards.querySelectorAll('.role-card').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-id') === id); });
+    detail.innerHTML = '<div class="row"><span style="font-size:26px">'+r.ico+'</span><h3>'+r.name+' · role contract</h3></div>'+
+      '<div class="contract">'+
+      '<div class="ck">mission</div><div>'+r.mission+'</div>'+
+      '<div class="ck">input</div><div>'+r.input+'</div>'+
+      '<div class="ck">output</div><div>'+r.output+'</div>'+
+      '<div class="ck">tools</div><div>'+r.tools+'</div>'+
+      '<div class="ck">must not</div><div style="color:var(--danger)">'+r.never+'</div>'+
+      '<div class="ck">pass / fail</div><div>'+r.gate+'</div></div>';
+    detail.style.animation = 'none'; void detail.offsetWidth; detail.style.animation = 'fadein .3s ease';
+  }
+  cards.addEventListener('click', function(e){ var b = e.target.closest('.role-card'); if(b) show(b.getAttribute('data-id')); });
+  show('val');
+
+  var tasks = [
+    {t:'Flag that "the system should be fast" has no measurable threshold.', a:'val', why:'Catching untestable input is the Validator\'s job, and it has to happen before anyone builds on it.'},
+    {t:'Write pytest functions for each step in sequence.md.', a:'gen', why:'Producing the executable artifact from the plan is the Generator\'s job.'},
+    {t:'Order test steps so "create" runs before "update" and "delete".', a:'bld', why:'Turning criteria into an ordered plan with preconditions is the Builder\'s job.'},
+    {t:'Confirm every acceptance criterion is covered by at least one test.', a:'rev', why:'Tracing output back to the criteria from an independent view is the Reviewer\'s job.'},
+    {t:'Reject a test that asserts on an HTTP field the spec never mentions.', a:'rev', why:'The Reviewer judges the output against the original criteria and sends it back with findings rather than fixing it.'},
+    {t:'Ask for clarification: which user roles may delete a record?', a:'val', why:'A missing actor or permission is a completeness gap, so the Validator raises it.'}
+  ];
+  var idx = 0, score = 0, answered = 0, locked = false;
+  function renderTask(){
+    locked = false;
+    $('gameTask').textContent = '“'+tasks[idx].t+'”';
+    $('gameFb').innerHTML = '';
+    $('gameNext').disabled = true;
+    $('gameBtns').innerHTML = roles.map(function(r){ return '<button class="btn btn-sm" data-id="'+r.id+'">'+r.ico+' '+r.name+'</button>'; }).join('');
+  }
+  $('gameBtns').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b || locked) return;
+    locked = true; answered++;
+    var ok = b.getAttribute('data-id') === tasks[idx].a;
+    if(ok) score++;
+    var right = roles.filter(function(r){ return r.id === tasks[idx].a; })[0];
+    $('gameFb').innerHTML = (ok ? '<span style="color:var(--good);font-weight:700">✓ Correct.</span> ' : '<span style="color:var(--danger);font-weight:700">✗ It\'s the '+right.name+'.</span> ') + '<span class="dim">'+tasks[idx].why+'</span>';
+    $('gameScore').textContent = score+' / '+answered;
+    $('gameNext').disabled = false;
+    $('gameNext').textContent = idx === tasks.length-1 ? '↺ Play again' : 'Next task →';
+  });
+  $('gameNext').addEventListener('click', function(){
+    if(idx === tasks.length-1){ idx = 0; score = 0; answered = 0; $('gameScore').textContent = '0 / 0'; }
+    else idx++;
+    renderTask();
+  });
+  renderTask();
+})();
+
+/* ============================================================
+   3. Subagent context visualizer
+   ============================================================ */
+(function(){
+  var nSub = 1;
+  function w(el, pct){ el.style.width = Math.max(0, pct)+'%'; }
+  function update(){
+    var files = +$('filesRange').value;
+    $('filesVal').textContent = files;
+    var sys = 10, task = 8, per = 1.15;
+    // Inline: everything lands in the parent
+    var fileCtx = files*per;
+    var inlineTotal = sys + task + fileCtx;
+    w($('iSys'), sys); w($('iTask'), task); w($('iFiles'), Math.min(100 - sys - task, fileCtx));
+    $('inlinePct').textContent = Math.round(Math.min(100, inlineTotal)) + '%' + (inlineTotal > 100 ? ' (overflow!)' : '');
+    var warn = $('inlineWarn');
+    if(inlineTotal > 100){ warn.innerHTML = '<span style="color:var(--danger)">⚠ Context overflow: earlier instructions get summarized away or dropped.</span>'; }
+    else if(inlineTotal > 75){ warn.innerHTML = '<span style="color:var(--warn)">⚠ Crowded: rules and the original goal compete with raw tool output.</span>'; }
+    else { warn.innerHTML = '<span style="color:var(--good)">✓ Fits. At this size, delegating is optional.</span>'; }
+    // Delegated
+    var sum = nSub*4;
+    w($('dSys'), sys); w($('dTask'), task); w($('dSum'), sum);
+    $('delPct').textContent = Math.round(sys + task + sum) + '%';
+    var perSub = Math.ceil(files / nSub);
+    var html = '';
+    for(var i=0;i<3;i++){
+      var on = i < nSub;
+      var subFill = 6 + perSub*per;
+      html += '<div class="sub-box'+(on?'':' off')+'"><span class="tag">subagent '+(i+1)+'</span>'+
+        '<div class="ctx-bar" style="height:14px"><div class="ctx-seg seg-task" style="width:6%"></div><div class="ctx-seg seg-files" style="width:'+(on?Math.min(94, perSub*per):0)+'%"></div></div>'+
+        '<div class="tag" style="margin-top:6px;text-transform:none">'+(on ? perSub+' files · '+Math.round(Math.min(100, subFill))+'%' : 'idle')+'</div></div>';
+    }
+    $('subGrid').innerHTML = html;
+  }
+  $('filesRange').addEventListener('input', update);
+  document.querySelectorAll('#subSeg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#subSeg button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on'); nSub = +b.getAttribute('data-n'); update();
+    });
+  });
+  update();
+})();
+
+/* ============================================================
+   4. Failure lab
+   ============================================================ */
+(function(){
+  var timers = [];
+  function outcome(type, attempt, feedback){
+    switch(type){
+      case 'none': return 'ok';
+      case 'transient': return attempt <= 2 ? '503' : 'ok';
+      case 'timeout': return attempt === 1 ? 'hang' : 'ok';
+      case 'permanent': return '401';
+      case 'badoutput': return attempt === 1 ? 'invalid' : (feedback ? 'ok' : 'invalid');
+    }
+  }
+  function drawBudget(max, states){
+    var h = '';
+    for(var i=0;i<max;i++){ h += '<span class="'+(states[i]||'')+'"></span>'; }
+    $('budget').innerHTML = h;
+    $('budgetLbl').textContent = 'attempt budget · '+states.filter(Boolean).length+' / '+max+' used';
+  }
+  $('retryRange').addEventListener('input', function(){ $('retryVal').textContent = this.value; });
+  $('failRun').addEventListener('click', function(){
+    timers.forEach(clearTimeout); timers = [];
+    var type = $('failType').value, maxR = +$('retryRange').value;
+    var optT = $('optTimeout').checked, optB = $('optBackoff').checked, optF = $('optFeedback').checked, optC = $('optClassify').checked;
+    var maxAttempts = maxR + 1;
+    var con = $('failConsole'), verdict = $('failVerdict');
+    con.innerHTML = ''; verdict.className = 'verdict'; verdict.innerHTML = '';
+    var states = [];
+    drawBudget(maxAttempts, states);
+    var lines = [], clock = 0, final = null;
+    function L(cls, txt, budgetState){ lines.push({cls:cls, txt:txt, b:budgetState}); }
+    L('mt', '[run 7f3a] stage=api_validator  retries='+maxR+'  timeout='+(optT?'30s':'none')+'  backoff='+(optB?'exp':'off'));
+    for(var a=1; a<=maxAttempts; a++){
+      var r = outcome(type, a, optF);
+      L('in', '[t+'+clock+'s] attempt '+a+'/'+maxAttempts+' → POST /validate tests/test_api.py');
+      if(r === 'ok'){
+        clock += 4;
+        L('ok', '[t+'+clock+'s] ✓ 200 OK, api_report.json passes schema check. Handing off to reviewer.', 'okk');
+        final = a === 1 ? {k:'good', m:'<b>Recovered.</b> The stage passed on the first attempt and the next stage gets a valid artifact.'}
+                        : {k:'good', m:'<b>Recovered after '+(a-1)+' retr'+(a-1===1?'y':'ies')+'.</b> The policy matched the failure type, so the retries were worth it. Both attempts are in the trace, so the cost is visible.'};
+        break;
+      }
+      if(r === 'hang'){
+        if(!optT){
+          L('wr', '[t+'+clock+'s] … waiting for response');
+          L('wr', '[t+'+(clock+120)+'s] … still waiting');
+          L('err', '[t+'+(clock+3600)+'s] … still waiting. No timeout is set, so nothing will stop this call.', 'bad');
+          final = {k:'bad', m:'<b>Stuck.</b> With no timeout, one hung call blocks the whole pipeline indefinitely and holds its budget and locks. Always set a limit on each attempt.'};
+          break;
+        }
+        clock += 30;
+        L('err', '[t+'+clock+'s] ✗ timeout after 30s, attempt aborted', 'used');
+      } else if(r === '503'){
+        clock += 1;
+        L('err', '[t+'+clock+'s] ✗ 503 Service Unavailable (transient)', 'used');
+      } else if(r === 'invalid'){
+        clock += 5;
+        L('err', '[t+'+clock+'s] ✗ schema check FAIL: test_update_user missing "expected_status"', 'used');
+      } else if(r === '401'){
+        clock += 1;
+        L('err', '[t+'+clock+'s] ✗ 401 Unauthorized (permanent)', 'used');
+        if(optC){
+          L('wr', '[t+'+clock+'s] classified NON-RETRYABLE → fail fast, retries skipped');
+          final = {k:'warn', m:'<b>Failed fast, as intended.</b> Retrying wouldn\'t fix a bad credential. The pipeline stopped, the downstream stages never ran, and the log says what to fix.'};
+          break;
+        }
+      }
+      if(a < maxAttempts){
+        var wait = optB ? Math.pow(2, a) : 0;
+        var note = r === 'invalid' ? (optF ? 'retry WITH validator error appended to prompt' : 'blind retry with the SAME prompt') :
+                   r === '401' ? 'retrying a permanent error (wasted call)' :
+                   (optB ? 'backoff '+wait+'s before retry' : 'immediate retry (no backoff), adding load to a struggling service');
+        L('wr', '[t+'+clock+'s] ↻ '+note);
+        clock += wait;
+      } else {
+        L('err', '[t+'+clock+'s] ■ retry budget exhausted → escalate to human, downstream stages NOT run');
+        if(r === '401') final = {k:'bad', m:'<b>Wasted budget.</b> All '+maxAttempts+' attempts hit the same permanent error. Classify errors so a 401 fails fast on the first attempt.'};
+        else if(r === 'invalid' && !optF) final = {k:'bad', m:'<b>Same input, same failure.</b> A blind retry repeats the same mistake. Include the validator\'s error in the retry prompt so the agent can fix it.'};
+        else if(maxR === 0) final = {k:'warn', m:'<b>Halted safely, but early.</b> Zero retries means one blip stops the run. Allow a small number of retries for transient failures.'};
+        else final = {k:'warn', m:'<b>Halted safely.</b> The budget ran out before the stage recovered. Stopping and escalating is the correct outcome here, better than looping forever.'};
+      }
+    }
+    lines.forEach(function(ln, i){
+      timers.push(setTimeout(function(){
+        var d = document.createElement('div');
+        d.className = 'l '+ln.cls; d.textContent = ln.txt;
+        con.appendChild(d); con.scrollTop = con.scrollHeight;
+        if(ln.b){ states.push(ln.b); drawBudget(maxAttempts, states); }
+        if(i === lines.length-1 && final){ verdict.className = 'verdict show '+final.k; verdict.innerHTML = final.m; }
+      }, i*420));
+    });
+  });
+  drawBudget(3, []);
+})();
+
+/* ============================================================
+   5. Granularity chart + decision helper
+   ============================================================ */
+(function(){
+  var svg = $('gChart');
+  var X0=44, X1=585, Y0=236, Y1=16;
+  function bx(n){ return X0 + (n-1)/7*(X1-X0); }
+  function by(v){ return Y0 - v/100*(Y0-Y1); }
+  function benefit(n){ return 100*(1-Math.exp(-0.6*n)); }
+  function overhead(n){ return 6*Math.pow(n-1, 1.4); }
+  function net(n){ return benefit(n) - overhead(n); }
+  function path(fn){
+    var d = '';
+    for(var i=0;i<=70;i++){ var n = 1 + i/10; d += (i?'L':'M') + bx(n).toFixed(1)+' '+by(Math.max(0, Math.min(100, fn(n)))).toFixed(1); }
+    return d;
+  }
+  var notes = {
+    1:'<b>1 agent.</b> No handoffs and cheapest to run. But the same model writes and checks its own work, so nothing reviews it independently.',
+    2:'<b>2 agents.</b> A doer and an independent checker. This is often all you need.',
+    3:'<b>3 agents: the sweet spot here.</b> Validate, generate, and review. Each boundary is also a PASS/FAIL gate.',
+    4:'<b>4 agents.</b> Still reasonable if each role has different tools or permissions. Check that every handoff carries a real artifact.',
+    5:'<b>5 agents.</b> This is the Module 16 lab, and it works because each stage has a distinct tool: spec, sequencer, pytest, API schema, review. Without that, merge some roles.',
+    6:'<b>6 agents.</b> Overhead is growing fast. Ask whether any agent could be a rule, a skill, or a step inside another agent.',
+    7:'<b>7 agents.</b> Tracing, token cost, and failure points now cost more than the specialization gives back.',
+    8:'<b>8 agents.</b> An agent zoo. Debugging means reading 8 transcripts, and each one is a place to fail. Simplify.'
+  };
+  function draw(n){
+    var g = '';
+    for(var v=0; v<=100; v+=25){ g += '<line x1="'+X0+'" x2="'+X1+'" y1="'+by(v)+'" y2="'+by(v)+'" stroke="var(--border-soft)"/><text x="'+(X0-8)+'" y="'+(by(v)+4)+'" text-anchor="end">'+v+'</text>'; }
+    for(var k=1;k<=8;k++){ g += '<text x="'+bx(k)+'" y="'+(Y0+18)+'" text-anchor="middle">'+k+'</text>'; }
+    g += '<text x="'+((X0+X1)/2)+'" y="266" text-anchor="middle">agents</text>';
+    var peak = 1; for(var p=1;p<=8;p++){ if(net(p) > net(peak)) peak = p; }
+    g += '<rect x="'+(bx(peak)-26)+'" y="'+Y1+'" width="52" height="'+(Y0-Y1)+'" fill="var(--good)" opacity="0.07" rx="6"/>';
+    g += '<path d="'+path(benefit)+'" fill="none" stroke="var(--accent-2)" stroke-width="2.5"/>';
+    g += '<path d="'+path(overhead)+'" fill="none" stroke="var(--danger)" stroke-width="2.5"/>';
+    g += '<path d="'+path(net)+'" fill="none" stroke="var(--good)" stroke-width="3"/>';
+    g += '<line x1="'+bx(n)+'" x2="'+bx(n)+'" y1="'+Y1+'" y2="'+Y0+'" stroke="var(--text-faint)" stroke-dasharray="3 4"/>';
+    g += '<circle cx="'+bx(n)+'" cy="'+by(Math.max(0,net(n)))+'" r="6" fill="var(--good)" stroke="var(--surface)" stroke-width="2"/>';
+    g += '<circle cx="'+bx(n)+'" cy="'+by(benefit(n))+'" r="4" fill="var(--accent-2)"/>';
+    g += '<circle cx="'+bx(n)+'" cy="'+by(Math.min(100,overhead(n)))+'" r="4" fill="var(--danger)"/>';
+    svg.innerHTML = g;
+    $('nVal').textContent = n;
+    $('nNote').innerHTML = notes[n] + '<br><span class="mono" style="font-size:12px;color:var(--text-faint)">handoffs: '+(n-1)+' · failure points: '+n+' · net value: '+Math.round(net(n))+'</span>';
+  }
+  $('nRange').addEventListener('input', function(){ draw(+this.value); });
+  draw(3);
+
+  var qs = [
+    'Does the output need an independent check before anyone uses it?',
+    'Is the exploration too big for one context window (many files or sources)?',
+    'Are there distinct stages that need different tools or permissions?',
+    'Will this run repeatedly, or without a person watching?'
+  ];
+  var rungs = [
+    {b:'Single prompt in Agent chat', d:'Do it directly. Adding orchestration would only add overhead.'},
+    {b:'A rule or skill', d:'Save the know-how once so every run follows it (Module 8 / 10).'},
+    {b:'Main agent + a subagent', d:'Hand exploration or review to a fresh context and keep the main thread clean.'},
+    {b:'Multi-agent pipeline with gates', d:'Separate roles, handoff artifacts, retries, and a trace. Worth the overhead at this point.'}
+  ];
+  var ans = [false,false,false,false];
+  $('qList').innerHTML = qs.map(function(q,i){
+    return '<div class="q-item"><span>'+q+'</span><span class="yn" data-i="'+i+'"><button data-v="1">Yes</button><button data-v="0" class="on">No</button></span></div>';
+  }).join('');
+  function renderLadder(){
+    var yes = ans.filter(Boolean).length;
+    var level = yes === 0 ? 0 : yes === 1 ? 1 : yes === 2 ? 2 : 3;
+    $('ladder').innerHTML = rungs.map(function(r,i){ return '<div class="rung'+(i===level?' on':'')+'"><b>'+(i===level?'👉 ':'')+r.b+'</b>'+r.d+'</div>'; }).join('');
+  }
+  $('qList').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    var grp = b.parentNode, i = +grp.getAttribute('data-i');
+    grp.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on'); ans[i] = b.getAttribute('data-v') === '1';
+    renderLadder();
+  });
+  renderLadder();
+})();
+
+/* ============================================================
+   6. Trace waterfall + native/external sorter
+   ============================================================ */
+(function(){
+  var spans = [
+    {n:'pipeline.run', s:0, e:100, c:'root', d:{span:'root', agent:'orchestrator', status:'ok', duration_s:94, tokens_total:61840, cost_usd:1.38, retries_total:1, note:'One root span, and every agent span below is a child of it.'}},
+    {n:'req_validator', s:0, e:9, c:'ok', d:{span:'s1', agent:'req_validator', input:'REQ-2481.md#sha:9c1e', output:'validated_req.json', gate:'PASS', criteria:4, tokens:5210, duration_s:8.4}},
+    {n:'sequence_builder', s:9, e:22, c:'ok', d:{span:'s2', agent:'sequence_builder', input:'validated_req.json', output:'sequence.md', steps:5, tokens:7930, duration_s:12.2}},
+    {n:'test_generator', s:22, e:46, c:'ok', d:{span:'s3', agent:'test_generator', mode:'subagent (fresh context)', output:'tests/test_api.py', tests:11, tokens:14880, duration_s:22.5}},
+    {n:'api_validator #1', s:46, e:53, c:'fail', d:{span:'s4', agent:'api_validator', attempt:1, gate:'FAIL', error:'test_update_user: missing expected_status', action:'retry test_generator with error feedback', tokens:4120}},
+    {n:'test_generator ↻', s:53, e:66, c:'ok', d:{span:'s5', agent:'test_generator', attempt:2, parent_cause:'s4', prompt_delta:'+ validator error', output:'tests/test_api.py (rev 2)', tokens:9340}},
+    {n:'api_validator #2', s:66, e:73, c:'ok', d:{span:'s6', agent:'api_validator', attempt:2, gate:'PASS', output:'api_report.json', tokens:3960}},
+    {n:'reviewer', s:73, e:90, c:'ok', d:{span:'s7', agent:'reviewer', context:'independent (artifacts only)', verdict:'APPROVE', findings:1, traceability:'4/4 criteria', tokens:16400}},
+    {n:'human_approval', s:90, e:100, c:'wait', d:{span:'s8', actor:'human:qa-lead', decision:'approved', commit:'a41f0e2', note:'Human decisions are logged in the same trace.'}}
+  ];
+  var wf = $('waterfall');
+  wf.innerHTML = spans.map(function(sp, i){
+    var indent = i === 0 ? '' : '&nbsp;&nbsp;';
+    return '<div class="wf-row" data-i="'+i+'"><span class="wf-name">'+indent+esc(sp.n)+'</span><div class="wf-track"><div class="wf-bar '+sp.c+'" style="left:'+sp.s+'%;width:'+(sp.e-sp.s)+'%"></div></div></div>';
+  }).join('');
+  function show(i){
+    wf.querySelectorAll('.wf-row').forEach(function(r){ r.classList.toggle('on', +r.getAttribute('data-i') === i); });
+    var obj = Object.assign({trace_id:'7f3a…c21'}, spans[i].d);
+    $('spanJson').textContent = JSON.stringify(obj, null, 2);
+  }
+  wf.addEventListener('click', function(e){ var r = e.target.closest('.wf-row'); if(r) show(+r.getAttribute('data-i')); });
+  show(4);
+
+  var items = [
+    {t:'Subagents launched from an Agent chat', a:'n', why:'Cursor Agent can delegate work to subagents, each with its own context.'},
+    {t:'Project rules / AGENTS.md shaping every agent', a:'n', why:'Rules and AGENTS.md are loaded by Cursor itself.'},
+    {t:'Skills an agent loads on demand', a:'n', why:'Skills are a Cursor-native way to package reusable know-how.'},
+    {t:'Hooks that run before/after agent actions', a:'n', why:'Cursor hooks can check, block, or log agent lifecycle events.'},
+    {t:'Parallel agents on separate worktrees', a:'n', why:'Cursor can run several agents side by side, each in its own worktree.'},
+    {t:'Durable retries that resume after a crash, days later', a:'x', why:'Persisting state across restarts needs a workflow engine (e.g., Temporal, LangGraph checkpoints).'},
+    {t:'Trigger the pipeline on every PR in CI', a:'x', why:'Triggering is done by CI (e.g., GitHub Actions), which can call a headless agent CLI.'},
+    {t:'Org-wide trace store and dashboards', a:'x', why:'Collecting traces across runs needs an observability backend (OpenTelemetry, Langfuse, etc.).'},
+    {t:'Queue fan-out across hundreds of repos', a:'x', why:'Large-scale scheduling and queues belong in an external orchestrator.'}
+  ];
+  var place = items.map(function(){ return 0; }); // 0 pool, 1 native, 2 external
+  function render(checked){
+    var pool = '', nat = '', ext = '';
+    items.forEach(function(it, i){
+      var cls = '';
+      if(checked && place[i] !== 0){ cls = ((place[i] === 1 && it.a === 'n') || (place[i] === 2 && it.a === 'x')) ? ' right' : ' wrong'; }
+      var chip = '<button class="chip'+cls+'" data-i="'+i+'" title="'+(checked?esc(it.why):'')+'">'+esc(it.t)+'</button>';
+      if(place[i] === 0) pool += chip; else if(place[i] === 1) nat += chip; else ext += chip;
+    });
+    $('sortPool').innerHTML = pool || '<span class="hint">All sorted. Press Check.</span>';
+    $('bNative').innerHTML = nat; $('bExternal').innerHTML = ext;
+  }
+  function onChip(e){
+    var c = e.target.closest('.chip'); if(!c) return;
+    var i = +c.getAttribute('data-i'); place[i] = (place[i] + 1) % 3;
+    $('sortFb').innerHTML = ''; render(false);
+  }
+  ['sortPool','bNative','bExternal'].forEach(function(id){ $(id).addEventListener('click', onChip); });
+  $('sortCheck').addEventListener('click', function(){
+    render(true);
+    var sorted = 0, right = 0, wrongs = [];
+    items.forEach(function(it, i){
+      if(place[i] === 0) return; sorted++;
+      if((place[i] === 1 && it.a === 'n') || (place[i] === 2 && it.a === 'x')) right++; else wrongs.push(it);
+    });
+    var msg = '<b>'+right+' / '+items.length+' correct</b>' + (sorted < items.length ? ' · '+(items.length-sorted)+' still unsorted' : '');
+    if(wrongs.length){ msg += '<ul style="margin:8px 0 0;padding-left:18px;color:var(--text-dim)">'+wrongs.map(function(w){ return '<li>'+esc(w.t)+': '+esc(w.why)+'</li>'; }).join('')+'</ul>'; }
+    else if(sorted === items.length){ msg += ' · <span style="color:var(--good)">Rule of thumb: Cursor handles the agents; external systems handle scheduling, persistence, and fleet-wide traces.</span>'; }
+    $('sortFb').innerHTML = msg;
+  });
+  $('sortReset').addEventListener('click', function(){ place = items.map(function(){ return 0; }); $('sortFb').innerHTML = ''; render(false); });
+  render(false);
+})();
+
+/* ============================================================
+   7. Hands-on diagram walkthrough + checklist
+   ============================================================ */
+(function(){
+  var steps = [
+    {t:'1 · Input: a versioned requirement', b:'The pipeline starts from a file, <code>REQ-2481.md</code>, not from a chat message. Every later artifact can then be traced to a specific version of the source.', q:'If someone edits the requirement mid-run, how would you know which version the tests were built from?'},
+    {t:'2 · Validator + gates: fail at the cheapest point', b:'The Validator runs first, and a <span style="color:var(--warn)">◆ gate</span> follows every stage with a machine-checkable PASS/FAIL. An untestable requirement stops here, before any tests are generated.', q:'What exact condition makes this first gate FAIL? Can a script check it, or does it need judgment?'},
+    {t:'3 · Handoffs: explicit artifacts', b:'Each arrow carries a named file: <code>validated_req.json → sequence.md → tests/*.py → api_report.json</code>. The artifact is the only state passed along. No agent reads another agent\'s chat.', q:'Could you rerun just the Test Generator using only the artifact on its incoming arrow?'},
+    {t:'4 · Test Generator runs as a subagent', b:'Generating tests means reading a lot of code. Running it in a subagent with a fresh context keeps the orchestrator\'s context small, and only the test files come back.', q:'What does the brief to this subagent need to include, given it can\'t see the conversation so far?'},
+    {t:'5 · The retry loop is bounded and carries feedback', b:'When the API Validator FAILs, it sends its error back to the Test Generator. That retry is limited to <b>2</b> attempts. After that, the pipeline halts and escalates to a person.', q:'What happens on the third failure, and which downstream stages are guaranteed NOT to run?'},
+    {t:'6 · Reviewer has an independent context', b:'The Reviewer sees the artifacts and the original criteria, but not the Generator\'s reasoning. If it could read the Generator\'s justifications, it would tend to agree with them. It has read-only access and reports findings without fixing them.', q:'What should the Reviewer do if it finds a gap: fix it, or send it back? Why?'},
+    {t:'7 · Human sign-off before the commit', b:'An agent approves the tests, but a person commits them. This checkpoint is where accountability sits (more on this in Module 17).', q:'What does the human need to see in order to decide in under two minutes?'},
+    {t:'8 · Budget and trace cover the whole run', b:'The run has a budget (steps, time, and cost). One <code>trace_id</code> ties all the spans together, including the failed attempt, so you can answer "what happened and what did it cost?" later.', q:'Which field in the trace would show you that the retry loop doubled this stage\'s cost?'}
+  ];
+  var cur = 0, svg = $('pipeSvg');
+  var dots = $('stepDots');
+  dots.innerHTML = steps.map(function(){ return '<span></span>'; }).join('');
+  function go(n){
+    cur = n;
+    svg.classList.toggle('focus', n > 0);
+    svg.querySelectorAll('.hl').forEach(function(g){ g.classList.toggle('lit', +g.getAttribute('data-step') === n); });
+    dots.querySelectorAll('span').forEach(function(d, i){ d.classList.toggle('on', i < n); });
+    $('stepTag').textContent = 'Step '+n+' / '+steps.length;
+    $('stepPrev').disabled = n <= 1;
+    if(n === 0){
+      $('stepTitle').textContent = 'Press Start to walk through the pipeline';
+      $('stepBody').innerHTML = 'Each step highlights one part of the diagram and explains the design choice behind it.';
+      $('stepAsk').style.display = 'none'; $('stepNext').textContent = 'Start →'; return;
+    }
+    var s = steps[n-1];
+    $('stepTitle').textContent = s.t;
+    $('stepBody').innerHTML = s.b;
+    $('stepAsk').style.display = 'block';
+    $('stepAsk').innerHTML = '🤔 <b>Ask yourself:</b> '+s.q;
+    $('stepNext').textContent = n === steps.length ? '↺ Restart' : 'Next →';
+  }
+  $('stepNext').addEventListener('click', function(){ go(cur >= steps.length ? 1 : cur + 1); });
+  $('stepPrev').addEventListener('click', function(){ if(cur > 1) go(cur - 1); });
+  $('stepAll').addEventListener('click', function(){ go(0); });
+  svg.querySelectorAll('.hs').forEach(function(h){ h.addEventListener('click', function(){ go(+h.getAttribute('data-go')); }); });
+
+  var checks = [
+    'The input is a versioned file, not a chat message',
+    'Every agent has exactly one role and a written contract',
+    'Every arrow names the artifact it carries',
+    'A PASS/FAIL gate follows every stage',
+    'Parallel branches (if any) write to separate keys and merge once',
+    'Retries are bounded, include the error, and permanent errors fail fast',
+    'The reviewer has an independent context, and a person signs off',
+    'One trace_id covers every span, retries included, and there is a budget'
+  ];
+  var state = checks.map(function(){ return false; });
+  $('hoList').innerHTML = checks.map(function(c, i){ return '<div class="check-item" data-i="'+i+'"><span class="check-box">✓</span><span class="check-label">'+c+'</span></div>'; }).join('');
+  $('hoList').addEventListener('click', function(e){
+    var r = e.target.closest('.check-item'); if(!r) return;
+    var i = +r.getAttribute('data-i'); state[i] = !state[i]; r.classList.toggle('checked', state[i]);
+    var n = state.filter(Boolean).length;
+    $('hoFill').style.width = (n/checks.length*100)+'%';
+    $('hoLabel').textContent = n+' / '+checks.length+' checked';
+    $('hoDone').classList.toggle('show', n === checks.length);
+  });
+})();
+
+/* ============================================================
+   Quiz
+   ============================================================ */
+(function(){
+  var qs = [
+    {q:'Unit, API, and e2e tests are each generated from the same sequence.md, and none needs the others. Which topology fits?', o:['Strictly sequential: unit → api → e2e','Parallel fan-out to three generators, then one merge/review step','One agent generates all three in a single prompt','A mesh where each generator reviews the others'], a:1, e:'The branches are independent, so fan them out. Each writes its own keys, and a single merge/review step joins the results.'},
+    {q:'Why delegate a large codebase exploration to a subagent?', o:['Subagents use a smarter model','The raw exploration stays in the subagent\'s context, and only a summary comes back to the parent','Subagents skip project rules','It makes the task run sequentially'], a:1, e:'The parent context stays small, so the original goal and rules aren\'t crowded out by tool output.'},
+    {q:'The API Validator gets 401 Unauthorized on its first call. Best policy?', o:['Retry 4 times with exponential backoff','Retry once immediately','Classify it as non-retryable, fail fast, and report what needs fixing','Skip the stage and continue downstream'], a:2, e:'A permanent error gives the same result every time. Retrying only uses up budget.'},
+    {q:'What should the Reviewer agent receive?', o:['The Generator\'s full chat transcript and reasoning','The artifacts plus the original acceptance criteria, in a fresh context','Write access so it can fix issues directly','Only the final test count'], a:1, e:'An independent context avoids simply agreeing with the Generator\'s reasoning. The Reviewer reports findings, and the Generator retries.'},
+    {q:'A task needs one small file edit, with no verification step and no special tools. How many agents?', o:['One. Adding orchestration here is only overhead','Two: a doer and a reviewer','Four: the standard V-B-G-R pipeline','As many as there are files in the repo'], a:0, e:'Use the smallest number of agents that does the job. Every added agent is another handoff and another way to fail.'},
+    {q:'Which of these requires external workflow orchestration rather than Cursor-native features?', o:['A subagent exploring the codebase','Project rules applied to every agent','A pipeline that persists state and resumes after a crash days later','A hook that logs each agent action'], a:2, e:'Durable state, scheduling, and resuming after a crash are the job of workflow engines and CI, not an editor session.'}
+  ];
+  var container = $('quizQuestions');
+  var picks = qs.map(function(){ return -1; });
+  container.innerHTML = qs.map(function(q, qi){
+    return '<div class="quiz-q"><div class="quiz-q-title">'+(qi+1)+'. '+esc(q.q)+'</div><div class="quiz-opts">'+
+      q.o.map(function(o, oi){ return '<div class="quiz-opt" data-q="'+qi+'" data-o="'+oi+'">'+esc(o)+'</div>'; }).join('')+
+      '</div><div class="quiz-explain" id="qe'+qi+'">'+esc(q.e)+'</div></div>';
+  }).join('');
+  var locked = false;
+  container.addEventListener('click', function(e){
+    var el = e.target.closest('.quiz-opt'); if(!el || locked) return;
+    var qi = +el.getAttribute('data-q');
+    container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){ x.classList.remove('selected'); });
+    el.classList.add('selected'); picks[qi] = +el.getAttribute('data-o');
+  });
+  $('quizCheck').addEventListener('click', function(){
+    locked = true; var score = 0;
+    qs.forEach(function(q, qi){
+      if(picks[qi] === q.a) score++;
+      container.querySelectorAll('.quiz-opt[data-q="'+qi+'"]').forEach(function(x){
+        var oi = +x.getAttribute('data-o');
+        if(oi === q.a) x.classList.add('correct');
+        else if(oi === picks[qi]) x.classList.add('incorrect');
+      });
+      $('qe'+qi).classList.add('show');
+    });
+    $('quizScoreText').textContent = score+'/'+qs.length;
+    $('quizScoreMsg').textContent = score === qs.length ? 'All correct. You\'re ready for the Module 16 lab.' : score >= 4 ? 'Solid. Read the explanations for the ones you missed.' : 'Go back over the failure lab and the granularity dial, then try again.';
+    $('quizScore').classList.add('show');
+    $('quizCheck').style.display = 'none';
+  });
+  $('quizRetry').addEventListener('click', function(){
+    locked = false; picks = qs.map(function(){ return -1; });
+    container.querySelectorAll('.quiz-opt').forEach(function(x){ x.classList.remove('selected','correct','incorrect'); });
+    container.querySelectorAll('.quiz-explain').forEach(function(x){ x.classList.remove('show'); });
+    $('quizScore').classList.remove('show'); $('quizCheck').style.display = '';
+  });
+})();
+
+})();
+</script>
+</body>
+</html>

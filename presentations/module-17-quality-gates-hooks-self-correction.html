@@ -1,0 +1,1127 @@
+<title>Quality Gates &amp; Hooks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ fill:var(--ink-soft); }
+  .lbl-strong{ fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+
+  /* Module 15 additions */
+  .hero-figure{ margin:0 0 44px; padding:18px 22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .hero-figure svg{ display:block; width:100%; height:auto; min-width:560px; }
+  .flow-dot{ fill:var(--plum); }
+  .flow-dot.copper{ fill:var(--copper); } .flow-dot.teal{ fill:var(--teal); }
+  .dash-flow{ stroke-dasharray:5 6; animation:dashmove 1.4s linear infinite; }
+  @keyframes dashmove{ to{ stroke-dashoffset:-22; } }
+  @media (prefers-reduced-motion:reduce){ .dash-flow{ animation:none; } }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+  @media (max-width:680px){ .split{ grid-template-columns:1fr; } }
+  .mini-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .mini-card h3{ font-size:16px; margin:0 0 8px; }
+  .mini-card p, .mini-card li{ font-size:13.5px; color:var(--ink-soft); }
+  .mini-card p{ margin:0; }
+  .mini-card ul{ margin:0; padding-left:18px; }
+  .mini-card li{ margin:3px 0; }
+  .mini-card.good{ border-top:3px solid var(--teal); }
+  .mini-card.warn{ border-top:3px solid var(--copper); }
+  .mini-card.bad{ border-top:3px solid var(--brick); }
+  .mini-card.plum{ border-top:3px solid var(--plum); }
+
+  .role-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:32px; }
+  @media (max-width:900px){ .role-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .role-grid{ grid-template-columns:1fr; } }
+  .role-card{ position:relative; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 18px 18px; overflow:hidden; }
+  .role-card::before{ content:""; position:absolute; left:0; top:0; right:0; height:4px; background:var(--accent); }
+  .role-icon{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); margin-bottom:12px; }
+  .role-icon svg{ width:22px; height:22px; }
+  .role-step{ font-family:var(--font-mono); font-size:11px; color:var(--accent); letter-spacing:.06em; text-transform:uppercase; margin:0 0 4px; }
+  .role-card h3{ font-size:19px; margin:0 0 6px; }
+  .role-card .q{ font-size:13.5px; font-style:italic; color:var(--ink); margin:0 0 12px; }
+  .role-card dl{ margin:0; font-size:12.5px; }
+  .role-card dt{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:8px; }
+  .role-card dd{ margin:2px 0 0; color:var(--ink); }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+  .chip{ font-family:var(--font-mono); font-size:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-radius:999px; padding:6px 14px; }
+  .chip b{ color:var(--plum); font-weight:600; }
+
+  .compare{ width:100%; border-collapse:collapse; margin-top:28px; font-size:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .compare-wrap{ overflow-x:auto; }
+  .compare th, .compare td{ text-align:left; padding:12px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .compare thead th{ font-family:var(--font-mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); background:var(--plum-tint); }
+  .compare tbody th{ font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--ink-soft); width:22%; }
+  .compare tr:last-child th, .compare tr:last-child td{ border-bottom:none; }
+
+  .toggle{ display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; padding:3px; margin-top:24px; background:var(--paper-raised); }
+  .toggle button{ font-family:var(--font-mono); font-size:12px; border:0; background:transparent; color:var(--ink-soft); padding:7px 16px; border-radius:999px; cursor:pointer; }
+  .toggle button[aria-pressed="true"]{ background:var(--plum); color:var(--paper); }
+
+  .walk{ list-style:none; margin:28px 0 0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:12px; counter-reset:walk; }
+  @media (max-width:680px){ .walk{ grid-template-columns:1fr; } }
+  .walk li{ counter-increment:walk; display:flex; gap:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; font-size:14px; }
+  .walk li::before{ content:counter(walk); flex:none; width:26px; height:26px; border-radius:50%; background:var(--plum); color:var(--paper); font-family:var(--font-mono); font-size:12px; display:grid; place-items:center; }
+  .walk strong{ display:block; margin-bottom:2px; }
+  .walk span{ color:var(--ink-soft); font-size:13.5px; }
+
+  /* Module 16 additions */
+  .timebar{ display:flex; gap:3px; margin:0 0 44px; max-width:860px; font-family:var(--font-mono); font-size:10.5px; }
+  .timebar .seg{ border-radius:6px; padding:8px 8px 7px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .timebar .seg b{ display:block; font-size:12px; font-weight:600; }
+  .timebar .a{ background:color-mix(in srgb, var(--teal) 16%, transparent); color:var(--teal); }
+  .timebar .brk{ background:var(--line); color:var(--ink-soft); }
+  .timebar .b{ background:color-mix(in srgb, var(--plum) 14%, transparent); color:var(--plum); }
+  .timebar-legend{ display:flex; gap:18px; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin:0 0 8px; }
+  @media (max-width:680px){ .timebar{ flex-wrap:wrap; } .timebar .seg{ flex:1 1 30% !important; } }
+
+  .split > *{ min-width:0; }
+  .split > .callout, .split > .mini-card{ align-self:start; }
+  pre.code{ margin:0; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-family:var(--font-mono); font-size:12.5px; line-height:1.6; color:var(--ink); }
+  pre.code .c{ color:var(--ink-soft); } pre.code .k{ color:var(--plum); font-weight:600; } pre.code .s{ color:var(--teal); } pre.code .m{ color:var(--copper); font-weight:600; } pre.code .e{ color:var(--brick); font-weight:600; }
+  .code-label{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:0 0 8px; }
+  .stack{ margin-top:24px; }
+
+  .doc-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:14px; }
+  .doc-card h3{ font-size:16px; margin:0 0 6px; }
+  .doc-card .story{ color:var(--ink-soft); font-style:italic; margin:0 0 10px; }
+  .doc-card ul{ list-style:none; margin:0; padding:0; }
+  .doc-card li{ padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .doc-card li code{ margin-right:6px; }
+  .doc-card li.flag{ background:color-mix(in srgb, var(--copper) 12%, transparent); border-radius:6px; padding:7px 8px; border-top-color:transparent; }
+  .flag-note{ font-family:var(--font-mono); font-size:11px; color:var(--copper); display:block; margin-top:4px; }
+
+  .callout{ margin-top:24px; display:flex; gap:14px; align-items:flex-start; padding:16px 20px; border-radius:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-left:4px solid var(--accent, var(--plum)); }
+  .callout p{ margin:0; font-size:14.5px; }
+  .callout .tag{ flex:none; font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent, var(--plum)); padding-top:2px; }
+
+  .checklist{ list-style:none; margin:0; padding:0; }
+  .checklist li{ position:relative; padding:6px 0 6px 24px; font-size:13.5px; color:var(--ink); }
+  .checklist li::before{ content:""; position:absolute; left:0; top:9px; width:14px; height:14px; border:1.5px solid var(--teal); border-radius:4px; background:color-mix(in srgb, var(--teal) 14%, transparent); }
+
+  .checkpoint{ margin-top:32px; display:flex; flex-wrap:wrap; gap:14px 22px; align-items:center; padding:18px 22px; border-radius:14px; border:1.5px dashed var(--teal); background:color-mix(in srgb, var(--teal) 7%, var(--paper-raised)); }
+  .checkpoint .tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); border:1px solid var(--teal); border-radius:999px; padding:5px 12px; }
+  .checkpoint p{ margin:0; font-size:14.5px; flex:1 1 320px; }
+
+  .pit-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:28px; }
+  @media (max-width:900px){ .pit-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .pit-grid{ grid-template-columns:1fr; } }
+  .pit{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .pit h3{ font-size:15px; margin:0 0 8px; }
+  .pit .see{ font-size:13px; color:var(--brick); margin:0 0 6px; }
+  .pit .fix{ font-size:13px; color:var(--teal); margin:0; }
+  .pit .see::before{ content:"You'll see: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+  .pit .fix::before{ content:"Fix: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+
+  .qa{ margin-top:28px; display:flex; flex-direction:column; gap:10px; }
+  .qa details{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:14px 18px; }
+  .qa summary{ cursor:pointer; font-size:14.5px; font-weight:600; list-style:none; display:flex; gap:12px; }
+  .qa summary::-webkit-details-marker{ display:none; }
+  .qa summary::before{ content:"+"; font-family:var(--font-mono); color:var(--plum); flex:none; width:12px; }
+  .qa details[open] summary::before{ content:"−"; }
+  .qa details p{ margin:10px 0 0 24px; font-size:14px; color:var(--ink-soft); }
+
+  /* Module 17 additions */
+  .trio{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:0 0 44px; }
+  @media (max-width:760px){ .trio{ grid-template-columns:1fr; } }
+  .trio .role-card .checks{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin:12px 0 6px; }
+  .trio .role-card .outs{ display:flex; flex-wrap:wrap; gap:6px; }
+  .trio .role-card .outs span{ font-family:var(--font-mono); font-size:11px; border:1px solid var(--accent); color:var(--accent); border-radius:999px; padding:2px 9px; }
+  .trio .role-card p.desc{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .sim{ margin-top:28px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .sim h3{ font-size:17px; margin:0 0 4px; }
+  .sim .hint{ font-size:13.5px; color:var(--ink-soft); margin:0 0 14px; }
+  .sim-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .sim-btns button{ font-family:var(--font-mono); font-size:12px; background:var(--paper); color:var(--ink); border:1px solid var(--line-strong); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  .sim-btns button:hover{ border-color:var(--plum); color:var(--plum); }
+  .sim-btns button[aria-pressed="true"]{ background:var(--plum); border-color:var(--plum); color:var(--paper); }
+  .sim-out{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  @media (max-width:680px){ .sim-out{ grid-template-columns:1fr; } }
+  .sim-cell{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-height:74px; }
+  .sim-cell .k{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:0 0 6px; }
+  .sim-cell .v{ font-family:var(--font-mono); font-size:13px; margin:0; word-break:break-word; }
+  .badge{ display:inline-block; font-family:var(--font-mono); font-size:12px; font-weight:600; border-radius:999px; padding:3px 12px; }
+  .badge.allow{ color:var(--teal); background:color-mix(in srgb, var(--teal) 16%, transparent); }
+  .badge.deny{ color:var(--brick); background:color-mix(in srgb, var(--brick) 16%, transparent); }
+  .badge.ask{ color:var(--copper); background:color-mix(in srgb, var(--copper) 18%, transparent); }
+  .sim-log{ margin-top:12px; }
+  .sim-log pre.code{ font-size:11.5px; }
+
+  .grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:24px; }
+  @media (max-width:900px){ .grid4{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .grid4{ grid-template-columns:1fr; } }
+  .grid4 .role-card h3{ font-size:16px; }
+  .grid4 .role-card p{ font-size:13px; color:var(--ink-soft); margin:0; }
+
+  .compare td.row-bad{ color:var(--brick); font-weight:600; }
+  .compare td.row-ok{ color:var(--copper); font-weight:600; }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#controls" data-target="controls"><span class="dot"></span><span class="rail-label">01 · The control layer</span></a>
+  <a href="#criteria" data-target="criteria"><span class="dot"></span><span class="rail-label">02 · PASS/FAIL criteria</span></a>
+  <a href="#loops" data-target="loops"><span class="dot"></span><span class="rail-label">03 · Correction loops</span></a>
+  <a href="#hooks" data-target="hooks"><span class="dot"></span><span class="rail-label">04 · Hooks</span></a>
+  <a href="#hitl" data-target="hitl"><span class="dot"></span><span class="rail-label">05 · Human checkpoints</span></a>
+  <a href="#bounds" data-target="bounds"><span class="dot"></span><span class="rail-label">06 · Bounded retries</span></a>
+  <a href="#failsafe" data-target="failsafe"><span class="dot"></span><span class="rail-label">07 · Gate logs &amp; fail-safe</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">08 · Hands-on walkthrough</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">09 · Recap &amp; self-check</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#controls" data-target="controls">01</a>
+  <a href="#criteria" data-target="criteria">02</a>
+  <a href="#loops" data-target="loops">03</a>
+  <a href="#hooks" data-target="hooks">04</a>
+  <a href="#hitl" data-target="hitl">05</a>
+  <a href="#bounds" data-target="bounds">06</a>
+  <a href="#failsafe" data-target="failsafe">07</a>
+  <a href="#handson" data-target="handson">08</a>
+  <a href="#recap" data-target="recap">09</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-teal" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-brick" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-brick" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-copper" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-copper" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-plum" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-plum" d="M0,0 L10,5 L0,10 Z"></path></marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 5 · Multi-Agent Orchestration Build — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Quality Gates, Hooks &amp; Self-Correction</h1>
+    <p class="lede hero-lede">Module 17 — 30 minutes plus a hands-on walkthrough, closing Day 5. In Module 16 <strong>you were the gate</strong>: you read each status, decided whether to continue, pasted findings back and counted rounds in your head. That doesn't scale and leaves no audit trail. This module replaces those manual decisions with controls you build into the pipeline.</p>
+
+    <div class="trio">
+      <article class="role-card" style="--accent:var(--copper)">
+        <div class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <p class="role-step">Between stages</p>
+        <h3>Gate</h3>
+        <p class="desc">Like a boarding-pass check: does this output meet the criteria to move to the next area?</p>
+        <p class="checks">Checks the result</p>
+        <div class="outs"><span>PASS</span><span>FAIL</span><span>NEEDS_HUMAN</span></div>
+      </article>
+      <article class="role-card" style="--accent:var(--plum)">
+        <div class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg></div>
+        <p class="role-step">Inside the agent loop</p>
+        <h3>Hook</h3>
+        <p class="desc">Like a metal detector: it fires automatically on every action of a given type, no matter who's acting.</p>
+        <p class="checks">Checks the action</p>
+        <div class="outs"><span>allow</span><span>deny</span><span>ask</span><span>+ log</span></div>
+      </article>
+      <article class="role-card" style="--accent:var(--teal)">
+        <div class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+        <p class="role-step">At high stakes</p>
+        <h3>Human checkpoint</h3>
+        <p class="desc">Like a supervisor signing off an unusual case: a named person decides, and who decided and why is recorded.</p>
+        <p class="checks">Owns the decision</p>
+        <div class="outs"><span>approve</span><span>reject</span><span>+ reason</span></div>
+      </article>
+    </div>
+
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">subtopic</span></li>
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">pipeline gates</span></li>
+      <li class="stat-tile"><span class="stat-num">30</span><span class="stat-label">minutes + walkthrough</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#controls"><span class="agenda-index">01</span><span>The control layer: gates, hooks, loops and checkpoints</span></a></li>
+      <li><a href="#criteria"><span class="agenda-index">02</span><span>Designing automated PASS/FAIL criteria between agent stages</span></a></li>
+      <li><a href="#loops"><span class="agenda-index">03</span><span>Correction loops: who retries, what feedback is reused, what reruns</span></a></li>
+      <li><a href="#hooks"><span class="agenda-index">04</span><span>Hooks for validation, policy enforcement, logging and lifecycle</span></a></li>
+      <li><a href="#hitl"><span class="agenda-index">05</span><span>Human-in-the-loop checkpoints: where and why</span></a></li>
+      <li><a href="#bounds"><span class="agenda-index">06</span><span>Bounded retries and avoiding infinite correction loops</span></a></li>
+      <li><a href="#failsafe"><span class="agenda-index">07</span><span>Logging gate decisions; fail-safe when checkers themselves fail</span></a></li>
+      <li><a href="#handson"><span class="agenda-index">08</span><span>Hands-on: walkthrough of a gate and hook configuration</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 01 -->
+<section class="deck-section" id="controls">
+  <div class="section-inner">
+    <p class="eyebrow">01 — Four mechanisms, four different questions</p>
+    <h2 class="section-title">A control layer on top of the Module 16 pipeline</h2>
+    <p class="lede">All four mechanisms "stop bad things", which is why they get mixed up. A <strong>gate</strong> judges an output between stages. A <strong>hook</strong> judges an action inside an agent. A <strong>correction loop</strong> decides what happens after a FAIL. A <strong>checkpoint</strong> hands a decision to a person. Bounds and fail-safe defaults sit around all four.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="The Module 16 pipeline with gates G1 to G5 after each of the five stages. G1 FAIL goes to the requirement owner. G2 FAIL retries the Sequence Builder. G3 and G4 FAIL, and a G5 REQUEST_CHANGES verdict, send findings back to the Test Generator within a shared limit of two rounds. G5 APPROVE or ESCALATE goes to a human commit-approval checkpoint, then commit. Hooks run inside every agent, and every gate decision is appended to gate_log.jsonl." style="min-width:760px">
+          <rect class="box-plum" x="10" y="22" width="660" height="40" rx="10" stroke-dasharray="5 4"></rect>
+          <text class="txt-plum" x="340" y="40" text-anchor="middle" font-size="10">🪝 hooks inside every agent</text>
+          <text class="lbl" x="340" y="54" text-anchor="middle" font-size="8.5">block out-of-scope writes · deny secrets · log tool calls · format after edit</text>
+          <g stroke="var(--plum)" stroke-dasharray="2 4" stroke-width="1.1" opacity=".7">
+            <line x1="52" y1="62" x2="52" y2="108"></line><line x1="196" y1="62" x2="196" y2="108"></line><line x1="340" y1="62" x2="340" y2="108"></line><line x1="484" y1="62" x2="484" y2="108"></line><line x1="628" y1="62" x2="628" y2="108"></line>
+          </g>
+
+          <g font-size="9">
+            <rect class="box-teal" x="10" y="110" width="84" height="44" rx="10"></rect><text class="txt-teal" x="52" y="129" text-anchor="middle">1 · Req</text><text class="txt-teal" x="52" y="142" text-anchor="middle">Validator</text>
+            <rect class="box-copper" x="154" y="110" width="84" height="44" rx="10"></rect><text class="txt-copper" x="196" y="129" text-anchor="middle">2 · Sequence</text><text class="txt-copper" x="196" y="142" text-anchor="middle">Builder</text>
+            <rect class="box-plum" x="298" y="110" width="84" height="44" rx="10"></rect><text class="txt-plum" x="340" y="129" text-anchor="middle">3 · Test</text><text class="txt-plum" x="340" y="142" text-anchor="middle">Generator</text>
+            <rect class="box-teal" x="442" y="110" width="84" height="44" rx="10"></rect><text class="txt-teal" x="484" y="129" text-anchor="middle">4 · API</text><text class="txt-teal" x="484" y="142" text-anchor="middle">Validator</text>
+            <rect class="box-brick" x="586" y="110" width="84" height="44" rx="10"></rect><text class="txt-brick" x="628" y="136" text-anchor="middle">5 · Reviewer</text>
+          </g>
+          <g>
+            <path class="box-copper" d="M124,114 L142,132 L124,150 L106,132 Z"></path><text class="txt-copper" x="124" y="135" text-anchor="middle" font-size="8.5">G1</text>
+            <path class="box-copper" d="M268,114 L286,132 L268,150 L250,132 Z"></path><text class="txt-copper" x="268" y="135" text-anchor="middle" font-size="8.5">G2</text>
+            <path class="box-copper" d="M412,114 L430,132 L412,150 L394,132 Z"></path><text class="txt-copper" x="412" y="135" text-anchor="middle" font-size="8.5">G3</text>
+            <path class="box-copper" d="M556,114 L574,132 L556,150 L538,132 Z"></path><text class="txt-copper" x="556" y="135" text-anchor="middle" font-size="8.5">G4</text>
+            <path class="box-copper" d="M700,114 L718,132 L700,150 L682,132 Z"></path><text class="txt-copper" x="700" y="135" text-anchor="middle" font-size="8.5">G5</text>
+          </g>
+          <g class="arrow-thin" stroke="var(--ink-soft)" stroke-width="1.4">
+            <path d="M94,132 L104,132"></path><path d="M238,132 L248,132"></path><path d="M382,132 L392,132"></path><path d="M526,132 L536,132"></path><path d="M670,132 L680,132"></path>
+          </g>
+          <g stroke="var(--teal)" stroke-width="1.5" fill="none">
+            <path d="M142,132 L152,132" marker-end="url(#arrow-teal)"></path><path d="M286,132 L296,132" marker-end="url(#arrow-teal)"></path><path d="M430,132 L440,132" marker-end="url(#arrow-teal)"></path><path d="M574,132 L584,132" marker-end="url(#arrow-teal)"></path><path d="M718,132 L728,132" marker-end="url(#arrow-teal)"></path>
+          </g>
+
+          <rect class="box-teal" x="730" y="110" width="120" height="44" rx="10"></rect>
+          <text class="txt-teal" x="790" y="129" text-anchor="middle" font-size="9">🧑 HITL commit</text><text class="txt-teal" x="790" y="142" text-anchor="middle" font-size="9">approval</text>
+          <text class="lbl" x="724" y="104" font-size="8">APPROVE / ESCALATE</text>
+          <path class="arrow" stroke="var(--teal)" d="M790,154 L790,198" marker-end="url(#arrow-teal)"></path>
+          <rect class="box-teal" x="750" y="200" width="80" height="32" rx="8"></rect><text class="txt-teal" x="790" y="220" text-anchor="middle" font-size="9.5">✔ commit</text>
+
+          <!-- fail routes -->
+          <path class="arrow" stroke="var(--brick)" d="M124,150 L124,196" marker-end="url(#arrow-brick)"></path>
+          <rect class="box-brick" x="84" y="198" width="80" height="32" rx="8"></rect><text class="txt-brick" x="124" y="218" text-anchor="middle" font-size="9">req owner</text>
+          <path class="arrow-thin" stroke="var(--copper)" stroke-width="1.4" d="M268,150 C268,182 206,182 206,156" marker-end="url(#arrow-copper)"></path>
+          <text class="txt-copper" x="237" y="196" text-anchor="middle" font-size="8">retry (max 1)</text>
+          <path class="arrow-thin" stroke="var(--copper)" stroke-width="1.4" d="M412,150 C412,178 352,178 352,156" marker-end="url(#arrow-copper)"></path>
+          <path class="arrow-thin" stroke="var(--copper)" stroke-width="1.4" d="M556,150 C556,205 340,205 340,156" marker-end="url(#arrow-copper)"></path>
+          <path class="arrow-thin" stroke="var(--copper)" stroke-width="1.4" d="M700,150 C700,235 328,235 328,156" marker-end="url(#arrow-copper)"></path>
+          <text class="txt-copper" x="708" y="176" font-size="8">REQUEST_CHANGES</text>
+          <text class="txt-copper" x="520" y="244" text-anchor="middle" font-size="9">FAIL + findings → Test Generator · shared limit: 2 rounds</text>
+
+          <rect class="box-copper" x="106" y="258" width="612" height="30" rx="8" stroke-dasharray="4 3"></rect>
+          <text class="txt-copper" x="412" y="277" text-anchor="middle" font-size="9.5">G1–G5 + HITL decisions → gate_log.jsonl (append-only)</text>
+        </svg>
+      </div>
+      <figcaption>Everything here defaults to <strong>stop</strong>, never to <strong>continue</strong>. Every loop has a counter, and if the control mechanism itself fails, the pipeline halts.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="deck-section" id="criteria">
+  <div class="section-inner">
+    <p class="eyebrow">02 — A gate is only as good as its criteria</p>
+    <h2 class="section-title">"Looks good" is not a criterion</h2>
+    <p class="lede">Good gate criteria are <strong>objective</strong> (the same input gives the same verdict), <strong>observable</strong> (checked from the artifact, not from what the agent claims), <strong>actionable</strong> (the FAIL message says what to fix), <strong>cheap first</strong> and <strong>versioned</strong> in the repo.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 285" role="img" aria-label="The gate check ladder, from cheapest and most deterministic to most expensive. L1 structural: envelope present, schema valid, files exist; milliseconds, free, fully reliable. L2 static: lint, type-check, collect-only, spec conformance; seconds, deterministic. L3 execution: run tests in the sandbox, coverage thresholds; seconds to minutes. L4 LLM rubric: independent judge with a written rubric and fresh context; costs tokens, probabilistic. L5 human: named approver for risky or irreversible steps; expensive but authoritative. Stop at the first FAIL, and never let L4 overrule an L1 to L3 FAIL." style="min-width:720px">
+          <text class="lbl" x="560" y="16" font-size="9">relative cost →</text>
+          <path class="arrow" stroke="var(--plum)" d="M22,26 L22,252" marker-end="url(#arrow-plum)"></path>
+          <text class="txt-plum" x="40" y="16" font-size="9">stop at the first FAIL ↓</text>
+
+          <g>
+            <rect class="box-teal" x="40" y="26" width="110" height="38" rx="8"></rect><text class="txt-teal" x="95" y="42" text-anchor="middle" font-size="10">L1</text><text class="txt-teal" x="95" y="56" text-anchor="middle" font-size="8.5">Structural</text>
+            <text class="lbl-strong" x="168" y="42" font-size="9.5">envelope present · schema valid · files exist</text>
+            <text class="lbl" x="168" y="57" font-size="8.5">milliseconds · free · 100% reliable</text>
+            <rect class="box-teal" x="560" y="34" width="24" height="22" rx="4"></rect>
+
+            <rect class="box-teal" x="40" y="74" width="110" height="38" rx="8"></rect><text class="txt-teal" x="95" y="90" text-anchor="middle" font-size="10">L2</text><text class="txt-teal" x="95" y="104" text-anchor="middle" font-size="8.5">Static</text>
+            <text class="lbl-strong" x="168" y="90" font-size="9.5">lint · type-check · collect-only · spec conformance</text>
+            <text class="lbl" x="168" y="105" font-size="8.5">seconds · deterministic</text>
+            <rect class="box-teal" x="560" y="82" width="56" height="22" rx="4"></rect>
+
+            <rect class="box-copper" x="40" y="122" width="110" height="38" rx="8"></rect><text class="txt-copper" x="95" y="138" text-anchor="middle" font-size="10">L3</text><text class="txt-copper" x="95" y="152" text-anchor="middle" font-size="8.5">Execution</text>
+            <text class="lbl-strong" x="168" y="138" font-size="9.5">run tests in sandbox · coverage thresholds</text>
+            <text class="lbl" x="168" y="153" font-size="8.5">seconds to minutes</text>
+            <rect class="box-copper" x="560" y="130" width="110" height="22" rx="4"></rect>
+
+            <rect class="box-plum" x="40" y="170" width="110" height="38" rx="8"></rect><text class="txt-plum" x="95" y="186" text-anchor="middle" font-size="10">L4</text><text class="txt-plum" x="95" y="200" text-anchor="middle" font-size="8.5">Rubric (LLM)</text>
+            <text class="lbl-strong" x="168" y="186" font-size="9.5">independent judge · written rubric · fresh context</text>
+            <text class="lbl" x="168" y="201" font-size="8.5">tokens · probabilistic</text>
+            <rect class="box-plum" x="560" y="178" width="180" height="22" rx="4"></rect>
+
+            <rect class="box-brick" x="40" y="218" width="110" height="38" rx="8"></rect><text class="txt-brick" x="95" y="234" text-anchor="middle" font-size="10">L5</text><text class="txt-brick" x="95" y="248" text-anchor="middle" font-size="8.5">Human</text>
+            <text class="lbl-strong" x="168" y="234" font-size="9.5">named approver for risk or irreversibility</text>
+            <text class="lbl" x="168" y="249" font-size="8.5">expensive · authoritative</text>
+            <rect class="box-brick" x="560" y="226" width="280" height="22" rx="4"></rect>
+          </g>
+          <text class="txt-brick" x="440" y="280" text-anchor="middle" font-size="9.5">never let L4 overrule an L1–L3 FAIL</text>
+        </svg>
+      </div>
+      <figcaption>Once code has shown an artifact is broken, a good score from a probabilistic judge doesn't make it usable.</figcaption>
+    </figure>
+
+    <div class="split">
+      <div>
+        <p class="code-label">gates.yaml: gate G3 (after the Test Generator)</p>
+<pre class="code"><span class="k">G3_tests_collect_and_conform:</span>
+  checks:
+    - cmd: <span class="s">pytest --collect-only -q tests/test_req_*.py</span>
+    - cmd: <span class="s">ruff check tests/</span>
+    - every test has <span class="m">@pytest.mark.ac</span> and <span class="m">.seq</span>
+    - changed paths ⊆ [<span class="s">"tests/**"</span>, <span class="s">"runs/**"</span>]
+  on_fail: <span class="k">retry_producer</span>     <span class="c"># stage 3, with findings</span>
+  max_rounds: <span class="k">2</span>
+
+<span class="k">G4_no_test_defects:</span>
+  checks:
+    - count(class == <span class="e">TEST_DEFECT</span>) == 0
+    - count(class == <span class="e">ENVIRONMENT</span>) == 0
+  allow: <span class="m">PRODUCT_DEFECT</span> <span class="c"># flagged, carried on</span>
+  max_rounds: <span class="k">2</span>     <span class="c"># shared counter with G3</span></pre>
+      </div>
+      <div>
+        <div class="mini-card warn" style="margin-bottom:14px">
+          <h3>Bad → good</h3>
+          <ul>
+            <li>"tests are reasonable" → <code>pytest --collect-only</code> exits 0</li>
+            <li>"agent says all ACs covered" → every AC-ID appears in ≥ 1 <code>@ac</code> marker</li>
+            <li>"FAIL" → "FAIL: AC-3 has no test; SEQ-3 unmapped"</li>
+            <li>criteria in someone's head → <code>gates.yaml</code> under review</li>
+          </ul>
+        </div>
+        <div class="mini-card plum">
+          <h3>Three outcomes, not two</h3>
+          <p><strong style="color:var(--teal)">PASS</strong> → next stage.<br><strong style="color:var(--brick)">FAIL</strong> → criteria checked and not met; the producer can fix it, so start a correction loop.<br><strong style="color:var(--copper)">NEEDS_HUMAN</strong> → can't be decided automatically (ambiguous input, validator error, policy question).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="deck-section" id="loops">
+  <div class="section-inner">
+    <p class="eyebrow">03 — After the FAIL</p>
+    <h2 class="section-title">Send the failure to the stage that owns it, and patch rather than regenerate</h2>
+    <p class="lede">Three decisions determine whether a correction loop converges or just churns: <strong>who retries</strong> (the stage that owns the defect, not simply the last one), <strong>what feedback is reused</strong> (structured findings plus the previous artifact, not "try again"), and <strong>what reruns</strong> (only the retried stage and whatever depends on it).</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 260" role="img" aria-label="Routing a gate failure at stage N. The root cause is classified first. If stage N's artifact is wrong, retry stage N with findings and re-run stages N+1 to the end. If stage N was given a bad upstream artifact, retry the upstream owner stage K and re-run K to the end. If the input or requirement is the problem, it becomes NEEDS_HUMAN for the requirement owner. If it's an environment or tool failure, retry the infrastructure once, then NEEDS_HUMAN, without blaming the agent." style="min-width:740px">
+          <rect class="box-brick" x="20" y="106" width="140" height="48" rx="8"></rect>
+          <text class="txt-brick" x="90" y="127" text-anchor="middle" font-size="10">Gate FAIL</text><text class="lbl" x="90" y="142" text-anchor="middle" font-size="8.5">at stage N</text>
+          <path class="arrow" d="M160,130 L186,130" marker-end="url(#arrow)"></path>
+          <path class="box-copper" d="M232,95 L278,130 L232,165 L188,130 Z"></path>
+          <text class="txt-copper" x="233" y="127" text-anchor="middle" font-size="8.5">classify</text><text class="txt-copper" x="233" y="139" text-anchor="middle" font-size="8.5">root cause</text>
+
+          <g stroke="var(--ink-soft)" stroke-width="1.5" fill="none">
+            <path d="M270,124 L318,40" marker-end="url(#arrow)"></path>
+            <path d="M276,128 L318,100" marker-end="url(#arrow)"></path>
+            <path d="M276,132 L318,160" marker-end="url(#arrow)"></path>
+            <path d="M270,136 L318,220" marker-end="url(#arrow)"></path>
+          </g>
+
+          <rect class="box-plum" x="320" y="18" width="250" height="46" rx="8"></rect>
+          <text class="txt-plum" x="335" y="37" font-size="9.5">Retry stage N with findings</text><text class="lbl" x="335" y="53" font-size="8.5">stage N's own artifact is wrong</text>
+          <rect class="box-plum" x="320" y="78" width="250" height="46" rx="8"></rect>
+          <text class="txt-plum" x="335" y="97" font-size="9.5">Retry upstream owner K &lt; N</text><text class="lbl" x="335" y="113" font-size="8.5">N was fed a bad upstream artifact</text>
+          <rect class="box-copper" x="320" y="138" width="250" height="46" rx="8"></rect>
+          <text class="txt-copper" x="335" y="157" font-size="9.5">NEEDS_HUMAN → requirement owner</text><text class="lbl" x="335" y="173" font-size="8.5">the input / requirement is the problem</text>
+          <rect class="box" x="320" y="198" width="250" height="46" rx="8"></rect>
+          <text class="lbl-strong" x="335" y="217" font-size="9.5">Retry infra once → NEEDS_HUMAN</text><text class="lbl" x="335" y="233" font-size="8.5">env / tool failure, not the agent's fault</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M570,41 L618,41" marker-end="url(#arrow-teal)"></path>
+          <path class="arrow" stroke="var(--teal)" d="M570,101 L618,101" marker-end="url(#arrow-teal)"></path>
+          <rect class="box-teal" x="620" y="18" width="220" height="46" rx="8"></rect>
+          <text class="txt-teal" x="730" y="37" text-anchor="middle" font-size="9.5">re-run N+1 … end</text><text class="lbl" x="730" y="53" text-anchor="middle" font-size="8.5">downstream only</text>
+          <rect class="box-teal" x="620" y="78" width="220" height="46" rx="8"></rect>
+          <text class="txt-teal" x="730" y="97" text-anchor="middle" font-size="9.5">re-run K … end</text><text class="lbl" x="730" y="113" text-anchor="middle" font-size="8.5">everything downstream of K</text>
+        </svg>
+      </div>
+    </figure>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 205" role="img" aria-label="Downstream reruns. In run 1, stages 1 to 3 pass and stage 4, the API Validator, finds a test defect, so stage 5 never runs. Findings go back to stage 3. In round 2, the artifacts from stages 1 and 2 are reused from cache without re-running. Stage 3 patches only the failing test, and stages 4 and 5 re-run because they depend on it. That saves the tokens and time for stages 1 and 2." style="min-width:740px">
+          <text class="lbl-strong" x="20" y="48" font-size="10">Run 1</text>
+          <text class="lbl-strong" x="20" y="138" font-size="10">Round 2</text>
+          <g font-size="9">
+            <rect class="box-teal" x="100" y="26" width="130" height="38" rx="8"></rect><text class="txt-teal" x="165" y="49" text-anchor="middle">1 Validator ✔</text>
+            <rect class="box-teal" x="250" y="26" width="130" height="38" rx="8"></rect><text class="txt-teal" x="315" y="49" text-anchor="middle">2 Builder ✔</text>
+            <rect class="box-teal" x="400" y="26" width="130" height="38" rx="8"></rect><text class="txt-teal" x="465" y="49" text-anchor="middle">3 Generator ✔</text>
+            <rect class="box-brick" x="550" y="26" width="130" height="38" rx="8"></rect><text class="txt-brick" x="615" y="42" text-anchor="middle">4 API Val ✘</text><text class="lbl" x="615" y="56" text-anchor="middle" font-size="8">TEST_DEFECT</text>
+            <rect class="box" x="700" y="26" width="130" height="38" rx="8" stroke-dasharray="4 3" opacity=".5"></rect><text class="lbl" x="765" y="49" text-anchor="middle" opacity=".6">5 not reached</text>
+
+            <rect class="box" x="100" y="116" width="130" height="38" rx="8" stroke-dasharray="4 3"></rect><text class="lbl" x="165" y="133" text-anchor="middle">1 reused ⟲</text><text class="lbl" x="165" y="146" text-anchor="middle" font-size="8">cached artifact</text>
+            <rect class="box" x="250" y="116" width="130" height="38" rx="8" stroke-dasharray="4 3"></rect><text class="lbl" x="315" y="133" text-anchor="middle">2 reused ⟲</text><text class="lbl" x="315" y="146" text-anchor="middle" font-size="8">cached artifact</text>
+            <rect class="box-plum" x="400" y="116" width="130" height="38" rx="8"></rect><text class="txt-plum" x="465" y="133" text-anchor="middle">3 Generator ✔</text><text class="lbl" x="465" y="146" text-anchor="middle" font-size="8">patch failing test only</text>
+            <rect class="box-teal" x="550" y="116" width="130" height="38" rx="8"></rect><text class="txt-teal" x="615" y="133" text-anchor="middle">4 API Val ✔</text><text class="lbl" x="615" y="146" text-anchor="middle" font-size="8">re-run (depends on 3)</text>
+            <rect class="box-teal" x="700" y="116" width="130" height="38" rx="8"></rect><text class="txt-teal" x="765" y="133" text-anchor="middle">5 Reviewer ✔</text><text class="lbl" x="765" y="146" text-anchor="middle" font-size="8">re-run (depends on 4)</text>
+          </g>
+          <g stroke="var(--line-strong)" stroke-width="1.3">
+            <line x1="230" y1="45" x2="250" y2="45"></line><line x1="380" y1="45" x2="400" y2="45"></line><line x1="530" y1="45" x2="550" y2="45"></line><line x1="680" y1="45" x2="700" y2="45"></line>
+            <line x1="230" y1="135" x2="250" y2="135"></line><line x1="380" y1="135" x2="400" y2="135"></line><line x1="530" y1="135" x2="550" y2="135"></line><line x1="680" y1="135" x2="700" y2="135"></line>
+          </g>
+          <path class="arrow" stroke="var(--copper)" d="M600,64 C600,92 480,88 470,114" marker-end="url(#arrow-copper)"></path>
+          <text class="txt-copper" x="612" y="84" font-size="9">findings</text>
+          <text class="lbl" x="430" y="186" text-anchor="middle" font-size="9">saved: tokens and time for stages 1–2 · re-run a stage only if an input hash changed (like a build system)</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="split">
+      <div>
+        <p class="code-label">findings.json: structured correction feedback</p>
+<pre class="code">{
+  <span class="k">"gate"</span>: <span class="s">"G4_no_test_defects"</span>,
+  <span class="k">"round"</span>: 1, <span class="k">"max_rounds"</span>: 2,
+  <span class="k">"route_to"</span>: <span class="s">"test-generator"</span>,
+  <span class="k">"artifact_to_modify"</span>: <span class="s">"tests/test_req_2481_….py"</span>,
+  <span class="k">"findings"</span>: [{
+    <span class="k">"test"</span>: <span class="s">"test_cancel_shipped_order_rejected"</span>,
+    <span class="k">"ac_id"</span>: <span class="m">"AC-2"</span>,
+    <span class="k">"observed"</span>: <span class="e">"asserts body['errorCode']"</span>,
+    <span class="k">"expected"</span>: <span class="s">"body['error']['code'] per openapi.yaml"</span>,
+    <span class="k">"class"</span>: <span class="e">"TEST_DEFECT"</span>
+  }],
+  <span class="k">"do_not_change"</span>: [<span class="s">"tests with no findings"</span>, <span class="s">"markers"</span>],
+  <span class="k">"previous_attempt_summaries"</span>: [
+    <span class="c">"round 0: fixture make_order missing → fixed"</span>]
+}</pre>
+      </div>
+      <div class="callout" style="--accent:var(--copper); margin-top:0">
+        <span class="tag">Why it works</span>
+        <p><code>artifact_to_modify</code> makes the agent patch instead of regenerate. <code>do_not_change</code> stops a fix for F-1 from breaking tests that already passed. <code>previous_attempt_summaries</code> stops the agent from trying a fix that already failed. Without these three fields, correction loops tend to cycle between the same few states.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="deck-section" id="hooks">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Deterministic code the model can't forget</p>
+    <h2 class="section-title">A rule says what should happen. A hook makes sure it does.</h2>
+    <p class="lede">A hook is a script the agent runtime runs automatically at a lifecycle event. It gets JSON describing the event and can <strong>allow</strong>, <strong>deny</strong> or <strong>ask</strong>, and log the result. Use both together: the rule explains <em>why</em> ("never read <code>.env</code>") and the hook enforces it every time.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="Hooks firing during one Test Generator stage. The prompt passes beforeSubmitPrompt and is allowed with secrets redacted and the run id tagged. Reading .env triggers beforeReadFile and is denied. Running pytest collect-only triggers beforeShellExecution and is allowed because it is on the allow-list. Editing a test file triggers afterFileEdit, which runs the formatter and appends to hook_log. When the agent stops, the stop hook runs gate G3 and writes gate_log." style="min-width:740px">
+          <g class="lbl" font-size="9.5">
+            <text x="20" y="20">agent tries…</text><text x="330" y="20">hook event</text><text x="600" y="20">decision / effect</text>
+          </g>
+          <line x1="20" y1="30" x2="840" y2="30" stroke="var(--line-strong)"></line>
+          <g font-size="9.5">
+            <rect class="box" x="20" y="42" width="270" height="38" rx="8"></rect><text class="lbl-strong" x="34" y="65">send stage-3 prompt</text>
+            <rect class="box-plum" x="330" y="46" width="220" height="30" rx="15"></rect><text class="txt-plum" x="440" y="65" text-anchor="middle">beforeSubmitPrompt</text>
+            <rect class="box-teal" x="600" y="42" width="240" height="38" rx="8"></rect><text class="txt-teal" x="614" y="58">ALLOW</text><text class="lbl" x="614" y="72" font-size="8.5">secrets redacted · run_id tagged</text>
+
+            <rect class="box" x="20" y="94" width="270" height="38" rx="8"></rect><text class="lbl-strong" x="34" y="117">read .env</text>
+            <rect class="box-plum" x="330" y="98" width="220" height="30" rx="15"></rect><text class="txt-plum" x="440" y="117" text-anchor="middle">beforeReadFile</text>
+            <rect class="box-brick" x="600" y="94" width="240" height="38" rx="8"></rect><text class="txt-brick" x="614" y="110">DENY</text><text class="lbl" x="614" y="124" font-size="8.5">"secrets are injected at runtime"</text>
+
+            <rect class="box" x="20" y="146" width="270" height="38" rx="8"></rect><text class="lbl-strong" x="34" y="169">pytest --collect-only …</text>
+            <rect class="box-plum" x="330" y="150" width="220" height="30" rx="15"></rect><text class="txt-plum" x="440" y="169" text-anchor="middle">beforeShellExecution</text>
+            <rect class="box-teal" x="600" y="146" width="240" height="38" rx="8"></rect><text class="txt-teal" x="614" y="162">ALLOW</text><text class="lbl" x="614" y="176" font-size="8.5">on the allow-list</text>
+
+            <rect class="box" x="20" y="198" width="270" height="38" rx="8"></rect><text class="lbl-strong" x="34" y="221">edit tests/test_req_2481_*.py</text>
+            <rect class="box-plum" x="330" y="202" width="220" height="30" rx="15"></rect><text class="txt-plum" x="440" y="221" text-anchor="middle">afterFileEdit</text>
+            <rect class="box" x="600" y="198" width="240" height="38" rx="8"></rect><text class="lbl-strong" x="614" y="214">OBSERVE</text><text class="lbl" x="614" y="228" font-size="8.5">ruff format · append hook_log.jsonl</text>
+
+            <rect class="box" x="20" y="250" width="270" height="38" rx="8"></rect><text class="lbl-strong" x="34" y="273">finish (agent loop ends)</text>
+            <rect class="box-plum" x="330" y="254" width="220" height="30" rx="15"></rect><text class="txt-plum" x="440" y="273" text-anchor="middle">stop</text>
+            <rect class="box-copper" x="600" y="250" width="240" height="38" rx="8"></rect><text class="txt-copper" x="614" y="266">RUN GATE G3</text><text class="lbl" x="614" y="280" font-size="8.5">→ gate_log.jsonl · PASS / FAIL + findings</text>
+          </g>
+          <g stroke="var(--ink-soft)" stroke-width="1.4" fill="none">
+            <path d="M290,61 L328,61" marker-end="url(#arrow)"></path><path d="M550,61 L598,61" marker-end="url(#arrow)"></path>
+            <path d="M290,113 L328,113" marker-end="url(#arrow)"></path><path d="M550,113 L598,113" marker-end="url(#arrow)"></path>
+            <path d="M290,165 L328,165" marker-end="url(#arrow)"></path><path d="M550,165 L598,165" marker-end="url(#arrow)"></path>
+            <path d="M290,217 L328,217" marker-end="url(#arrow)"></path><path d="M550,217 L598,217" marker-end="url(#arrow)"></path>
+            <path d="M290,269 L328,269" marker-end="url(#arrow)"></path><path d="M550,269 L598,269" marker-end="url(#arrow)"></path>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Hooks are configured in <code>.cursor/hooks.json</code> (project) or <code>~/.cursor/hooks.json</code> (user). Event names, payload fields and response formats have changed between Cursor releases, so <strong>check the current Cursor Hooks docs</strong> before copying examples. The same patterns apply to Claude Code hooks, Git hooks and CI checks.</figcaption>
+    </figure>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead><tr><th></th><th>Rule / prompt instruction (Module 8)</th><th>Hook</th></tr></thead>
+        <tbody>
+          <tr><th>What it does</th><td>Tells the model what it <em>should</em> do</td><td>Enforces what it <em>can</em> do and records what it <em>did</em></td></tr>
+          <tr><th>Reliability</th><td>Probabilistic: usually followed</td><td>Deterministic: always runs</td></tr>
+          <tr><th>Token cost</th><td>Lives in context and costs tokens</td><td>Lives outside context and costs no tokens</td></tr>
+          <tr><th>Good for</th><td>Style, approach, conventions</td><td>Hard policy, validation, audit logging, formatting</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid4">
+      <article class="role-card" style="--accent:var(--teal)"><p class="role-step">Validation</p><h3>Check output early</h3><p><code>afterFileEdit</code> on <code>tests/**</code> → collect-only on that file</p></article>
+      <article class="role-card" style="--accent:var(--brick)"><p class="role-step">Policy</p><h3>Block what's disallowed</h3><p>Deny <code>git push</code>, non-sandbox <code>curl</code>, reads of <code>creds/**</code></p></article>
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">Logging</p><h3>Record every action</h3><p>Append <code>{ts, run_id, event, target, decision}</code> to <code>hook_log.jsonl</code></p></article>
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">Lifecycle</p><h3>Act at start / end</h3><p><code>stop</code> runs the stage gate and adds a bounded follow-up on FAIL</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="deck-section" id="hitl">
+  <div class="section-inner">
+    <p class="eyebrow">05 — The most expensive gate, used on purpose</p>
+    <h2 class="section-title">Put a human where an automated mistake would be unacceptable</h2>
+    <p class="lede">A human is the slowest, most expensive and most authoritative gate. Add checkpoints where the impact is high or the action can't be undone, not everywhere. Too many checkpoints cause <strong>approval fatigue</strong>: people start approving without reading, and the checkpoint stops protecting anything.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="Checkpoint placement matrix. Rows are impact, columns are reversibility. High impact and hard to undo: always checkpoint, for example merging to main, deploying, deleting data, sending external messages or force-pushing. High impact but easy to undo: a checkpoint or a strong automated gate with alerting. Low impact and easy to undo: automate and just log, for example writing test files or running tests in the sandbox. Low impact but hard to undo: checkpoint on first use, then automate with an audit trail, for example creating tickets." style="min-width:720px">
+          <text class="lbl-strong" x="490" y="18" text-anchor="middle" font-size="10">reversibility of the next action</text>
+          <text class="lbl" x="315" y="36" text-anchor="middle" font-size="9">easy to undo</text>
+          <text class="lbl" x="665" y="36" text-anchor="middle" font-size="9">hard / impossible to undo</text>
+          <text class="lbl-strong" x="20" y="100" font-size="10">High impact</text>
+          <text class="lbl" x="20" y="115" font-size="8.5">prod · money ·</text><text class="lbl" x="20" y="127" font-size="8.5">customers · security</text>
+          <text class="lbl-strong" x="20" y="215" font-size="10">Low impact</text>
+          <text class="lbl" x="20" y="230" font-size="8.5">local · sandbox ·</text><text class="lbl" x="20" y="242" font-size="8.5">drafts</text>
+
+          <rect class="box-copper" x="140" y="46" width="346" height="116" rx="10"></rect>
+          <text class="txt-copper" x="160" y="72" font-size="10.5">⚠ checkpoint OR strong automated gate</text>
+          <text class="txt-copper" x="160" y="88" font-size="10.5">+ alert</text>
+          <text class="lbl" x="160" y="112" font-size="9">e.g. config change in staging, feature flag flip</text>
+
+          <rect class="box-brick" x="494" y="46" width="346" height="116" rx="10"></rect>
+          <text class="txt-brick" x="514" y="72" font-size="11">🧑 ALWAYS checkpoint</text>
+          <text class="lbl" x="514" y="96" font-size="9">merge to main · deploy · data deletion</text>
+          <text class="lbl" x="514" y="112" font-size="9">external messages · force-push</text>
+          <text class="txt-brick" x="514" y="140" font-size="9">Lab 3: before committing generated tests</text>
+
+          <rect class="box-teal" x="140" y="170" width="346" height="116" rx="10"></rect>
+          <text class="txt-teal" x="160" y="196" font-size="11">🤖 automate; log only</text>
+          <text class="lbl" x="160" y="220" font-size="9">write test files · run tests in sandbox</text>
+          <text class="txt-teal" x="160" y="248" font-size="9">approving each pytest run = approval fatigue</text>
+
+          <rect class="box-copper" x="494" y="170" width="346" height="116" rx="10"></rect>
+          <text class="txt-copper" x="514" y="196" font-size="10.5">⚠ checkpoint on first use,</text>
+          <text class="txt-copper" x="514" y="212" font-size="10.5">then automate with audit</text>
+          <text class="lbl" x="514" y="236" font-size="9">e.g. creating tickets, raising defects</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="split">
+      <div class="mini-card plum">
+        <h3>Checkpoints in the Lab 3 pipeline</h3>
+        <ul>
+          <li><strong>Ambiguous input:</strong> G1 NEEDS_HUMAN → requirement owner answers</li>
+          <li><strong>Before an irreversible action:</strong> commit / PR of generated tests</li>
+          <li><strong>After the loop runs out of rounds:</strong> round 3 of Generator retries</li>
+          <li><strong>On escalation:</strong> Reviewer ESCALATE (DEF-5520)</li>
+          <li><strong>When the control layer fails:</strong> validator crashed → human</li>
+        </ul>
+      </div>
+      <div>
+        <p class="code-label">What the approver sees: a decision packet, not a transcript</p>
+<pre class="code"><span class="k">## Approval requested:</span> commit tests for REQ-2481
+Run:        req-2481-run-03
+Decision:   APPROVE / REJECT / REQUEST CHANGES
+Gate trail: <span class="s">G1 ✔ G2 ✔ G3 ✔</span><span class="c">(round 2)</span> <span class="s">G4 ✔</span> <span class="m">G5 ESCALATE</span>
+Coverage:   AC-1..AC-4 → 6 tests · 5 pass · <span class="e">1 fail</span>
+            (DEF-5520, product defect, 404 vs 403)
+Diff scope: tests/test_req_2481_….py (+142), runs/…/**
+Risk notes: no out-of-scope files; no secrets found
+Cost:       61k tokens · 7m 40s · 2 correction rounds
+Evidence:   traceability.md · 04_report · gate_log.jsonl</pre>
+      </div>
+    </div>
+    <div class="callout" style="--accent:var(--brick)"><span class="tag">Rule</span><p>Record every decision with <strong>approver identity, timestamp and reason</strong> in the gate log. If an approval wasn't recorded, treat it as if it never happened.</p></div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="deck-section" id="bounds">
+  <div class="section-inner">
+    <p class="eyebrow">06 — A counter alone is not enough</p>
+    <h2 class="section-title">Stop when the loop stops making progress, not just when it runs out of rounds</h2>
+    <p class="lede">Self-correction loops fail in predictable ways. A hard round limit catches runaway loops, but you also need to detect oscillation, stalled progress, and agents that "pass" by weakening the tests.</p>
+
+    <div class="pit-grid">
+      <div class="pit"><h3>Runaway</h3><p class="see">Rounds never end.</p><p class="fix">Hard <code>max_rounds</code> per gate <em>and</em> per run.</p></div>
+      <div class="pit"><h3>Oscillation</h3><p class="see">Fix A breaks B, fix B breaks A.</p><p class="fix">Detect repeated artifact hash or finding set; <code>do_not_change</code>.</p></div>
+      <div class="pit"><h3>No progress</h3><p class="see">Same findings every round.</p><p class="fix">Stop if the findings count doesn't drop between rounds.</p></div>
+      <div class="pit"><h3>Goal drift</h3><p class="see">"Passes" by deleting asserts or adding <code>skip</code>.</p><p class="fix">Invariants: assertion count ≥ previous; no new skip/xfail without a defect ID.</p></div>
+      <div class="pit"><h3>Budget blow-out</h3><p class="see">Each round adds context and costs more.</p><p class="fix">Token/time budget per run; send summaries, not transcripts.</p></div>
+      <div class="pit"><h3>Gate gaming</h3><p class="see">Agent edits the gate config or test runner.</p><p class="fix">Hooks deny writes to <code>gates.yaml</code>, <code>pytest.ini</code>, <code>.cursor/**</code>.</p></div>
+    </div>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 250" role="img" aria-label="Bounded correction loop. Produce leads to Gate. PASS leads to Passed and the loop ends. FAIL leads to a bounds check. If rounds remain, progress was made and budget is left, it loops back to Produce. Otherwise it escalates: when the maximum round is reached, when there is no progress (same findings or same hash), when the budget is exhausted, or when an invariant is violated because tests were weakened. A NEEDS_HUMAN result or a gate error also goes straight to Escalate, which halts and sends a decision packet to a human." style="min-width:740px">
+          <rect class="box-plum" x="20" y="100" width="120" height="48" rx="24"></rect>
+          <text class="txt-plum" x="80" y="128" text-anchor="middle" font-size="11">Produce</text>
+          <path class="arrow" d="M140,124 L196,124" marker-end="url(#arrow)"></path>
+          <path class="box-copper" d="M250,94 L300,124 L250,154 L200,124 Z"></path>
+          <text class="txt-copper" x="250" y="128" text-anchor="middle" font-size="10">Gate</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M270,106 L358,62" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="300" y="72" font-size="9">PASS</text>
+          <rect class="box-teal" x="360" y="40" width="150" height="44" rx="8"></rect>
+          <text class="txt-teal" x="435" y="67" text-anchor="middle" font-size="10.5">Passed ✔</text>
+
+          <path class="arrow" stroke="var(--brick)" d="M300,124 L358,124" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="316" y="116" font-size="9">FAIL</text>
+          <rect class="box" x="360" y="104" width="150" height="44" rx="8"></rect>
+          <text class="lbl-strong" x="435" y="124" text-anchor="middle" font-size="10">check bounds</text>
+          <text class="lbl" x="435" y="139" text-anchor="middle" font-size="8.5">rounds · progress · budget</text>
+
+          <path class="arrow-thin" stroke="var(--copper)" stroke-width="1.6" d="M435,148 C435,214 80,214 80,150" marker-end="url(#arrow-copper)"></path>
+          <text class="txt-copper" x="258" y="232" text-anchor="middle" font-size="9">round &lt; max ∧ progress made ∧ budget left → retry</text>
+
+          <path class="arrow" stroke="var(--brick)" d="M510,126 L578,126" marker-end="url(#arrow-brick)"></path>
+          <rect class="box-brick" x="580" y="70" width="260" height="130" rx="10"></rect>
+          <text class="txt-brick" x="710" y="92" text-anchor="middle" font-size="11">ESCALATE</text>
+          <g class="lbl" font-size="9">
+            <text x="598" y="114">• round == max</text>
+            <text x="598" y="130">• no progress (same findings / hash)</text>
+            <text x="598" y="146">• budget exhausted</text>
+            <text x="598" y="162">• invariant violated (tests weakened)</text>
+          </g>
+          <text class="txt-brick" x="710" y="188" text-anchor="middle" font-size="9">halt + decision packet to human</text>
+
+          <path class="arrow-thin" stroke="var(--brick)" stroke-width="1.4" stroke-dasharray="4 4" d="M250,94 L250,14 L740,14 L740,68" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="620" y="30" text-anchor="middle" font-size="9">NEEDS_HUMAN / gate error</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead><tr><th>Round</th><th>Findings</th><th>Artifact hash</th><th>Assertions</th><th>Decision</th></tr></thead>
+        <tbody>
+          <tr><th>0</th><td>3</td><td><code>a91f…</code></td><td>14</td><td class="row-ok">FAIL → retry (round 1/2)</td></tr>
+          <tr><th>1</th><td>1</td><td><code>c07e…</code></td><td>15</td><td class="row-ok">FAIL → retry (progress: 3 → 1)</td></tr>
+          <tr><th>2</th><td>1</td><td><code>c07e…</code></td><td>15</td><td class="row-bad">ESCALATE: identical hash, no progress</td></tr>
+          <tr><th>1 (alt run)</th><td>0</td><td><code>d4b2…</code></td><td>9</td><td class="row-bad">ESCALATE: assertions 15 → 9 (goal drift), even though the gate said PASS</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="deck-section" id="failsafe">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Subtopic: decisions on record, safe when things break</p>
+    <h2 class="section-title">If the checker fails, the answer is never PASS</h2>
+    <p class="lede">Module 14 logged <strong>handoffs</strong>. This module also logs <strong>decisions</strong>: every gate evaluation and every human approval becomes an append-only entry that answers the auditor's question, <em>"why was this allowed through, and by whom or what?"</em> The checkers can fail too. When they do, the pipeline stops rather than continuing.</p>
+
+    <div class="split">
+      <div>
+        <p class="code-label">gate_log.jsonl: one line per evaluation</p>
+<pre class="code">{<span class="k">"gate"</span>:<span class="s">"G3_tests_collect_and_conform"</span>,
+ <span class="k">"gates_version"</span>:<span class="s">"1.0.0"</span>, <span class="k">"round"</span>:1,
+ <span class="k">"input_ref"</span>:<span class="s">"tests/…py#sha:c07e"</span>,
+ <span class="k">"decision"</span>:<span class="e">"FAIL"</span>,
+ <span class="k">"checks"</span>:[{<span class="s">"collect"</span>:<span class="s">"PASS"</span>},
+          {<span class="s">"markers"</span>:<span class="e">"FAIL"</span>,
+           <span class="k">"detail"</span>:<span class="s">"test_refund missing @ac"</span>}],
+ <span class="k">"routed_to"</span>:<span class="s">"test-generator"</span>,
+ <span class="k">"decided_by"</span>:<span class="m">"automated"</span>}
+
+{<span class="k">"gate"</span>:<span class="s">"HITL_commit"</span>, <span class="k">"decision"</span>:<span class="s">"APPROVE"</span>,
+ <span class="k">"decided_by"</span>:<span class="m">"human:qa-lead"</span>,
+ <span class="k">"reason"</span>:<span class="s">"DEF-5520 raised; failing test kept"</span>}</pre>
+      </div>
+      <div class="mini-card warn">
+        <h3>Why each field is there</h3>
+        <ul>
+          <li><code>gates_version</code>: a verdict only means something relative to the criteria that produced it</li>
+          <li><code>input_ref</code> + hash: proves <em>which</em> artifact was judged</li>
+          <li><code>checks[]</code>: which criterion failed, not just the overall verdict</li>
+          <li><code>decided_by</code>: <code>automated</code>, <code>llm-judge@v</code> or <code>human:&lt;role&gt;</code></li>
+          <li><code>reason</code>: required for human overrides and ESCALATE</li>
+        </ul>
+      </div>
+    </div>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 200" role="img" aria-label="Fail-safe flow for any control-layer error. Log the error with run id and component. If it's transient, such as a timeout, 5xx or rate limit, and it's the first time, retry once with backoff: if that works, resume; if it fails again, halt. If it isn't transient, halt. Halting sets the verdict to NEEDS_HUMAN, never PASS, then quarantines partial artifacts and sends a decision packet to a human." style="min-width:740px">
+          <rect class="box-brick" x="20" y="72" width="150" height="50" rx="8"></rect>
+          <text class="txt-brick" x="95" y="93" text-anchor="middle" font-size="9.5">control-layer error</text><text class="lbl" x="95" y="108" text-anchor="middle" font-size="8">gate · hook · validator · tool</text>
+          <path class="arrow" d="M170,97 L196,97" marker-end="url(#arrow)"></path>
+          <rect class="box" x="198" y="72" width="120" height="50" rx="8"></rect>
+          <text class="lbl-strong" x="258" y="93" text-anchor="middle" font-size="9.5">log error</text><text class="lbl" x="258" y="108" text-anchor="middle" font-size="8">run_id · component</text>
+          <path class="arrow" d="M318,97 L346,97" marker-end="url(#arrow)"></path>
+          <path class="box-copper" d="M398,62 L448,97 L398,132 L348,97 Z"></path>
+          <text class="txt-copper" x="398" y="95" text-anchor="middle" font-size="8.5">transient?</text><text class="lbl" x="398" y="107" text-anchor="middle" font-size="7.5">timeout·5xx</text>
+
+          <path class="arrow" stroke="var(--copper)" d="M398,62 L398,32 L486,32" marker-end="url(#arrow-copper)"></path>
+          <text class="txt-copper" x="406" y="50" font-size="8.5">yes, 1st time</text>
+          <rect class="box-copper" x="488" y="12" width="130" height="42" rx="8"></rect>
+          <text class="txt-copper" x="553" y="30" text-anchor="middle" font-size="9.5">retry once</text><text class="lbl" x="553" y="44" text-anchor="middle" font-size="8">with backoff</text>
+          <path class="arrow" stroke="var(--teal)" d="M618,33 L668,33" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="643" y="26" text-anchor="middle" font-size="8.5">ok</text>
+          <rect class="box-teal" x="670" y="12" width="170" height="42" rx="8"></rect>
+          <text class="txt-teal" x="755" y="37" text-anchor="middle" font-size="9.5">resume normal flow</text>
+
+          <path class="arrow" stroke="var(--brick)" d="M553,54 L553,118" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="561" y="90" font-size="8.5">fails again</text>
+          <path class="arrow" stroke="var(--brick)" d="M448,97 L470,97 L470,146 L486,146" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="454" y="125" font-size="8.5">no</text>
+
+          <rect class="box-brick" x="488" y="120" width="130" height="62" rx="8"></rect>
+          <text class="txt-brick" x="553" y="140" text-anchor="middle" font-size="10">HALT stage</text>
+          <text class="lbl" x="553" y="155" text-anchor="middle" font-size="8">verdict = NEEDS_HUMAN</text>
+          <text class="txt-brick" x="553" y="170" text-anchor="middle" font-size="8.5">never PASS</text>
+          <path class="arrow" d="M618,151 L640,151" marker-end="url(#arrow)"></path>
+          <rect class="box" x="642" y="128" width="90" height="46" rx="8"></rect>
+          <text class="lbl-strong" x="687" y="148" text-anchor="middle" font-size="9">quarantine</text><text class="lbl" x="687" y="162" text-anchor="middle" font-size="8">partial artifacts</text>
+          <path class="arrow" d="M732,151 L752,151" marker-end="url(#arrow)"></path>
+          <rect class="box-copper" x="754" y="128" width="86" height="46" rx="8"></rect>
+          <text class="txt-copper" x="797" y="148" text-anchor="middle" font-size="9">🧑 decision</text><text class="txt-copper" x="797" y="162" text-anchor="middle" font-size="9">packet</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead><tr><th>What failed</th><th>Fail-open (dangerous)</th><th>Fail-safe (required)</th></tr></thead>
+        <tbody>
+          <tr><th>Gate script crashes</th><td>Missing verdict treated as PASS</td><td>NEEDS_HUMAN; halt stage; log the error</td></tr>
+          <tr><th>LLM judge unparsable</th><td>Assume approval</td><td>Retry once with stricter format, then NEEDS_HUMAN</td></tr>
+          <tr><th>Sandbox unreachable</th><td>Skip execution checks</td><td>ENVIRONMENT; retry infra once; then halt</td></tr>
+          <tr><th>Policy hook errors</th><td>Allow the action</td><td>Deny (for <code>before*</code> hooks); alert</td></tr>
+          <tr><th>Log sink down</th><td>Continue without a trail</td><td>Buffer locally; block HITL/commit until written</td></tr>
+          <tr><th>Timeout mid-edit</th><td>Keep partial edits</td><td>Quarantine; next attempt writes a fresh file</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Hands-on: walkthrough of a gate and hook configuration</p>
+    <h2 class="section-title">One gate, three hooks, and a policy you can test here</h2>
+    <p class="lede">The walkthrough adds one gate and a few hooks to the Module 16 pipeline. Module 18 builds out the rest. The simulator below follows the logic of <code>shell-policy.sh</code> and <code>deny-secrets.sh</code>, so try each command before reading the script.</p>
+
+    <div class="sim" id="sim">
+      <h3>Hook simulator: the Test Generator tries…</h3>
+      <p class="hint">Pick a command. The simulator shows which hook fires, what it decides, and the log line it writes.</p>
+      <div class="sim-btns" role="group" aria-label="Commands to simulate">
+        <button type="button" data-cmd="cat .env">cat .env</button>
+        <button type="button" data-cmd="pytest --collect-only -q tests/">pytest --collect-only</button>
+        <button type="button" data-cmd="ruff check tests/">ruff check tests/</button>
+        <button type="button" data-cmd="git push origin main">git push origin main</button>
+        <button type="button" data-cmd="pip install requests">pip install requests</button>
+        <button type="button" data-cmd="curl https://api.example.com">curl https://…</button>
+        <button type="button" data-cmd="ls tests/">ls tests/</button>
+        <button type="button" data-cmd="edit gates.yaml">edit gates.yaml</button>
+      </div>
+      <div class="sim-out" aria-live="polite">
+        <div class="sim-cell"><p class="k">Hook event</p><p class="v" id="simEvent">—</p></div>
+        <div class="sim-cell"><p class="k">Decision</p><p class="v" id="simDecision">—</p></div>
+        <div class="sim-cell"><p class="k">Message</p><p class="v" id="simMsg" style="font-family:var(--font-body);font-size:13.5px">Choose a command above.</p></div>
+      </div>
+      <div class="sim-log"><pre class="code" id="simLog"><span class="c">// runs/hook_log.jsonl: entries appear here</span></pre></div>
+    </div>
+
+    <div class="split">
+      <div>
+        <p class="code-label">Step 1 · .cursor/hooks.json</p>
+<pre class="code">{
+  <span class="k">"version"</span>: 1,
+  <span class="k">"hooks"</span>: {
+    <span class="m">"beforeReadFile"</span>:
+      [{ <span class="k">"command"</span>: <span class="s">".cursor/hooks/deny-secrets.sh"</span> }],
+    <span class="m">"beforeShellExecution"</span>:
+      [{ <span class="k">"command"</span>: <span class="s">".cursor/hooks/shell-policy.sh"</span> }],
+    <span class="m">"afterFileEdit"</span>:
+      [{ <span class="k">"command"</span>: <span class="s">".cursor/hooks/after-edit-log-and-scope.sh"</span> }],
+    <span class="m">"stop"</span>:
+      [{ <span class="k">"command"</span>: <span class="s">".cursor/hooks/run-stage-gate.sh"</span> }]
+  }
+}</pre>
+        <p class="code-label" style="margin-top:14px">Step 3 · run-stage-gate.sh (outline)</p>
+<pre class="code"><span class="k">on stop:</span>
+ 1. read current stage + envelope
+ 2. evaluate gates.yaml: L1 → L2 → L3,
+    stop at first FAIL
+ 3. append decision to gate_log.jsonl
+ 4. <span class="s">PASS</span>  → orchestrator starts next stage
+    <span class="e">FAIL</span>  → round &lt; max ∧ progress ?
+            findings.json + follow-up
+            : ESCALATE (decision packet)
+    <span class="m">NEEDS_HUMAN / error</span> → halt + packet</pre>
+      </div>
+      <div>
+        <p class="code-label">Step 2 · .cursor/hooks/shell-policy.sh</p>
+<pre class="code"><span class="c">#!/usr/bin/env bash
+# stdin: hook event JSON · stdout: allow / deny / ask
+# Fail-safe: any unexpected error → deny</span>
+set -euo pipefail
+trap <span class="s">'echo "{\"permission\":\"deny\"}"; exit 0'</span> ERR
+
+cmd="$(jq -r <span class="s">'.command // empty'</span>)"
+
+case "$cmd" in
+  *<span class="s">"git push"</span>*|*<span class="s">"rm -rf"</span>*|*<span class="s">"curl "</span>*|*<span class="s">"wget "</span>*)
+    log deny;  echo <span class="e">'{"permission":"deny"}'</span> ;;
+  <span class="s">"pytest"</span>*|<span class="s">"ruff"</span>*|<span class="s">"python -m pytest"</span>*)
+    log allow; echo <span class="s">'{"permission":"allow"}'</span> ;;
+  <span class="s">"pip install"</span>*|<span class="s">"uv add"</span>*)
+    log ask;   echo <span class="m">'{"permission":"ask"}'</span> ;;
+  *)
+    log ask;   echo <span class="m">'{"permission":"ask"}'</span> ;;
+    <span class="c"># default: unknown → a human decides</span>
+esac</pre>
+        <p class="lbl" style="font-size:12.5px;color:var(--ink-soft);margin:10px 0 0">What matters is the shape: an allow-list, an explicit deny-list, ask by default, one log line per decision, and deny on error. Check the current Cursor Hooks docs for exact field names.</p>
+      </div>
+    </div>
+
+    <ol class="walk">
+      <li><div><strong>Criteria</strong><span>Place each G3 check on the L1–L4 ladder. Why does none of them need an LLM?</span></div></li>
+      <li><div><strong>Routing</strong><span>Missing marker, 404-vs-403, sandbox 503: who retries, and what reruns downstream?</span></div></li>
+      <li><div><strong>Hooks</strong><span>Trace <code>cat .env</code>, <code>pytest</code>, <code>git push</code>, <code>pip install requests</code> in the simulator.</span></div></li>
+      <li><div><strong>Checkpoints</strong><span>Justify exactly two HITL checkpoints. Which tempting third one would cause approval fatigue?</span></div></li>
+      <li><div><strong>Bounds</strong><span>In the round table from §06, when should the loop have stopped, and why?</span></div></li>
+      <li><div><strong>Fail-safe</strong><span>Rename <code>gates.yaml</code>. Confirm the verdict is NEEDS_HUMAN, not PASS, and that the error is in <code>gate_log.jsonl</code>.</span></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">09 — Before Day 6</p>
+    <h2 class="section-title">Carry these five ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Gates judge <strong>outputs</strong> between stages, using objective, cheap-first, versioned criteria with three outcomes: PASS, FAIL and NEEDS_HUMAN.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Send each FAIL to the stage that owns the defect, with structured findings. Patch instead of regenerating, and re-run only what depends on the change.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Hooks judge <strong>actions</strong> inside an agent and always run. Rules explain why; hooks make sure it happens.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Put humans only where an action has high impact or can't be undone, and show them a decision packet.</p></div>
+      <div class="recap-chip" style="grid-column:1/-1"><span class="recap-num">05</span><p>Limit loops by rounds, progress, budget and invariants. Log every decision, and when a checker fails, the result is NEEDS_HUMAN or deny, never PASS.</p></div>
+    </div>
+
+    <div class="qa">
+      <details><summary>What's the difference between a gate and a hook? One example of each from Lab 3.</summary><p>A gate judges a stage's output between stages, e.g. G3 checks the tests collect and carry AC markers. A hook fires on an action inside an agent's loop, e.g. <code>beforeShellExecution</code> denying <code>git push</code>, or <code>afterFileEdit</code> formatting and logging an edited test.</p></details>
+      <details><summary>Why should an LLM-judge verdict never overrule a failing deterministic check?</summary><p>Deterministic checks are objective and reproducible. An LLM judge is probabilistic and can be persuaded by output that looks plausible. Once code has shown the artifact is broken, a good judged "quality" score doesn't make it usable.</p></details>
+      <details><summary>A test asserts a field that isn't in the spec. Who retries, with what feedback, and what reruns?</summary><p>The Test Generator retries. It gets structured findings (test, AC-ID, criterion, observed vs. expected with a spec citation) and the existing test file to patch. Stages 3 → 4 → 5 rerun, and stages 1–2 are reused.</p></details>
+      <details><summary>Why isn't a rule saying "never read <code>.env</code>" enough on its own?</summary><p>A rule is guidance the model usually follows but can ignore, misread or lose in a long context. A <code>beforeReadFile</code> hook enforces it on every attempt and logs the denial.</p></details>
+      <details><summary>The loop has rounds left but produces an identical artifact hash twice. What now?</summary><p>Escalate now. An identical hash means no progress, so more rounds would just use up budget or oscillate. The progress check overrides the remaining round count.</p></details>
+      <details><summary>The gate script crashes. What verdict is recorded, and what must not happen?</summary><p>NEEDS_HUMAN: halt the stage, quarantine partial artifacts, log the error. It must not be treated as PASS, because continuing without a verdict is failing open.</p></details>
+    </div>
+
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 18: Use Case Lab 4, Self-Correcting Agent Orchestration with Quality Gates.</strong> The gate criteria, hooks, correction loop and approval checkpoint from this module go into the Lab 3 pipeline to make it a working, bounded, self-correcting pipeline, with gate logs, validation evidence and an approval trail as the deliverable.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 17 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+
+    // Hook simulator — mirrors shell-policy.sh / deny-secrets.sh / afterFileEdit scope check
+    function evaluate(cmd){
+      if(/^cat\s+\.env|creds\//.test(cmd)) return { hook:'beforeReadFile', script:'deny-secrets.sh', d:'deny', msg:'Secrets are injected at runtime. Reading .env or creds/ is never allowed.' };
+      if(/^edit\s+(gates\.yaml|pytest\.ini|\.cursor\/)/.test(cmd)) return { hook:'afterFileEdit', script:'after-edit-log-and-scope.sh', d:'deny', msg:'Out-of-scope write: gate config and runner are protected against gate gaming. Edit reverted and flagged.' };
+      if(/git push|rm -rf|curl |wget /.test(cmd)) return { hook:'beforeShellExecution', script:'shell-policy.sh', d:'deny', msg:'Blocked by pipeline policy: no push, deletes or network calls.' };
+      if(/^(pytest|ruff|python -m pytest)/.test(cmd)) return { hook:'beforeShellExecution', script:'shell-policy.sh', d:'allow', msg:'On the allow-list: runs in the sandbox, no human needed.' };
+      if(/^(pip install|uv add)/.test(cmd)) return { hook:'beforeShellExecution', script:'shell-policy.sh', d:'ask', msg:'Agent wants to add a dependency. A human approves or rejects.' };
+      return { hook:'beforeShellExecution', script:'shell-policy.sh', d:'ask', msg:'Not on any list, so the default is to ask a human.' };
+    }
+    var btns = document.querySelectorAll('.sim-btns button');
+    var ev = document.getElementById('simEvent'), dec = document.getElementById('simDecision'), msg = document.getElementById('simMsg'), log = document.getElementById('simLog');
+    var lines = [];
+    function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    btns.forEach(function(b){
+      b.addEventListener('click', function(){
+        btns.forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+        var cmd = b.getAttribute('data-cmd'), r = evaluate(cmd);
+        ev.innerHTML = esc(r.hook) + '<br><span style="color:var(--ink-soft);font-size:11.5px">' + esc(r.script) + '</span>';
+        dec.innerHTML = '<span class="badge ' + r.d + '">' + r.d.toUpperCase() + '</span>';
+        msg.textContent = r.msg;
+        var ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+        var cls = r.d === 'allow' ? 's' : (r.d === 'deny' ? 'e' : 'm');
+        lines.unshift('{"ts":"' + ts + '","hook":"' + r.script.replace('.sh','') + '","event":"' + r.hook + '","target":"' + esc(cmd) + '","decision":<span class="' + cls + '">"' + r.d + '"</span>}');
+        lines = lines.slice(0, 5);
+        log.innerHTML = lines.join('\n');
+      });
+    });
+  }catch(e){}
+})();
+</script>

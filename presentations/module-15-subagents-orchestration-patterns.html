@@ -1,0 +1,911 @@
+<title>Subagents &amp; Orchestration</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ fill:var(--ink-soft); }
+  .lbl-strong{ fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+
+  /* Module 15 additions */
+  .hero-figure{ margin:0 0 44px; padding:18px 22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .hero-figure svg{ display:block; width:100%; height:auto; min-width:560px; }
+  .flow-dot{ fill:var(--plum); }
+  .flow-dot.copper{ fill:var(--copper); } .flow-dot.teal{ fill:var(--teal); }
+  .dash-flow{ stroke-dasharray:5 6; animation:dashmove 1.4s linear infinite; }
+  @keyframes dashmove{ to{ stroke-dashoffset:-22; } }
+  @media (prefers-reduced-motion:reduce){ .dash-flow{ animation:none; } }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+  @media (max-width:680px){ .split{ grid-template-columns:1fr; } }
+  .mini-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .mini-card h3{ font-size:16px; margin:0 0 8px; }
+  .mini-card p, .mini-card li{ font-size:13.5px; color:var(--ink-soft); }
+  .mini-card p{ margin:0; }
+  .mini-card ul{ margin:0; padding-left:18px; }
+  .mini-card li{ margin:3px 0; }
+  .mini-card.good{ border-top:3px solid var(--teal); }
+  .mini-card.warn{ border-top:3px solid var(--copper); }
+  .mini-card.bad{ border-top:3px solid var(--brick); }
+  .mini-card.plum{ border-top:3px solid var(--plum); }
+
+  .role-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:32px; }
+  @media (max-width:900px){ .role-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .role-grid{ grid-template-columns:1fr; } }
+  .role-card{ position:relative; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 18px 18px; overflow:hidden; }
+  .role-card::before{ content:""; position:absolute; left:0; top:0; right:0; height:4px; background:var(--accent); }
+  .role-icon{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); margin-bottom:12px; }
+  .role-icon svg{ width:22px; height:22px; }
+  .role-step{ font-family:var(--font-mono); font-size:11px; color:var(--accent); letter-spacing:.06em; text-transform:uppercase; margin:0 0 4px; }
+  .role-card h3{ font-size:19px; margin:0 0 6px; }
+  .role-card .q{ font-size:13.5px; font-style:italic; color:var(--ink); margin:0 0 12px; }
+  .role-card dl{ margin:0; font-size:12.5px; }
+  .role-card dt{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:8px; }
+  .role-card dd{ margin:2px 0 0; color:var(--ink); }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+  .chip{ font-family:var(--font-mono); font-size:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-radius:999px; padding:6px 14px; }
+  .chip b{ color:var(--plum); font-weight:600; }
+
+  .compare{ width:100%; border-collapse:collapse; margin-top:28px; font-size:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .compare-wrap{ overflow-x:auto; }
+  .compare th, .compare td{ text-align:left; padding:12px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .compare thead th{ font-family:var(--font-mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); background:var(--plum-tint); }
+  .compare tbody th{ font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--ink-soft); width:22%; }
+  .compare tr:last-child th, .compare tr:last-child td{ border-bottom:none; }
+
+  .toggle{ display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; padding:3px; margin-top:24px; background:var(--paper-raised); }
+  .toggle button{ font-family:var(--font-mono); font-size:12px; border:0; background:transparent; color:var(--ink-soft); padding:7px 16px; border-radius:999px; cursor:pointer; }
+  .toggle button[aria-pressed="true"]{ background:var(--plum); color:var(--paper); }
+
+  .walk{ list-style:none; margin:28px 0 0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:12px; counter-reset:walk; }
+  @media (max-width:680px){ .walk{ grid-template-columns:1fr; } }
+  .walk li{ counter-increment:walk; display:flex; gap:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; font-size:14px; }
+  .walk li::before{ content:counter(walk); flex:none; width:26px; height:26px; border-radius:50%; background:var(--plum); color:var(--paper); font-family:var(--font-mono); font-size:12px; display:grid; place-items:center; }
+  .walk strong{ display:block; margin-bottom:2px; }
+  .walk span{ color:var(--ink-soft); font-size:13.5px; }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#seqpar" data-target="seqpar"><span class="dot"></span><span class="rail-label">01 · Sequential vs. parallel</span></a>
+  <a href="#handoff" data-target="handoff"><span class="dot"></span><span class="rail-label">02 · State &amp; handoff</span></a>
+  <a href="#roles" data-target="roles"><span class="dot"></span><span class="rail-label">03 · Agent roles</span></a>
+  <a href="#delegation" data-target="delegation"><span class="dot"></span><span class="rail-label">04 · Subagent delegation</span></a>
+  <a href="#failure" data-target="failure"><span class="dot"></span><span class="rail-label">05 · Failure &amp; bounds</span></a>
+  <a href="#granularity" data-target="granularity"><span class="dot"></span><span class="rail-label">06 · Granularity</span></a>
+  <a href="#observability" data-target="observability"><span class="dot"></span><span class="rail-label">07 · Observability</span></a>
+  <a href="#native" data-target="native"><span class="dot"></span><span class="rail-label">08 · Native vs. external</span></a>
+  <a href="#handson" data-target="handson"><span class="dot"></span><span class="rail-label">09 · Hands-on walkthrough</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">10 · Recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#seqpar" data-target="seqpar">01</a>
+  <a href="#handoff" data-target="handoff">02</a>
+  <a href="#roles" data-target="roles">03</a>
+  <a href="#delegation" data-target="delegation">04</a>
+  <a href="#failure" data-target="failure">05</a>
+  <a href="#granularity" data-target="granularity">06</a>
+  <a href="#observability" data-target="observability">07</a>
+  <a href="#native" data-target="native">08</a>
+  <a href="#handson" data-target="handson">09</a>
+  <a href="#recap" data-target="recap">10</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="fill-teal" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+    <marker id="arrow-brick" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="fill-brick" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+    <marker id="arrow-plum" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="fill-plum" d="M0,0 L10,5 L0,10 Z"></path>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 5 · Multi-Agent Orchestration Build — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Subagents &amp; Orchestration Patterns</h1>
+    <p class="lede hero-lede">Module 15 — 45 minutes, opening Day 5. Module 10 gave us agents, skills and subagents as building blocks; Module 14 wrapped them in governance. This module is about wiring several agents into a pipeline that holds up: how work flows between them, who does what, what happens when a step fails, and when a second agent is not worth adding.</p>
+
+    <figure class="hero-figure" aria-label="Pipeline preview">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 150" role="img" aria-label="A requirement flows through four agents in order — Validator, Builder, Generator and Reviewer — and comes out as a signed-off test suite. An orchestrator above the pipeline holds the shared state and watches each handoff.">
+          <rect class="box-plum" x="300" y="8" width="260" height="34" rx="17"></rect>
+          <text class="txt-plum" x="430" y="30" text-anchor="middle" font-size="11">Orchestrator · run state · budgets</text>
+          <g stroke="var(--plum)" stroke-width="1.2" stroke-dasharray="2 4" fill="none" opacity=".7">
+            <path d="M330,42 L200,78"></path><path d="M400,42 L360,78"></path><path d="M460,42 L520,78"></path><path d="M530,42 L680,78"></path>
+          </g>
+
+          <text class="lbl" x="20" y="104" font-size="10">requirement</text>
+          <path class="arrow dash-flow" d="M95,100 L138,100 M260,100 L298,100 M420,100 L458,100 M580,100 L618,100 M740,100 L766,100"></path>
+          <circle class="flow-dot" r="5" cx="0" cy="0">
+            <animateMotion dur="5s" repeatCount="indefinite" path="M95,100 L760,100"></animateMotion>
+          </circle>
+
+          <rect class="box-teal" x="140" y="80" width="120" height="42" rx="21"></rect>
+          <text class="txt-teal" x="200" y="106" text-anchor="middle" font-size="11">Validator</text>
+          <rect class="box-copper" x="300" y="80" width="120" height="42" rx="21"></rect>
+          <text class="txt-copper" x="360" y="106" text-anchor="middle" font-size="11">Builder</text>
+          <rect class="box-plum" x="460" y="80" width="120" height="42" rx="21"></rect>
+          <text class="txt-plum" x="520" y="106" text-anchor="middle" font-size="11">Generator</text>
+          <rect class="box-brick" x="620" y="80" width="120" height="42" rx="21"></rect>
+          <text class="txt-brick" x="680" y="106" text-anchor="middle" font-size="11">Reviewer</text>
+
+          <text class="lbl" x="772" y="96" font-size="10">signed-off</text>
+          <text class="lbl" x="772" y="110" font-size="10">tests</text>
+          <text class="lbl" x="430" y="142" text-anchor="middle" font-size="9.5">each arrow is a handoff: a contract, a log line, and a place to fail safely</text>
+
+          
+        </svg>
+      </div>
+    </figure>
+
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">2</span><span class="stat-label">subtopics</span></li>
+      <li class="stat-tile"><span class="stat-num">4</span><span class="stat-label">pipeline roles</span></li>
+      <li class="stat-tile"><span class="stat-num">45</span><span class="stat-label">minutes</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#seqpar"><span class="agenda-index">01</span><span>Sequential vs. parallel multi-agent pipelines</span></a></li>
+      <li><a href="#handoff"><span class="agenda-index">02</span><span>State and handoff between agents</span></a></li>
+      <li><a href="#roles"><span class="agenda-index">03</span><span>Designing agent roles: Validator, Builder, Generator, Reviewer</span></a></li>
+      <li><a href="#delegation"><span class="agenda-index">04</span><span>Subagent delegation and independent-context patterns</span></a></li>
+      <li><a href="#failure"><span class="agenda-index">05</span><span>Failure handling, retries, timeouts, and bounded execution</span></a></li>
+      <li><a href="#granularity"><span class="agenda-index">06</span><span>Choosing orchestration granularity without adding needless agents</span></a></li>
+      <li><a href="#observability"><span class="agenda-index">07</span><span>Observability and logging across agent handoffs</span></a></li>
+      <li><a href="#native"><span class="agenda-index">08</span><span>Cursor-native capabilities vs. external workflow orchestration</span></a></li>
+      <li><a href="#handson"><span class="agenda-index">09</span><span>Hands-on: walking through a sample pipeline diagram</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 01 -->
+<section class="deck-section" id="seqpar">
+  <div class="section-inner">
+    <p class="eyebrow">01 — Two basic shapes</p>
+    <h2 class="section-title">Sequential when each step needs the last one's output. Parallel when it doesn't.</h2>
+    <p class="lede">A sequential chain is easy to reason about: one input, one output, one place to look when it breaks. Fan-out/fan-in cuts wall-clock time, but only when the branches really are independent, and you then need a merge step to reconcile what comes back.</p>
+
+    <div class="toggle" role="group" aria-label="Pipeline shape">
+      <button type="button" data-shape="seq" aria-pressed="true">Sequential</button>
+      <button type="button" data-shape="par" aria-pressed="false">Parallel fan-out</button>
+      <button type="button" data-shape="both" aria-pressed="false">Compare</button>
+    </div>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 270" role="img" aria-label="Timeline comparison. Sequential: Validate, Build, Generate, Review run one after another and finish at 8 minutes. Parallel: after Validate, Generate unit tests, Generate API tests and Lint run side by side, then a Merge step and Review, finishing at about 6 minutes." style="min-width:700px">
+          <!-- axis -->
+          <line x1="130" y1="248" x2="840" y2="248" stroke="var(--line-strong)"></line>
+          <g class="lbl" font-size="9">
+            <text x="130" y="263" text-anchor="middle">0</text>
+            <text x="300" y="263" text-anchor="middle">2 min</text>
+            <text x="470" y="263" text-anchor="middle">4 min</text>
+            <text x="640" y="263" text-anchor="middle">6 min</text>
+            <text x="810" y="263" text-anchor="middle">8 min</text>
+          </g>
+
+          <g id="laneSeq">
+            <text class="lbl-strong" x="20" y="48" font-size="11">Sequential</text>
+            <rect class="box-teal" x="130" y="30" width="150" height="30" rx="6"></rect><text class="txt-teal" x="205" y="50" text-anchor="middle" font-size="10">Validate</text>
+            <rect class="box-copper" x="284" y="30" width="170" height="30" rx="6"></rect><text class="txt-copper" x="369" y="50" text-anchor="middle" font-size="10">Build sequence</text>
+            <rect class="box-plum" x="458" y="30" width="200" height="30" rx="6"></rect><text class="txt-plum" x="558" y="50" text-anchor="middle" font-size="10">Generate tests</text>
+            <rect class="box-brick" x="662" y="30" width="148" height="30" rx="6"></rect><text class="txt-brick" x="736" y="50" text-anchor="middle" font-size="10">Review</text>
+            <text class="lbl" x="130" y="78" font-size="9">+ simplest to trace  + each step sees a finished input  − slowest; one stall blocks all</text>
+          </g>
+
+          <g id="lanePar">
+            <text class="lbl-strong" x="20" y="150" font-size="11">Parallel</text>
+            <rect class="box-teal" x="130" y="135" width="150" height="30" rx="6"></rect><text class="txt-teal" x="205" y="155" text-anchor="middle" font-size="10">Validate</text>
+            <path class="arrow-thin" stroke="var(--ink-soft)" d="M280,150 L292,112"></path>
+            <path class="arrow-thin" stroke="var(--ink-soft)" d="M280,150 L292,150"></path>
+            <path class="arrow-thin" stroke="var(--ink-soft)" d="M280,150 L292,188"></path>
+            <rect class="box-plum" x="294" y="98" width="150" height="28" rx="6"></rect><text class="txt-plum" x="369" y="116" text-anchor="middle" font-size="9.5">Generate unit tests</text>
+            <rect class="box-plum" x="294" y="136" width="140" height="28" rx="6"></rect><text class="txt-plum" x="364" y="154" text-anchor="middle" font-size="9.5">Generate API tests</text>
+            <rect class="box" x="294" y="174" width="110" height="28" rx="6"></rect><text class="lbl-strong" x="349" y="192" text-anchor="middle" font-size="9.5">Lint spec</text>
+            <path class="arrow-thin" stroke="var(--ink-soft)" d="M444,112 L456,150"></path>
+            <path class="arrow-thin" stroke="var(--ink-soft)" d="M434,150 L456,150"></path>
+            <path class="arrow-thin" stroke="var(--ink-soft)" d="M404,188 L456,150"></path>
+            <rect class="box-copper" x="458" y="135" width="64" height="30" rx="6"></rect><text class="txt-copper" x="490" y="155" text-anchor="middle" font-size="10">Merge</text>
+            <rect class="box-brick" x="526" y="135" width="130" height="30" rx="6"></rect><text class="txt-brick" x="591" y="155" text-anchor="middle" font-size="10">Review</text>
+            <text class="lbl" x="130" y="226" font-size="9">+ ~20% faster here  − needs a merge/reconcile step  − branches must not share mutable state</text>
+            <line x1="656" y1="128" x2="656" y2="240" stroke="var(--teal)" stroke-dasharray="3 3"></line>
+            <text class="txt-teal" x="662" y="238" font-size="9">done ≈ 6.2 min</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Rule of thumb: parallelise reads and independent generation; keep writes to the same files sequential. Two agents editing one file at once is a merge conflict you created on purpose.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="deck-section" id="handoff">
+  <div class="section-inner">
+    <p class="eyebrow">02 — What actually crosses the arrow</p>
+    <h2 class="section-title">A handoff is a contract, not a chat transcript</h2>
+    <p class="lede">The next agent should not have to read the previous agent's whole conversation. It gets a small, typed payload plus pointers to artifacts on disk. The pipeline's state (which step, which attempt, what passed) sits with the orchestrator, not inside any single agent's memory.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 290" role="img" aria-label="Agent A passes a handoff envelope to Agent B. The envelope contains run id, step, status, an artifact path, assumptions and open questions. Both agents read and write a shared run-state file owned by the orchestrator. Large artifacts are written to disk and passed by reference rather than pasted into the envelope." style="min-width:720px">
+          <rect class="box-teal" x="20" y="60" width="170" height="80" rx="10"></rect>
+          <text class="txt-teal" x="105" y="95" text-anchor="middle" font-size="12">Agent A</text>
+          <text class="lbl" x="105" y="114" text-anchor="middle" font-size="9">Validator</text>
+
+          <path class="arrow" d="M190,100 L262,100" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="265" y="18" width="330" height="170" rx="10"></rect>
+          <path d="M265,28 L430,82 L595,28" fill="none" stroke="var(--line-strong)" stroke-width="1.2"></path>
+          <text class="lbl-strong" x="430" y="40" text-anchor="middle" font-size="10.5">handoff.json</text>
+          <g class="lbl" font-size="9.5">
+            <text x="285" y="102">run_id:      "rt-0192"</text>
+            <text x="285" y="118">step:        "validate" → "build"</text>
+            <text x="285" y="134"><tspan class="txt-teal">status:      PASS</tspan></text>
+            <text x="285" y="150">artifact:    ./runs/rt-0192/req.v.md</text>
+            <text x="285" y="166">assumptions: ["units = ms"]</text>
+            <text x="285" y="182">open_qs:     []</text>
+          </g>
+
+          <path class="arrow" d="M595,100 L667,100" marker-end="url(#arrow)"></path>
+
+          <rect class="box-copper" x="670" y="60" width="170" height="80" rx="10"></rect>
+          <text class="txt-copper" x="755" y="95" text-anchor="middle" font-size="12">Agent B</text>
+          <text class="lbl" x="755" y="114" text-anchor="middle" font-size="9">Sequence Builder</text>
+
+          <rect class="box-plum" x="200" y="222" width="460" height="52" rx="10"></rect>
+          <text class="txt-plum" x="430" y="243" text-anchor="middle" font-size="10.5">run-state (orchestrator-owned)</text>
+          <text class="lbl" x="430" y="261" text-anchor="middle" font-size="9">current step · attempt counts · gate results · budgets used</text>
+          <path class="arrow-thin" stroke="var(--plum)" stroke-dasharray="3 4" d="M105,140 L220,220" marker-end="url(#arrow-plum)"></path>
+          <path class="arrow-thin" stroke="var(--plum)" stroke-dasharray="3 4" d="M755,140 L640,220" marker-end="url(#arrow-plum)"></path>
+        </svg>
+      </div>
+      <figcaption>Artifacts go by reference (a file path), status goes by value. That keeps each agent's context small and makes every handoff easy to replay.</figcaption>
+    </figure>
+    <div class="split">
+      <div class="mini-card good"><h3>Put in the handoff</h3><ul><li>Status and a one-line reason</li><li>Paths to produced artifacts</li><li>Assumptions made and open questions</li><li>Run / trace id so the next step can log under it</li></ul></div>
+      <div class="mini-card bad"><h3>Keep out of the handoff</h3><ul><li>The previous agent's full reasoning or chat log</li><li>Whole files pasted inline</li><li>Secrets or credentials (Module 14)</li><li>Instructions that override the next agent's role</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="deck-section" id="roles">
+  <div class="section-inner">
+    <p class="eyebrow">03 — One job per agent</p>
+    <h2 class="section-title">Four roles, each with a clear input, output and boundary</h2>
+    <p class="lede">A role is worth having if it asks a question no other role asks. These four are the backbone of Module 16's lab. Note what each one is <em>not</em> allowed to do: that restriction is what keeps them independent.</p>
+    <div class="role-grid">
+      <article class="role-card" style="--accent:var(--teal)">
+        <div class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></div>
+        <p class="role-step">Step 1</p>
+        <h3>Validator</h3>
+        <p class="q">"Is this input complete and testable?"</p>
+        <dl><dt>In</dt><dd>Raw requirement</dd><dt>Out</dt><dd>PASS/FAIL + gaps list</dd><dt>Must not</dt><dd>Invent missing details</dd></dl>
+      </article>
+      <article class="role-card" style="--accent:var(--copper)">
+        <div class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 6.5h4a2 2 0 0 1 2 2V14"/></svg></div>
+        <p class="role-step">Step 2</p>
+        <h3>Builder</h3>
+        <p class="q">"What's the structure or sequence?"</p>
+        <dl><dt>In</dt><dd>Validated requirement</dd><dt>Out</dt><dd>Ordered test sequence / plan</dd><dt>Must not</dt><dd>Write executable code</dd></dl>
+      </article>
+      <article class="role-card" style="--accent:var(--plum)">
+        <div class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg></div>
+        <p class="role-step">Step 3</p>
+        <h3>Generator</h3>
+        <p class="q">"Turn the plan into working artifacts."</p>
+        <dl><dt>In</dt><dd>Sequence + repo conventions</dd><dt>Out</dt><dd>Code / tests (e.g. PyTest)</dd><dt>Must not</dt><dd>Change the plan silently</dd></dl>
+      </article>
+      <article class="role-card" style="--accent:var(--brick)">
+        <div class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+        <p class="role-step">Step 4</p>
+        <h3>Reviewer</h3>
+        <p class="q">"Does the output match the source?"</p>
+        <dl><dt>In</dt><dd>Artifacts + original requirement</dd><dt>Out</dt><dd>Sign-off or change requests</dd><dt>Must not</dt><dd>Fix what it reviews</dd></dl>
+      </article>
+    </div>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 120" role="img" aria-label="The Reviewer reads the original requirement directly rather than only the Generator's output, so it can catch drift that accumulated across the chain. Change requests loop back to the Generator." style="min-width:640px">
+          <rect class="box" x="20" y="45" width="130" height="36" rx="8"></rect><text class="lbl-strong" x="85" y="68" text-anchor="middle" font-size="10">Requirement</text>
+          <path class="arrow" d="M150,63 L200,63" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="202" y="45" width="110" height="36" rx="18"></rect><text class="txt-teal" x="257" y="68" text-anchor="middle" font-size="10">Validator</text>
+          <path class="arrow" d="M312,63 L352,63" marker-end="url(#arrow)"></path>
+          <rect class="box-copper" x="354" y="45" width="110" height="36" rx="18"></rect><text class="txt-copper" x="409" y="68" text-anchor="middle" font-size="10">Builder</text>
+          <path class="arrow" d="M464,63 L504,63" marker-end="url(#arrow)"></path>
+          <rect class="box-plum" x="506" y="45" width="110" height="36" rx="18"></rect><text class="txt-plum" x="561" y="68" text-anchor="middle" font-size="10">Generator</text>
+          <path class="arrow" d="M616,63 L656,63" marker-end="url(#arrow)"></path>
+          <rect class="box-brick" x="658" y="45" width="110" height="36" rx="18"></rect><text class="txt-brick" x="713" y="68" text-anchor="middle" font-size="10">Reviewer</text>
+          <path class="arrow-thin" stroke="var(--brick)" stroke-dasharray="4 4" d="M85,45 C85,20 713,20 713,43" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="400" y="16" text-anchor="middle" font-size="9">reads the source directly, so drift across the chain gets caught</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M713,81 C713,112 561,112 561,83" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="637" y="112" text-anchor="middle" font-size="9">change requests</text>
+          <text class="lbl" x="790" y="68" font-size="10">✓ ship</text>
+        </svg>
+      </div>
+      <figcaption>An independent Reviewer only works if it doesn't share the Generator's context and isn't grading its own homework. Section 04 covers how that's arranged.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="deck-section" id="delegation">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Fresh context on purpose</p>
+    <h2 class="section-title">Subagents start clean and return only a summary</h2>
+    <p class="lede">When the parent agent delegates, the subagent gets a brief, not the parent's history. It can read 40 files, run searches and try things, and all of that noise stays in <em>its</em> context. The parent gets back a short result and keeps its own context for coordinating.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="A parent agent with a context window at 28 percent use delegates three briefs to three subagents. Each subagent has its own independent context window that fills up with exploration. Each returns only a short summary to the parent. Inline, the same work would have filled the parent's context to about 95 percent." style="min-width:720px">
+          <!-- parent -->
+          <rect class="box-plum" x="20" y="90" width="210" height="120" rx="12"></rect>
+          <text class="txt-plum" x="125" y="116" text-anchor="middle" font-size="12">Parent agent</text>
+          <text class="lbl" x="125" y="134" text-anchor="middle" font-size="9">plans · delegates · merges</text>
+          <rect x="40" y="152" width="170" height="14" rx="7" fill="none" stroke="var(--line-strong)"></rect>
+          <rect x="40" y="152" width="48" height="14" rx="7" class="fill-teal" opacity=".8"></rect>
+          <text class="lbl" x="125" y="186" text-anchor="middle" font-size="9">context used: 28%</text>
+          <text class="txt-brick" x="125" y="202" text-anchor="middle" font-size="8.5">(inline it would be ~95%)</text>
+
+          <!-- briefs out -->
+          <path class="arrow" d="M230,120 L380,52" marker-end="url(#arrow)"></path>
+          <path class="arrow" d="M230,150 L380,150" marker-end="url(#arrow)"></path>
+          <path class="arrow" d="M230,180 L380,248" marker-end="url(#arrow)"></path>
+          <text class="lbl" x="300" y="74" font-size="9" text-anchor="middle">brief</text>
+          <text class="lbl" x="300" y="143" font-size="9" text-anchor="middle">brief</text>
+          <text class="lbl" x="300" y="232" font-size="9" text-anchor="middle">brief</text>
+
+          <!-- subagents -->
+          <g>
+            <rect class="box" x="382" y="22" width="290" height="62" rx="10"></rect>
+            <text class="lbl-strong" x="398" y="44" font-size="10.5">Explore: find API contracts</text>
+            <rect x="398" y="56" width="160" height="12" rx="6" fill="none" stroke="var(--line-strong)"></rect>
+            <rect x="398" y="56" width="138" height="12" rx="6" class="fill-copper" opacity=".75"></rect>
+            <text class="lbl" x="570" y="66" font-size="8.5">own ctx 86%</text>
+          </g>
+          <g>
+            <rect class="box" x="382" y="120" width="290" height="62" rx="10"></rect>
+            <text class="lbl-strong" x="398" y="142" font-size="10.5">Generate: unit tests</text>
+            <rect x="398" y="154" width="160" height="12" rx="6" fill="none" stroke="var(--line-strong)"></rect>
+            <rect x="398" y="154" width="104" height="12" rx="6" class="fill-copper" opacity=".75"></rect>
+            <text class="lbl" x="570" y="164" font-size="8.5">own ctx 65%</text>
+          </g>
+          <g>
+            <rect class="box" x="382" y="218" width="290" height="62" rx="10"></rect>
+            <text class="lbl-strong" x="398" y="240" font-size="10.5">Review: independent check</text>
+            <rect x="398" y="252" width="160" height="12" rx="6" fill="none" stroke="var(--line-strong)"></rect>
+            <rect x="398" y="252" width="72" height="12" rx="6" class="fill-copper" opacity=".75"></rect>
+            <text class="lbl" x="570" y="262" font-size="8.5">own ctx 45%</text>
+          </g>
+
+          <!-- summaries back -->
+          <path class="arrow-thin" stroke="var(--teal)" stroke-width="1.6" d="M672,53 L712,53" marker-end="url(#arrow-teal)"></path>
+          <path class="arrow-thin" stroke="var(--teal)" stroke-width="1.6" d="M672,151 L712,151" marker-end="url(#arrow-teal)"></path>
+          <path class="arrow-thin" stroke="var(--teal)" stroke-width="1.6" d="M672,249 L712,249" marker-end="url(#arrow-teal)"></path>
+          <rect class="box-teal" x="714" y="38" width="130" height="30" rx="6"></rect><text class="txt-teal" x="779" y="57" text-anchor="middle" font-size="9">5 endpoints + paths</text>
+          <rect class="box-teal" x="714" y="136" width="130" height="30" rx="6"></rect><text class="txt-teal" x="779" y="155" text-anchor="middle" font-size="9">12 tests · file path</text>
+          <rect class="box-teal" x="714" y="234" width="130" height="30" rx="6"></rect><text class="txt-teal" x="779" y="253" text-anchor="middle" font-size="9">PASS · 2 nits</text>
+          <text class="lbl" x="779" y="108" text-anchor="middle" font-size="9">summaries flow</text>
+          <text class="lbl" x="779" y="120" text-anchor="middle" font-size="9">back to parent</text>
+        </svg>
+      </div>
+      <figcaption>Independent context is also a quality property: a Reviewer that never saw the Generator's reasoning can't be talked into agreeing with it.</figcaption>
+    </figure>
+    <div class="split">
+      <div class="mini-card plum"><h3>Delegate when…</h3><ul><li>The subtask is noisy (search, exploration, long logs)</li><li>You need an unbiased second opinion</li><li>Branches can run in parallel</li><li>The subtask needs different tools or tighter permissions</li></ul></div>
+      <div class="mini-card warn"><h3>A good brief contains…</h3><ul><li>Goal plus a definition of done</li><li>Exact inputs (paths, ids), not "see above"</li><li>Constraints: read-only? which folders?</li><li>The shape of the answer you want back</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="deck-section" id="failure">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Every loop needs an exit</p>
+    <h2 class="section-title">Retry with feedback, time out, then stop and escalate</h2>
+    <p class="lede">Agents fail in quieter ways than code does: wrong output that looks right, loops that never converge, tool calls that hang. Every step needs three limits (attempts, time, budget) and a defined thing that happens when a limit is hit. Silently continuing should never be that thing.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 285" role="img" aria-label="State machine for one pipeline step. The step runs, then a check decides pass or fail. Pass hands off to the next step. Fail checks whether attempts are under three; if so, it feeds the failure reason back and retries. If the attempt limit, timeout or budget is exceeded, the step moves to a fail-safe stop that preserves state and escalates to a human." style="min-width:720px">
+          <rect class="box" x="20" y="105" width="120" height="50" rx="25"></rect>
+          <text class="lbl-strong" x="80" y="135" text-anchor="middle" font-size="11">Run step</text>
+          <path class="arrow" d="M140,130 L218,130" marker-end="url(#arrow)"></path>
+
+          <path class="box-copper" d="M280,90 L340,130 L280,170 L220,130 Z"></path>
+          <text class="txt-copper" x="280" y="127" text-anchor="middle" font-size="10">check</text>
+          <text class="txt-copper" x="280" y="141" text-anchor="middle" font-size="9">output</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M340,130 L420,130" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="380" y="122" text-anchor="middle" font-size="9.5">PASS</text>
+          <rect class="box-teal" x="422" y="105" width="150" height="50" rx="10"></rect>
+          <text class="txt-teal" x="497" y="127" text-anchor="middle" font-size="10.5">Handoff to next</text>
+          <text class="lbl" x="497" y="143" text-anchor="middle" font-size="8.5">log + update run-state</text>
+
+          <path class="arrow" stroke="var(--brick)" d="M280,170 L280,208" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="292" y="195" font-size="9.5">FAIL</text>
+          <path class="box" d="M280,210 L345,240 L280,270 L215,240 Z"></path>
+          <text class="lbl-strong" x="280" y="238" text-anchor="middle" font-size="9">attempt &lt; 3</text>
+          <text class="lbl-strong" x="280" y="251" text-anchor="middle" font-size="9">&amp; in budget?</text>
+
+          <path class="arrow" stroke="var(--copper)" d="M215,240 L80,240 L80,158" marker-end="url(#arrow)"></path>
+          <text class="txt-copper" x="148" y="256" text-anchor="middle" font-size="9">yes: retry with failure reason</text>
+          <text class="lbl" x="140" y="272" text-anchor="middle" font-size="8.5">(backoff; never resend the same prompt)</text>
+
+          <path class="arrow" stroke="var(--brick)" d="M345,240 L620,240" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="480" y="232" text-anchor="middle" font-size="9">no</text>
+          <rect class="box-brick" x="622" y="205" width="218" height="68" rx="10"></rect>
+          <text class="txt-brick" x="731" y="228" text-anchor="middle" font-size="10.5">Fail-safe stop</text>
+          <text class="lbl" x="731" y="245" text-anchor="middle" font-size="8.5">keep artifacts + run-state</text>
+          <text class="lbl" x="731" y="260" text-anchor="middle" font-size="8.5">escalate to a human with context</text>
+
+          <!-- timeout watchdog -->
+          <rect class="box-plum" x="20" y="18" width="330" height="44" rx="10"></rect>
+          <text class="txt-plum" x="185" y="37" text-anchor="middle" font-size="10">⏱ watchdog: timeout / max turns / token budget</text>
+          <text class="lbl" x="185" y="53" text-anchor="middle" font-size="8.5">fires at any time while the step runs</text>
+          <path class="arrow-thin" stroke="var(--plum)" stroke-dasharray="4 4" d="M80,62 L80,103"></path>
+          <path class="arrow-thin" stroke="var(--brick)" stroke-dasharray="4 4" d="M350,40 L731,40 L731,203" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="560" y="33" text-anchor="middle" font-size="9">limit hit, skip straight to stop</text>
+        </svg>
+      </div>
+      <figcaption>Retries only help if the second attempt knows why the first one failed. Re-running the same prompt usually gets you the same wrong answer.</figcaption>
+    </figure>
+    <div class="chip-row" aria-label="Example bounds">
+      <span class="chip">max_attempts <b>3</b></span>
+      <span class="chip">step_timeout <b>120s</b></span>
+      <span class="chip">max_turns <b>25</b></span>
+      <span class="chip">run_token_budget <b>200K</b></span>
+      <span class="chip">on_exhaust <b>stop + escalate</b></span>
+      <span class="chip">retry_scope <b>this step only</b></span>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="deck-section" id="granularity">
+  <div class="section-inner">
+    <p class="eyebrow">06 — The cheapest agent is the one you didn't add</p>
+    <h2 class="section-title">Climb the ladder only as far as the problem needs</h2>
+    <p class="lede">Each extra agent adds a handoff, a failure point, latency and cost (Module 14's cost table). Start at the lowest rung that works. Only move up when you can say which specific problem the next rung solves.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 260" role="img" aria-label="A five-step ladder rising left to right: single prompt, prompt plus rule or skill, one agent with subagents, sequential pipeline, and parallel pipeline with an orchestrator. An arrow underneath shows cost, latency and failure surface increasing with each step. Each step lists when it is justified." style="min-width:720px">
+          <g>
+            <rect class="box-teal" x="20" y="180" width="155" height="54" rx="8"></rect>
+            <text class="txt-teal" x="97" y="202" text-anchor="middle" font-size="10">Single prompt</text>
+            <text class="lbl" x="97" y="220" text-anchor="middle" font-size="8.5">one-off, small scope</text>
+
+            <rect class="box-teal" x="185" y="145" width="155" height="89" rx="8"></rect>
+            <text class="txt-teal" x="262" y="167" text-anchor="middle" font-size="10">+ Rule / Skill</text>
+            <text class="lbl" x="262" y="185" text-anchor="middle" font-size="8.5">repeatable procedure,</text>
+            <text class="lbl" x="262" y="198" text-anchor="middle" font-size="8.5">same agent</text>
+
+            <rect class="box-copper" x="350" y="110" width="155" height="124" rx="8"></rect>
+            <text class="txt-copper" x="427" y="132" text-anchor="middle" font-size="10">Agent + subagents</text>
+            <text class="lbl" x="427" y="150" text-anchor="middle" font-size="8.5">noisy side-tasks,</text>
+            <text class="lbl" x="427" y="163" text-anchor="middle" font-size="8.5">independent review</text>
+
+            <rect class="box-plum" x="515" y="75" width="155" height="159" rx="8"></rect>
+            <text class="txt-plum" x="592" y="97" text-anchor="middle" font-size="10">Sequential pipeline</text>
+            <text class="lbl" x="592" y="115" text-anchor="middle" font-size="8.5">distinct roles, gates</text>
+            <text class="lbl" x="592" y="128" text-anchor="middle" font-size="8.5">between stages</text>
+
+            <rect class="box-brick" x="680" y="40" width="160" height="194" rx="8"></rect>
+            <text class="txt-brick" x="760" y="62" text-anchor="middle" font-size="10">Parallel + orchestrator</text>
+            <text class="lbl" x="760" y="80" text-anchor="middle" font-size="8.5">independent branches,</text>
+            <text class="lbl" x="760" y="93" text-anchor="middle" font-size="8.5">time matters, durable state</text>
+          </g>
+          <path class="arrow" d="M20,250 L838,250" marker-end="url(#arrow)"></path>
+          
+          <text class="lbl-strong" x="430" y="30" text-anchor="middle" font-size="10">cost · latency · failure surface · debugging effort →</text>
+        </svg>
+      </div>
+    </figure>
+    <div class="split">
+      <div class="mini-card good"><h3>Split into another agent only if one of these is true</h3><ul><li>It needs a <strong>different context</strong> (would pollute or bias the current one)</li><li>It needs <strong>independent verification</strong></li><li>It needs <strong>different tools or permissions</strong></li><li>It can run <strong>in parallel</strong> and time matters</li></ul></div>
+      <div class="mini-card bad"><h3>Smells of over-orchestration</h3><ul><li>An agent whose output is just passed straight through</li><li>Two agents that always need each other's full context</li><li>"Manager" agents managing one worker</li><li>More handoff code than task logic</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="deck-section" id="observability">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Subtopic: seeing across handoffs</p>
+    <h2 class="section-title">One run id, one span per agent, one line per handoff</h2>
+    <p class="lede">Module 14 introduced tracing and handoff logs. In a pipeline they answer the first debugging question: <em>which handoff went wrong?</em> A failure at the Reviewer is usually caused two steps earlier, and the trace is what lets you follow it back.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 250" role="img" aria-label="A waterfall trace for run rt-0192. Validator span passes. Builder span passes. Generator attempt 1 fails and attempt 2 passes. Reviewer span fails, and an annotation traces the root cause back to an assumption recorded in the Builder's handoff." style="min-width:720px">
+          <text class="lbl-strong" x="20" y="24" font-size="10.5">trace · run_id rt-0192</text>
+          <line x1="150" y1="36" x2="840" y2="36" stroke="var(--line-strong)"></line>
+
+          <text class="lbl" x="20" y="62" font-size="10">Validator</text>
+          <rect class="box-teal" x="150" y="48" width="110" height="20" rx="4"></rect><text class="txt-teal" x="268" y="62" font-size="9">PASS · 1.1K tok</text>
+
+          <text class="lbl" x="20" y="96" font-size="10">Builder</text>
+          <rect class="box-copper" x="262" y="82" width="140" height="20" rx="4"></rect><text class="txt-copper" x="410" y="96" font-size="9">PASS · assumption: "units = s"</text>
+
+          <text class="lbl" x="20" y="130" font-size="10">Generator #1</text>
+          <rect class="box-brick" x="404" y="116" width="120" height="20" rx="4"></rect><text class="txt-brick" x="532" y="130" font-size="9">FAIL · syntax</text>
+
+          <text class="lbl" x="20" y="164" font-size="10">Generator #2</text>
+          <rect class="box-plum" x="526" y="150" width="140" height="20" rx="4"></rect><text class="txt-plum" x="674" y="164" font-size="9">PASS</text>
+
+          <text class="lbl" x="20" y="198" font-size="10">Reviewer</text>
+          <rect class="box-brick" x="668" y="184" width="110" height="20" rx="4"></rect><text class="txt-brick" x="786" y="198" font-size="9">FAIL</text>
+
+          <path class="arrow-thin" stroke="var(--brick)" stroke-dasharray="4 4" d="M720,208 C720,238 332,238 332,106" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="520" y="244" text-anchor="middle" font-size="9">root cause: spec says ms, Builder assumed s. Visible only because the handoff logged it</text>
+        </svg>
+      </div>
+      <figcaption>Log at every handoff: run id, from/to, attempt number, status, artifact path, assumptions, tokens and duration. Same fields every time, so they can be queried.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="deck-section" id="native">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Subtopic: where Cursor ends and your pipeline begins</p>
+    <h2 class="section-title">Cursor-native orchestration vs. external workflow orchestration</h2>
+    <p class="lede">Inside Cursor, the agent is the orchestrator. It decides when to delegate, in an interactive session with a developer watching. An external orchestrator (CI job, script, workflow engine) owns the control flow in code and calls agents as steps. Most teams need both, and they should know which layer owns which guarantee.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 250" role="img" aria-label="Two layers. The inner layer is the Cursor session: Agent mode with subagents, parallel agents, rules, skills, hooks and MCP tools, with a developer in the loop. The outer layer is external workflow orchestration: a CI pipeline or workflow engine with deterministic control flow, durable state, scheduling, retries across runs and audit, which calls the Cursor agent headlessly as one step." style="min-width:720px">
+          <rect class="box" x="20" y="20" width="820" height="210" rx="16" stroke-dasharray="6 5"></rect>
+          <text class="lbl-strong" x="40" y="44" font-size="11">External orchestration: CI / workflow engine / scripts</text>
+          <text class="lbl" x="40" y="62" font-size="9">deterministic control flow · durable state · schedules &amp; triggers · retries across runs · approvals</text>
+
+          <rect class="box" x="40" y="100" width="120" height="40" rx="8"></rect><text class="lbl-strong" x="100" y="124" text-anchor="middle" font-size="9.5">trigger (PR/ticket)</text>
+          <path class="arrow" d="M160,120 L218,120" marker-end="url(#arrow)"></path>
+
+          <rect class="box-plum" x="220" y="80" width="400" height="130" rx="12"></rect>
+          <text class="txt-plum" x="420" y="102" text-anchor="middle" font-size="11">Cursor session (native)</text>
+          <g font-size="9">
+            <rect class="box-plum" x="240" y="114" width="115" height="26" rx="13"></rect><text class="txt-plum" x="297" y="131" text-anchor="middle">Agent mode</text>
+            <rect class="box-plum" x="363" y="114" width="115" height="26" rx="13"></rect><text class="txt-plum" x="420" y="131" text-anchor="middle">Subagents</text>
+            <rect class="box-plum" x="486" y="114" width="115" height="26" rx="13"></rect><text class="txt-plum" x="543" y="131" text-anchor="middle">Parallel agents</text>
+            <rect class="box-plum" x="240" y="148" width="115" height="26" rx="13"></rect><text class="txt-plum" x="297" y="165" text-anchor="middle">Rules · Skills</text>
+            <rect class="box-plum" x="363" y="148" width="115" height="26" rx="13"></rect><text class="txt-plum" x="420" y="165" text-anchor="middle">Hooks</text>
+            <rect class="box-plum" x="486" y="148" width="115" height="26" rx="13"></rect><text class="txt-plum" x="543" y="165" text-anchor="middle">MCP tools</text>
+          </g>
+          <text class="lbl" x="420" y="196" text-anchor="middle" font-size="9">developer in the loop · agent decides the flow</text>
+
+          <path class="arrow" d="M620,145 L678,145" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="680" y="100" width="140" height="40" rx="8"></rect><text class="txt-teal" x="750" y="124" text-anchor="middle" font-size="9.5">gate / approval</text>
+          <rect class="box-teal" x="680" y="150" width="140" height="40" rx="8"></rect><text class="txt-teal" x="750" y="174" text-anchor="middle" font-size="9.5">merge / deploy</text>
+        </svg>
+      </div>
+      <figcaption>Native features cover the loop a developer works in. Guarantees that must hold without anyone watching (scheduled runs, cross-run retries, mandatory approvals, long-lived state) belong in the outer layer.</figcaption>
+    </figure>
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead><tr><th>Concern</th><th>Cursor-native</th><th>External orchestration</th></tr></thead>
+        <tbody>
+          <tr><th>Who decides next step</th><td>The agent, guided by rules / skills / prompts</td><td>Code: explicit DAG or state machine</td></tr>
+          <tr><th>State</th><td>Session context + files in the workspace</td><td>Durable store that survives restarts</td></tr>
+          <tr><th>Retries &amp; timeouts</th><td>Within the session; bounded by prompt and hooks</td><td>Enforced by the runner, per step, across runs</td></tr>
+          <tr><th>Human role</th><td>Watching and steering live</td><td>Explicit approval checkpoints</td></tr>
+          <tr><th>Best fit</th><td>Interactive build, explore, refactor, review</td><td>Repeatable, scheduled or unattended pipelines</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="deck-section" id="handson">
+  <div class="section-inner">
+    <p class="eyebrow">09 — Hands-on: read a pipeline diagram like a reviewer</p>
+    <h2 class="section-title">Walk the sample pipeline, one numbered point at a time</h2>
+    <p class="lede">This is the Module 16 pipeline drawn with everything from this module on it. Go through the numbered points as a group. For each one, ask: what's the contract, what's the bound, and what gets logged?</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 330" role="img" aria-label="Sample requirement-to-test pipeline. An orchestrator owns run-state. A requirement enters the Requirement Validator, which gates on completeness. The Sequence Builder produces a test sequence. The Test Generator and API Validator then run with the API Validator checking generated tests against the interface. A Reviewer subagent with independent context signs off before commit. Numbered callouts mark the entry gate, the handoff contract, the parallel-capable branch, the retry loop, the independent reviewer, the human escalation path and the trace spanning the whole run." style="min-width:760px">
+          <!-- orchestrator -->
+          <rect class="box-plum" x="20" y="14" width="820" height="36" rx="10"></rect>
+          <text class="txt-plum" x="430" y="37" text-anchor="middle" font-size="10.5">Orchestrator · run-state · budgets · trace rt-xxxx</text>
+
+          <!-- nodes -->
+          <rect class="box" x="20" y="130" width="96" height="46" rx="8"></rect><text class="lbl-strong" x="68" y="151" text-anchor="middle" font-size="9.5">Engineering</text><text class="lbl-strong" x="68" y="165" text-anchor="middle" font-size="9.5">requirement</text>
+          <path class="arrow" d="M116,153 L146,153" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="148" y="128" width="118" height="50" rx="25"></rect><text class="txt-teal" x="207" y="150" text-anchor="middle" font-size="9.5">Requirement</text><text class="txt-teal" x="207" y="164" text-anchor="middle" font-size="9.5">Validator</text>
+          <path class="arrow" d="M266,153 L300,153" marker-end="url(#arrow)"></path>
+
+          <rect class="box-copper" x="302" y="128" width="118" height="50" rx="25"></rect><text class="txt-copper" x="361" y="150" text-anchor="middle" font-size="9.5">Sequence</text><text class="txt-copper" x="361" y="164" text-anchor="middle" font-size="9.5">Builder</text>
+          <path class="arrow" d="M420,153 L454,153" marker-end="url(#arrow)"></path>
+
+          <rect class="box-plum" x="456" y="128" width="118" height="50" rx="25"></rect><text class="txt-plum" x="515" y="150" text-anchor="middle" font-size="9.5">Test</text><text class="txt-plum" x="515" y="164" text-anchor="middle" font-size="9.5">Generator</text>
+          <path class="arrow" d="M574,153 L608,153" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="610" y="128" width="100" height="50" rx="25"></rect><text class="txt-teal" x="660" y="150" text-anchor="middle" font-size="9.5">API</text><text class="txt-teal" x="660" y="164" text-anchor="middle" font-size="9.5">Validator</text>
+          <path class="arrow" d="M710,153 L738,153" marker-end="url(#arrow)"></path>
+
+          <rect class="box-brick" x="740" y="128" width="100" height="50" rx="25" stroke-dasharray="4 3"></rect><text class="txt-brick" x="790" y="150" text-anchor="middle" font-size="9.5">Reviewer</text><text class="lbl" x="790" y="164" text-anchor="middle" font-size="8">subagent</text>
+
+          <!-- retry loop -->
+          <path class="arrow-thin" stroke="var(--copper)" d="M660,178 C660,215 515,215 515,180" marker-end="url(#arrow)"></path>
+          <text class="txt-copper" x="588" y="226" text-anchor="middle" font-size="8.5">fail: retry ≤ 3 with reason</text>
+
+          <!-- reject back -->
+          <path class="arrow-thin" stroke="var(--brick)" stroke-dasharray="4 4" d="M207,178 L207,262" marker-end="url(#arrow-brick)"></path>
+          <rect class="box-brick" x="130" y="264" width="160" height="40" rx="8"></rect>
+          <text class="txt-brick" x="210" y="282" text-anchor="middle" font-size="9">incomplete → back to</text>
+          <text class="txt-brick" x="210" y="296" text-anchor="middle" font-size="9">author (human)</text>
+
+          <!-- commit -->
+          <path class="arrow" stroke="var(--teal)" d="M790,178 L790,262" marker-end="url(#arrow-teal)"></path>
+          <rect class="box-teal" x="700" y="264" width="140" height="40" rx="8"></rect>
+          <text class="txt-teal" x="770" y="282" text-anchor="middle" font-size="9">sign-off → commit</text>
+          <text class="lbl" x="770" y="296" text-anchor="middle" font-size="8">tests traced to REQ id</text>
+
+          <!-- escalate -->
+          <path class="arrow-thin" stroke="var(--brick)" stroke-dasharray="4 4" d="M570,234 L570,262" marker-end="url(#arrow-brick)"></path>
+          <rect class="box-brick" x="470" y="264" width="200" height="40" rx="8"></rect>
+          <text class="txt-brick" x="570" y="288" text-anchor="middle" font-size="9">limit hit → stop + escalate</text>
+
+          <!-- trace dashed lines up -->
+          <g stroke="var(--plum)" stroke-dasharray="2 4" stroke-width="1.1" opacity=".7">
+            <line x1="207" y1="50" x2="207" y2="126"></line><line x1="361" y1="50" x2="361" y2="126"></line><line x1="515" y1="50" x2="515" y2="126"></line><line x1="660" y1="50" x2="660" y2="126"></line><line x1="790" y1="50" x2="790" y2="126"></line>
+          </g>
+
+          <!-- callouts -->
+          <g font-size="10" font-weight="600">
+            <circle cx="148" cy="112" r="10" class="fill-plum"></circle><text x="148" y="116" text-anchor="middle" fill="var(--paper)">1</text>
+            <circle cx="283" cy="138" r="10" class="fill-plum"></circle><text x="283" y="142" text-anchor="middle" fill="var(--paper)">2</text>
+            <circle cx="592" cy="112" r="10" class="fill-plum"></circle><text x="592" y="116" text-anchor="middle" fill="var(--paper)">3</text>
+            <circle cx="640" cy="206" r="10" class="fill-plum"></circle><text x="640" y="210" text-anchor="middle" fill="var(--paper)">4</text>
+            <circle cx="836" cy="112" r="10" class="fill-plum"></circle><text x="836" y="116" text-anchor="middle" fill="var(--paper)">5</text>
+            <circle cx="682" cy="284" r="10" class="fill-plum"></circle><text x="682" y="288" text-anchor="middle" fill="var(--paper)">6</text>
+            <circle cx="30" cy="32" r="10" class="fill-plum"></circle><text x="30" y="36" text-anchor="middle" fill="var(--paper)">7</text>
+          </g>
+        </svg>
+      </div>
+    </figure>
+    <ol class="walk">
+      <li><div><strong>Entry gate</strong><span>The Validator rejects early. An incomplete requirement goes back to its author, not further down the chain.</span></div></li>
+      <li><div><strong>Handoff contract</strong><span>What fields cross this arrow? Which are passed by path rather than inline?</span></div></li>
+      <li><div><strong>Sequential or parallel?</strong><span>Could API validation run beside generation, or does it need the generated tests first?</span></div></li>
+      <li><div><strong>Retry loop</strong><span>Who retries (the Generator), what feedback is reused, and what is the cap?</span></div></li>
+      <li><div><strong>Independent reviewer</strong><span>Why is it a subagent with its own context? What does it read directly?</span></div></li>
+      <li><div><strong>Fail-safe path</strong><span>What state is kept when a limit is hit, and who receives the escalation?</span></div></li>
+      <li><div><strong>Trace &amp; orchestrator</strong><span>Native Cursor session or external runner? What does one run's trace show end to end?</span></div></li>
+      <li><div><strong>Your turn</strong><span>Redraw it with one agent removed. What would you lose, and would anyone notice?</span></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">10 — Before the lab</p>
+    <h2 class="section-title">Carry these five ideas into Module 16</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Go sequential when steps depend on each other and parallel only when branches are truly independent. Pass state through small, typed handoffs.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Each role asks one question and has one thing it must not do. Validator, Builder, Generator and Reviewer stay separate for that reason.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Subagents give you a clean context: less noise for the parent, and a reviewer that hasn't already been persuaded.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Every step gets attempt, time and budget limits, retries carry the failure reason, and hitting a limit means stopping and escalating.</p></div>
+      <div class="recap-chip" style="grid-column:1/-1"><span class="recap-num">05</span><p>Add agents only for a named reason, trace every handoff under one run id, and decide which guarantees come from Cursor and which from an external orchestrator.</p></div>
+    </div>
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 16: Use Case Lab 3, Multi-Agent Requirement-to-Test Automation.</strong> You'll build the pipeline from Section 09: Requirement Validator → Sequence Builder → Test Generator → API Validator → Reviewer.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 15 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+
+    // Sequential / parallel toggle
+    var seq = document.getElementById('laneSeq'), par = document.getElementById('lanePar');
+    var btns = document.querySelectorAll('.toggle button');
+    function show(mode){
+      btns.forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.shape === mode)); });
+      seq.style.opacity = (mode === 'par') ? '.15' : '1';
+      par.style.opacity = (mode === 'seq') ? '.15' : '1';
+    }
+    btns.forEach(function(b){ b.addEventListener('click', function(){ show(b.dataset.shape); }); });
+    [seq, par].forEach(function(g){ g.style.transition = 'opacity .3s'; });
+    show('both');
+
+    // Respect reduced motion for the SMIL hero dot
+    if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      document.querySelectorAll('animateMotion').forEach(function(a){ a.parentNode.removeChild(a); });
+      document.querySelectorAll('.flow-dot').forEach(function(d){ d.setAttribute('cx', 100); d.setAttribute('cy', 100); });
+    }
+  }catch(e){}
+})();
+</script>

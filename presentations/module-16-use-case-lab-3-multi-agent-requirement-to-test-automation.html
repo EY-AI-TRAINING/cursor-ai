@@ -1,0 +1,1155 @@
+<title>Requirement-to-Test Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ fill:var(--ink-soft); }
+  .lbl-strong{ fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+
+  /* Module 15 additions */
+  .hero-figure{ margin:0 0 44px; padding:18px 22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .hero-figure svg{ display:block; width:100%; height:auto; min-width:560px; }
+  .flow-dot{ fill:var(--plum); }
+  .flow-dot.copper{ fill:var(--copper); } .flow-dot.teal{ fill:var(--teal); }
+  .dash-flow{ stroke-dasharray:5 6; animation:dashmove 1.4s linear infinite; }
+  @keyframes dashmove{ to{ stroke-dashoffset:-22; } }
+  @media (prefers-reduced-motion:reduce){ .dash-flow{ animation:none; } }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+  @media (max-width:680px){ .split{ grid-template-columns:1fr; } }
+  .mini-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .mini-card h3{ font-size:16px; margin:0 0 8px; }
+  .mini-card p, .mini-card li{ font-size:13.5px; color:var(--ink-soft); }
+  .mini-card p{ margin:0; }
+  .mini-card ul{ margin:0; padding-left:18px; }
+  .mini-card li{ margin:3px 0; }
+  .mini-card.good{ border-top:3px solid var(--teal); }
+  .mini-card.warn{ border-top:3px solid var(--copper); }
+  .mini-card.bad{ border-top:3px solid var(--brick); }
+  .mini-card.plum{ border-top:3px solid var(--plum); }
+
+  .role-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:32px; }
+  @media (max-width:900px){ .role-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .role-grid{ grid-template-columns:1fr; } }
+  .role-card{ position:relative; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 18px 18px; overflow:hidden; }
+  .role-card::before{ content:""; position:absolute; left:0; top:0; right:0; height:4px; background:var(--accent); }
+  .role-icon{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); margin-bottom:12px; }
+  .role-icon svg{ width:22px; height:22px; }
+  .role-step{ font-family:var(--font-mono); font-size:11px; color:var(--accent); letter-spacing:.06em; text-transform:uppercase; margin:0 0 4px; }
+  .role-card h3{ font-size:19px; margin:0 0 6px; }
+  .role-card .q{ font-size:13.5px; font-style:italic; color:var(--ink); margin:0 0 12px; }
+  .role-card dl{ margin:0; font-size:12.5px; }
+  .role-card dt{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:8px; }
+  .role-card dd{ margin:2px 0 0; color:var(--ink); }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+  .chip{ font-family:var(--font-mono); font-size:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-radius:999px; padding:6px 14px; }
+  .chip b{ color:var(--plum); font-weight:600; }
+
+  .compare{ width:100%; border-collapse:collapse; margin-top:28px; font-size:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .compare-wrap{ overflow-x:auto; }
+  .compare th, .compare td{ text-align:left; padding:12px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .compare thead th{ font-family:var(--font-mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); background:var(--plum-tint); }
+  .compare tbody th{ font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--ink-soft); width:22%; }
+  .compare tr:last-child th, .compare tr:last-child td{ border-bottom:none; }
+
+  .toggle{ display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; padding:3px; margin-top:24px; background:var(--paper-raised); }
+  .toggle button{ font-family:var(--font-mono); font-size:12px; border:0; background:transparent; color:var(--ink-soft); padding:7px 16px; border-radius:999px; cursor:pointer; }
+  .toggle button[aria-pressed="true"]{ background:var(--plum); color:var(--paper); }
+
+  .walk{ list-style:none; margin:28px 0 0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:12px; counter-reset:walk; }
+  @media (max-width:680px){ .walk{ grid-template-columns:1fr; } }
+  .walk li{ counter-increment:walk; display:flex; gap:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; font-size:14px; }
+  .walk li::before{ content:counter(walk); flex:none; width:26px; height:26px; border-radius:50%; background:var(--plum); color:var(--paper); font-family:var(--font-mono); font-size:12px; display:grid; place-items:center; }
+  .walk strong{ display:block; margin-bottom:2px; }
+  .walk span{ color:var(--ink-soft); font-size:13.5px; }
+
+  /* Module 16 additions */
+  .timebar{ display:flex; gap:3px; margin:0 0 44px; max-width:860px; font-family:var(--font-mono); font-size:10.5px; }
+  .timebar .seg{ border-radius:6px; padding:8px 8px 7px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .timebar .seg b{ display:block; font-size:12px; font-weight:600; }
+  .timebar .a{ background:color-mix(in srgb, var(--teal) 16%, transparent); color:var(--teal); }
+  .timebar .brk{ background:var(--line); color:var(--ink-soft); }
+  .timebar .b{ background:color-mix(in srgb, var(--plum) 14%, transparent); color:var(--plum); }
+  .timebar-legend{ display:flex; gap:18px; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin:0 0 8px; }
+  @media (max-width:680px){ .timebar{ flex-wrap:wrap; } .timebar .seg{ flex:1 1 30% !important; } }
+
+  .split > *{ min-width:0; }
+  .split > .callout, .split > .mini-card{ align-self:start; }
+  pre.code{ margin:0; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-family:var(--font-mono); font-size:12.5px; line-height:1.6; color:var(--ink); }
+  pre.code .c{ color:var(--ink-soft); } pre.code .k{ color:var(--plum); font-weight:600; } pre.code .s{ color:var(--teal); } pre.code .m{ color:var(--copper); font-weight:600; } pre.code .e{ color:var(--brick); font-weight:600; }
+  .code-label{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:0 0 8px; }
+  .stack{ margin-top:24px; }
+
+  .doc-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:14px; }
+  .doc-card h3{ font-size:16px; margin:0 0 6px; }
+  .doc-card .story{ color:var(--ink-soft); font-style:italic; margin:0 0 10px; }
+  .doc-card ul{ list-style:none; margin:0; padding:0; }
+  .doc-card li{ padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .doc-card li code{ margin-right:6px; }
+  .doc-card li.flag{ background:color-mix(in srgb, var(--copper) 12%, transparent); border-radius:6px; padding:7px 8px; border-top-color:transparent; }
+  .flag-note{ font-family:var(--font-mono); font-size:11px; color:var(--copper); display:block; margin-top:4px; }
+
+  .callout{ margin-top:24px; display:flex; gap:14px; align-items:flex-start; padding:16px 20px; border-radius:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-left:4px solid var(--accent, var(--plum)); }
+  .callout p{ margin:0; font-size:14.5px; }
+  .callout .tag{ flex:none; font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent, var(--plum)); padding-top:2px; }
+
+  .checklist{ list-style:none; margin:0; padding:0; }
+  .checklist li{ position:relative; padding:6px 0 6px 24px; font-size:13.5px; color:var(--ink); }
+  .checklist li::before{ content:""; position:absolute; left:0; top:9px; width:14px; height:14px; border:1.5px solid var(--teal); border-radius:4px; background:color-mix(in srgb, var(--teal) 14%, transparent); }
+
+  .checkpoint{ margin-top:32px; display:flex; flex-wrap:wrap; gap:14px 22px; align-items:center; padding:18px 22px; border-radius:14px; border:1.5px dashed var(--teal); background:color-mix(in srgb, var(--teal) 7%, var(--paper-raised)); }
+  .checkpoint .tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); border:1px solid var(--teal); border-radius:999px; padding:5px 12px; }
+  .checkpoint p{ margin:0; font-size:14.5px; flex:1 1 320px; }
+
+  .pit-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:28px; }
+  @media (max-width:900px){ .pit-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .pit-grid{ grid-template-columns:1fr; } }
+  .pit{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .pit h3{ font-size:15px; margin:0 0 8px; }
+  .pit .see{ font-size:13px; color:var(--brick); margin:0 0 6px; }
+  .pit .fix{ font-size:13px; color:var(--teal); margin:0; }
+  .pit .see::before{ content:"You'll see: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+  .pit .fix::before{ content:"Fix: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+
+  .qa{ margin-top:28px; display:flex; flex-direction:column; gap:10px; }
+  .qa details{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:14px 18px; }
+  .qa summary{ cursor:pointer; font-size:14.5px; font-weight:600; list-style:none; display:flex; gap:12px; }
+  .qa summary::-webkit-details-marker{ display:none; }
+  .qa summary::before{ content:"+"; font-family:var(--font-mono); color:var(--plum); flex:none; width:12px; }
+  .qa details[open] summary::before{ content:"−"; }
+  .qa details p{ margin:10px 0 0 24px; font-size:14px; color:var(--ink-soft); }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#architecture" data-target="architecture"><span class="dot"></span><span class="rail-label">01 · Architecture &amp; setup</span></a>
+  <a href="#validator" data-target="validator"><span class="dot"></span><span class="rail-label">02 · Requirement Validator</span></a>
+  <a href="#builder" data-target="builder"><span class="dot"></span><span class="rail-label">03 · Sequence Builder</span></a>
+  <a href="#generator" data-target="generator"><span class="dot"></span><span class="rail-label">04 · Test Generator</span></a>
+  <a href="#apivalidator" data-target="apivalidator"><span class="dot"></span><span class="rail-label">05 · API Validator</span></a>
+  <a href="#reviewer" data-target="reviewer"><span class="dot"></span><span class="rail-label">06 · Reviewer</span></a>
+  <a href="#traceability" data-target="traceability"><span class="dot"></span><span class="rail-label">07 · Traceability &amp; run log</span></a>
+  <a href="#deliverable" data-target="deliverable"><span class="dot"></span><span class="rail-label">08 · Deliverable &amp; peer review</span></a>
+  <a href="#pitfalls" data-target="pitfalls"><span class="dot"></span><span class="rail-label">09 · Pitfalls &amp; stretch</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">10 · Recap &amp; self-check</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#architecture" data-target="architecture">01</a>
+  <a href="#validator" data-target="validator">02</a>
+  <a href="#builder" data-target="builder">03</a>
+  <a href="#generator" data-target="generator">04</a>
+  <a href="#apivalidator" data-target="apivalidator">05</a>
+  <a href="#reviewer" data-target="reviewer">06</a>
+  <a href="#traceability" data-target="traceability">07</a>
+  <a href="#deliverable" data-target="deliverable">08</a>
+  <a href="#pitfalls" data-target="pitfalls">09</a>
+  <a href="#recap" data-target="recap">10</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-teal" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-brick" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-brick" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-copper" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-copper" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-plum" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-plum" d="M0,0 L10,5 L0,10 Z"></path></marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 5 · Multi-Agent Orchestration Build — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Use Case Lab 3: Requirement-to-Test Automation</h1>
+    <p class="lede hero-lede">Module 16 — 150 minutes of hands-on build. The Module 15 sample pipeline becomes real: five chained agents take one engineering requirement, <code>REQ-2481</code> (order cancellation), and turn it into an executable PyTest suite that has been checked against the API, independently reviewed, and traced back to every acceptance criterion.</p>
+
+    <figure class="hero-figure" aria-label="How the requirement is transformed at each stage">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 195" role="img" aria-label="The requirement changes form at each stage. REQ-2481 starts as ambiguous prose. The Validator makes it checkable, with AC-4 clarified. The Builder orders it into five scenarios. The Generator makes it executable as PyTest. The API Validator verifies it against the API: five pass and one fails as product defect DEF-5520. The Reviewer judges it independently and escalates to a human. AC-IDs run through every artifact as the traceability spine." style="min-width:720px">
+          <g font-size="8.5">
+            <rect class="box" x="10" y="14" width="122" height="104" rx="8"></rect>
+            <text class="lbl-strong" x="20" y="32" font-size="9.5">REQ-2481.md</text>
+            <line x1="10" y1="40" x2="132" y2="40" stroke="var(--line)"></line>
+            <text class="lbl" x="20" y="56">"Customers can</text><text class="lbl" x="20" y="69">cancel an order</text><text class="lbl" x="20" y="82">before it ships…"</text>
+            <text class="txt-copper" x="20" y="100">AC-4 "triggers</text><text class="txt-copper" x="20" y="112">a refund" ⚠</text>
+
+            <rect class="box-teal" x="154" y="14" width="122" height="104" rx="8"></rect>
+            <text class="txt-teal" x="164" y="32" font-size="9.5">01 validated</text>
+            <line x1="154" y1="40" x2="276" y2="40" stroke="var(--line)"></line>
+            <text class="lbl" x="164" y="58">AC-1 ✔ testable</text><text class="lbl" x="164" y="73">AC-2 ✔ testable</text><text class="lbl" x="164" y="88">AC-3 ✔ testable</text><text class="txt-copper" x="164" y="103">AC-4 ⚠ clarified</text>
+
+            <rect class="box-copper" x="298" y="14" width="122" height="104" rx="8"></rect>
+            <text class="txt-copper" x="308" y="32" font-size="9.5">02 sequence</text>
+            <line x1="298" y1="40" x2="420" y2="40" stroke="var(--line)"></line>
+            <text class="lbl" x="308" y="56">SEQ-1 → AC-1</text><text class="lbl" x="308" y="69">SEQ-2 → AC-2</text><text class="lbl" x="308" y="82">SEQ-3 → AC-3</text><text class="lbl" x="308" y="95">SEQ-4 → AC-1,4</text><text class="lbl" x="308" y="108">SEQ-5 → AC-1</text>
+
+            <rect class="box-plum" x="442" y="14" width="122" height="104" rx="8"></rect>
+            <text class="txt-plum" x="452" y="32" font-size="9.5">03 tests</text>
+            <line x1="442" y1="40" x2="564" y2="40" stroke="var(--line)"></line>
+            <text class="lbl" x="452" y="56">test_cancel_paid</text><text class="lbl" x="452" y="69">test_shipped_409</text><text class="lbl" x="452" y="82">test_other_403</text><text class="lbl" x="452" y="95">test_refund …</text><text class="txt-plum" x="452" y="108">@ac @seq markers</text>
+
+            <rect class="box-teal" x="586" y="14" width="122" height="104" rx="8"></rect>
+            <text class="txt-teal" x="596" y="32" font-size="9.5">04 API check</text>
+            <line x1="586" y1="40" x2="708" y2="40" stroke="var(--line)"></line>
+            <text class="lbl" x="596" y="56">endpoints ✔</text><text class="lbl" x="596" y="69">status codes ✔</text><text class="lbl" x="596" y="82">schema fields ✔</text><text class="lbl" x="596" y="95">5 pass · 1 fail</text><text class="txt-brick" x="596" y="108">→ DEF-5520</text>
+
+            <rect class="box-brick" x="730" y="14" width="122" height="104" rx="8"></rect>
+            <text class="txt-brick" x="740" y="32" font-size="9.5">05 sign-off</text>
+            <line x1="730" y1="40" x2="852" y2="40" stroke="var(--line)"></line>
+            <text class="lbl" x="740" y="58">AC coverage 4/4</text><text class="lbl" x="740" y="73">verdict:</text><text class="txt-brick" x="740" y="88">ESCALATE</text><text class="lbl" x="740" y="103">→ human decides</text>
+          </g>
+          <g>
+            <path class="arrow" d="M132,66 L152,66" marker-end="url(#arrow)"></path>
+            <path class="arrow" d="M276,66 L296,66" marker-end="url(#arrow)"></path>
+            <path class="arrow" d="M420,66 L440,66" marker-end="url(#arrow)"></path>
+            <path class="arrow" d="M564,66 L584,66" marker-end="url(#arrow)"></path>
+            <path class="arrow" d="M708,66 L728,66" marker-end="url(#arrow)"></path>
+          </g>
+          <g class="lbl" font-size="9" text-anchor="middle">
+            <text x="71" y="136">ambiguous</text><text x="215" y="136">checkable</text><text x="359" y="136">ordered</text><text x="503" y="136">executable</text><text x="647" y="136">verified vs API</text><text x="791" y="136">independently judged</text>
+          </g>
+          <path class="arrow dash-flow" stroke="var(--plum)" d="M20,160 L840,160"></path>
+          <g font-size="9">
+            <rect class="box-plum" x="330" y="150" width="200" height="20" rx="10" style="fill:var(--paper-raised);fill-opacity:1"></rect>
+            <text class="txt-plum" x="430" y="164" text-anchor="middle">AC-1 · AC-2 · AC-3 · AC-4</text>
+          </g>
+          <text class="lbl" x="430" y="188" text-anchor="middle" font-size="9">the traceability spine: every artifact carries the AC-IDs it covers</text>
+        </svg>
+      </div>
+    </figure>
+
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">chained agents</span></li>
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">stage artifacts</span></li>
+      <li class="stat-tile"><span class="stat-num">4</span><span class="stat-label">acceptance criteria</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">traced test suite</span></li>
+      <li class="stat-tile"><span class="stat-num">150</span><span class="stat-label">minutes</span></li>
+    </ul>
+
+    <div class="timebar-legend"><span>Part A · 60 min</span><span>Break · 15</span><span>Part B · 90 min</span></div>
+    <div class="timebar" role="img" aria-label="Timing: Part A 60 minutes — setup 10, Requirement Validator 20, Sequence Builder 20, first chained run 10. Break 15. Part B 90 minutes — Test Generator 25, API Validator 20, Reviewer 15, end-to-end run 15, peer review 15.">
+      <div class="seg a" style="flex:10"><b>10</b>setup</div>
+      <div class="seg a" style="flex:20"><b>20</b>validator</div>
+      <div class="seg a" style="flex:20"><b>20</b>builder</div>
+      <div class="seg a" style="flex:10"><b>10</b>run 1</div>
+      <div class="seg brk" style="flex:15"><b>15</b>break</div>
+      <div class="seg b" style="flex:25"><b>25</b>generator</div>
+      <div class="seg b" style="flex:20"><b>20</b>API valid.</div>
+      <div class="seg b" style="flex:15"><b>15</b>reviewer</div>
+      <div class="seg b" style="flex:15"><b>15</b>e2e run</div>
+      <div class="seg b" style="flex:15"><b>15</b>peer rev.</div>
+    </div>
+
+    <ol class="agenda" role="list">
+      <li><a href="#architecture"><span class="agenda-index">01</span><span>Architecture, <code>PIPELINE.md</code> and the shared handoff rule</span></a></li>
+      <li><a href="#validator"><span class="agenda-index">02</span><span>Configure the Requirement Validator: completeness and testability</span></a></li>
+      <li><a href="#builder"><span class="agenda-index">03</span><span>Chain the Sequence Builder: derive an ordered test sequence</span></a></li>
+      <li><a href="#generator"><span class="agenda-index">04</span><span>Chain the Test Generator: executable PyTest with scoped writes</span></a></li>
+      <li><a href="#apivalidator"><span class="agenda-index">05</span><span>Chain the API Validator: check tests against the interface</span></a></li>
+      <li><a href="#reviewer"><span class="agenda-index">06</span><span>Chain the Reviewer: independent review and sign-off</span></a></li>
+      <li><a href="#traceability"><span class="agenda-index">07</span><span>End-to-end run, traceability and the run log</span></a></li>
+      <li><a href="#deliverable"><span class="agenda-index">08</span><span>Deliverable, commit and peer review</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 01 -->
+<section class="deck-section" id="architecture">
+  <div class="section-inner">
+    <p class="eyebrow">01 — What you're building</p>
+    <h2 class="section-title">Five agents, five artifacts, one run folder</h2>
+    <p class="lede">Each agent is a versioned definition in the repo (Module 10 anatomy). Each stage writes a named artifact plus a handoff envelope, and the next stage reads only those files. In this lab <strong>you are the orchestrator</strong>: you run the stages in order following <code>PIPELINE.md</code>. Module 19 moves that into CI.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 345" role="img" aria-label="Pipeline architecture. REQ-2481.md feeds the Requirement Validator, which passes 01_validated to the Sequence Builder, then 02_sequence to the Test Generator, then tests plus 03 notes to the API Validator, then the 04 report to the Reviewer. The Validator's FAIL path goes to the requirement owner. openapi.yaml feeds the Builder, Generator and API Validator. The Reviewer reads the original requirement directly. Findings from the API Validator and Reviewer go back to the Generator, capped at 2 rounds. A Reviewer PASS goes to a human who approves the commit. Every stage appends to run_log.jsonl." style="min-width:760px">
+          <rect class="box" x="20" y="44" width="116" height="40" rx="8"></rect>
+          <text class="lbl-strong" x="78" y="68" text-anchor="middle" font-size="10">REQ-2481.md</text>
+          <path class="arrow" d="M78,84 L78,136" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="372" y="44" width="116" height="40" rx="8"></rect>
+          <text class="lbl-strong" x="430" y="68" text-anchor="middle" font-size="10">openapi.yaml</text>
+          <g stroke="var(--ink-soft)" stroke-dasharray="3 4" stroke-width="1.2" fill="none">
+            <path d="M400,84 L270,138" marker-end="url(#arrow)"></path>
+            <path d="M430,84 L430,138" marker-end="url(#arrow)"></path>
+            <path d="M460,84 L590,138" marker-end="url(#arrow)"></path>
+          </g>
+
+          <path class="arrow-thin" stroke="var(--brick)" stroke-width="1.5" stroke-dasharray="5 4" d="M78,44 C78,6 782,6 782,138" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="700" y="30" text-anchor="middle" font-size="9.5">Reviewer reads the ORIGINAL</text>
+
+          <!-- stages -->
+          <rect class="box-teal" x="20" y="140" width="116" height="60" rx="12"></rect>
+          <text class="txt-teal" x="78" y="162" text-anchor="middle" font-size="10">1 · Requirement</text><text class="txt-teal" x="78" y="176" text-anchor="middle" font-size="10">Validator</text><text class="lbl" x="78" y="191" text-anchor="middle" font-size="8.5">read-only</text>
+          <rect class="box-copper" x="196" y="140" width="116" height="60" rx="12"></rect>
+          <text class="txt-copper" x="254" y="162" text-anchor="middle" font-size="10">2 · Sequence</text><text class="txt-copper" x="254" y="176" text-anchor="middle" font-size="10">Builder</text><text class="lbl" x="254" y="191" text-anchor="middle" font-size="8.5">read-only</text>
+          <rect class="box-plum" x="372" y="140" width="116" height="60" rx="12"></rect>
+          <text class="txt-plum" x="430" y="162" text-anchor="middle" font-size="10">3 · Test</text><text class="txt-plum" x="430" y="176" text-anchor="middle" font-size="10">Generator</text><text class="lbl" x="430" y="191" text-anchor="middle" font-size="8.5">writes tests/ only</text>
+          <rect class="box-teal" x="548" y="140" width="116" height="60" rx="12"></rect>
+          <text class="txt-teal" x="606" y="162" text-anchor="middle" font-size="10">4 · API</text><text class="txt-teal" x="606" y="176" text-anchor="middle" font-size="10">Validator</text><text class="lbl" x="606" y="191" text-anchor="middle" font-size="8.5">reads spec, runs tests</text>
+          <rect class="box-brick" x="724" y="140" width="116" height="60" rx="12"></rect>
+          <text class="txt-brick" x="782" y="162" text-anchor="middle" font-size="10">5 · Reviewer</text><text class="lbl" x="782" y="180" text-anchor="middle" font-size="8.5">independent</text><text class="lbl" x="782" y="191" text-anchor="middle" font-size="8.5">context</text>
+
+          <g font-size="8.5" class="lbl" text-anchor="middle">
+            <path class="arrow" d="M136,170 L194,170" marker-end="url(#arrow)"></path><text x="165" y="162">01_*.md</text>
+            <path class="arrow" d="M312,170 L370,170" marker-end="url(#arrow)"></path><text x="341" y="162">02_*.json</text>
+            <path class="arrow" d="M488,170 L546,170" marker-end="url(#arrow)"></path><text x="517" y="162">tests/+03</text>
+            <path class="arrow" d="M664,170 L722,170" marker-end="url(#arrow)"></path><text x="693" y="162">04_report</text>
+          </g>
+
+          <!-- validator fail -->
+          <path class="arrow" stroke="var(--brick)" d="M78,200 L78,254" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="86" y="232" font-size="9">FAIL: gaps</text>
+          <rect class="box-brick" x="20" y="256" width="116" height="40" rx="8"></rect>
+          <text class="txt-brick" x="78" y="280" text-anchor="middle" font-size="9.5">Requirement owner</text>
+
+          <!-- findings loops -->
+          <path class="arrow-thin" stroke="var(--copper)" stroke-width="1.5" d="M606,200 C606,236 450,236 450,203" marker-end="url(#arrow-copper)"></path>
+          <path class="arrow-thin" stroke="var(--copper)" stroke-width="1.5" d="M760,200 C760,262 410,262 410,203" marker-end="url(#arrow-copper)"></path>
+          <text class="txt-copper" x="585" y="276" text-anchor="middle" font-size="9">findings → Generator (max 2 manual rounds)</text>
+
+          <!-- human -->
+          <path class="arrow" stroke="var(--teal)" d="M806,200 L806,294" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="812" y="232" font-size="9">PASS</text>
+          <rect class="box-teal" x="700" y="296" width="140" height="40" rx="8"></rect>
+          <text class="txt-teal" x="770" y="314" text-anchor="middle" font-size="9.5">Human approves</text>
+          <text class="lbl" x="770" y="328" text-anchor="middle" font-size="8.5">→ commit tests + trace</text>
+
+          <!-- run log -->
+          <rect class="box-plum" x="196" y="296" width="400" height="40" rx="8" stroke-dasharray="4 3"></rect>
+          <text class="txt-plum" x="396" y="314" text-anchor="middle" font-size="9.5">runs/&lt;run_id&gt;/run_log.jsonl</text>
+          <text class="lbl" x="396" y="328" text-anchor="middle" font-size="8.5">every stage appends: status · attempt · tokens · duration</text>
+        </svg>
+      </div>
+      <figcaption>Only one stage can write to the codebase: the Generator, and only to <code>tests/</code>. Every other agent either reads and judges, or writes its own artifact in the run folder.</figcaption>
+    </figure>
+
+    <div class="split">
+      <div>
+        <p class="code-label">Repository layout</p>
+<pre class="code"><span class="k">requirement-to-test/</span>
+├── .cursor/
+│   ├── rules/pipeline-handoff.mdc   <span class="c"># envelope, AC-IDs, no self-approval</span>
+│   └── agents/                      <span class="c"># 5 role definitions</span>
+├── requirements/REQ-2481.md         <span class="c"># input</span>
+├── specs/openapi.yaml               <span class="c"># target API contract</span>
+├── tests/                           <span class="c"># ONLY Generator writes here</span>
+├── runs/req-2481-run-01/            <span class="c"># 01…05 + trace + log</span>
+└── <span class="k">PIPELINE.md</span>                      <span class="c"># order, budgets, stop rules</span></pre>
+      </div>
+      <div>
+        <p class="code-label">PIPELINE.md: stop rules</p>
+<pre class="code"><span class="c"># Pipeline: requirement-to-test v1.0.0</span>
+Stage 1 <span class="e">FAIL</span>        → stop, gaps to owner
+Any <span class="m">NEEDS_HUMAN</span>     → stop and ask
+Correction rounds → <span class="k">max 2</span>, then escalate
+Budget per run    → <span class="k">20 min · 400k tokens</span>
+Exceeded          → <span class="e">halt (fail-safe)</span>
+
+<span class="c"># handoff envelope (every stage)</span>
+run_id · stage · status · input_refs
+artifact_refs · <span class="s">ac_ids_covered</span> · evidence
+assumptions · open_issues · attempt</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="deck-section" id="validator">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Part A · Stage 1 · 20 min</p>
+    <h2 class="section-title">The Validator is the cheapest place for the pipeline to fail</h2>
+    <p class="lede">Before any tokens go into generation, check every acceptance criterion: is it complete, unambiguous, and observable through the API? The Validator flags gaps as questions for the owner. It <strong>never</strong> fills a gap by making up a requirement.</p>
+
+    <div class="split">
+      <div class="doc-card">
+        <p class="code-label">requirements/REQ-2481.md</p>
+        <h3>REQ-2481: Order cancellation</h3>
+        <p class="story">As a customer, I want to cancel an order before it ships so that I am not charged.</p>
+        <ul>
+          <li><code>AC-1</code>Cancel own order while PENDING or PAID → 200, status CANCELLED</li>
+          <li><code>AC-2</code>Cancel a SHIPPED order → 409 <code>ORDER_ALREADY_SHIPPED</code></li>
+          <li><code>AC-3</code>Cannot cancel another customer's order → 403</li>
+          <li class="flag"><code>AC-4</code>Cancellation of a PAID order triggers a refund<span class="flag-note">⚠ deliberately vague: how is the refund observable via the API?</span></li>
+        </ul>
+      </div>
+      <div class="doc-card">
+        <p class="code-label">01_validated_requirement.md (excerpt)</p>
+        <h3>Classification per AC</h3>
+        <ul>
+          <li><code>AC-1</code><span style="color:var(--teal)">TESTABLE</span>: 200 + status observable</li>
+          <li><code>AC-2</code><span style="color:var(--teal)">TESTABLE</span>: 409 + error.code in spec</li>
+          <li><code>AC-3</code><span style="color:var(--teal)">TESTABLE</span>: 403 defined; needs 2nd customer</li>
+          <li class="flag"><code>AC-4</code><span style="color:var(--copper)">NEEDS_CLARIFICATION</span><span class="flag-note">Q1: Assert a refund record via GET /refunds?order_id={id}, and within what time?</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 230" role="img" aria-label="Validator decision flow. For each AC, the question is whether it is complete, unambiguous and observable through the API. Yes means TESTABLE, partly means NEEDS_CLARIFICATION, no means UNTESTABLE. Then the statuses are combined: all TESTABLE gives PASS and moves on to the Sequence Builder. Any NEEDS_CLARIFICATION gives NEEDS_HUMAN, so the owner answers and the stage re-runs. Any UNTESTABLE gives FAIL, so the pipeline stops and the gaps are returned." style="min-width:720px">
+          <rect class="box" x="20" y="90" width="140" height="50" rx="8"></rect>
+          <text class="lbl-strong" x="90" y="112" text-anchor="middle" font-size="10">for each AC-ID</text>
+          <text class="lbl" x="90" y="127" text-anchor="middle" font-size="8.5">+ openapi.yaml</text>
+          <path class="arrow" d="M160,115 L198,115" marker-end="url(#arrow)"></path>
+
+          <path class="box-copper" d="M270,65 L340,115 L270,165 L200,115 Z"></path>
+          <text class="txt-copper" x="270" y="106" text-anchor="middle" font-size="8.5">complete,</text>
+          <text class="txt-copper" x="270" y="118" text-anchor="middle" font-size="8.5">unambiguous,</text>
+          <text class="txt-copper" x="270" y="130" text-anchor="middle" font-size="8.5">observable?</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M320,100 L398,42" marker-end="url(#arrow-teal)"></path>
+          <text class="lbl" x="352" y="62" font-size="9">yes</text>
+          <path class="arrow" stroke="var(--copper)" d="M340,115 L398,115" marker-end="url(#arrow-copper)"></path>
+          <text class="lbl" x="352" y="108" font-size="9">partly</text>
+          <path class="arrow" stroke="var(--brick)" d="M320,130 L398,188" marker-end="url(#arrow-brick)"></path>
+          <text class="lbl" x="352" y="176" font-size="9">no</text>
+
+          <rect class="box-teal" x="400" y="20" width="180" height="44" rx="8"></rect>
+          <text class="txt-teal" x="490" y="40" text-anchor="middle" font-size="10">TESTABLE</text><text class="lbl" x="490" y="55" text-anchor="middle" font-size="8.5">+ spec citation</text>
+          <rect class="box-copper" x="400" y="93" width="180" height="44" rx="8"></rect>
+          <text class="txt-copper" x="490" y="113" text-anchor="middle" font-size="10">NEEDS_CLARIFICATION</text><text class="lbl" x="490" y="128" text-anchor="middle" font-size="8.5">+ question for owner</text>
+          <rect class="box-brick" x="400" y="166" width="180" height="44" rx="8"></rect>
+          <text class="txt-brick" x="490" y="186" text-anchor="middle" font-size="10">UNTESTABLE</text><text class="lbl" x="490" y="201" text-anchor="middle" font-size="8.5">+ reason</text>
+
+          <path class="arrow" d="M580,42 L618,42" marker-end="url(#arrow)"></path>
+          <path class="arrow" d="M580,115 L618,115" marker-end="url(#arrow)"></path>
+          <path class="arrow" d="M580,188 L618,188" marker-end="url(#arrow)"></path>
+
+          <rect class="box-teal" x="620" y="20" width="220" height="44" rx="8"></rect>
+          <text class="txt-teal" x="730" y="40" text-anchor="middle" font-size="10">all TESTABLE → PASS</text><text class="lbl" x="730" y="55" text-anchor="middle" font-size="8.5">hand off to Sequence Builder</text>
+          <rect class="box-copper" x="620" y="93" width="220" height="44" rx="8"></rect>
+          <text class="txt-copper" x="730" y="113" text-anchor="middle" font-size="10">any unclear → NEEDS_HUMAN</text><text class="lbl" x="730" y="128" text-anchor="middle" font-size="8.5">owner answers, re-run stage 1</text>
+          <rect class="box-brick" x="620" y="166" width="220" height="44" rx="8"></rect>
+          <text class="txt-brick" x="730" y="186" text-anchor="middle" font-size="10">any UNTESTABLE → FAIL</text><text class="lbl" x="730" y="201" text-anchor="middle" font-size="8.5">stop; return the gap list</text>
+        </svg>
+      </div>
+      <figcaption>The status for the whole requirement is the worst status of any AC. One unclear criterion is enough to stop the pipeline, and that's the intended behaviour.</figcaption>
+    </figure>
+
+    <div class="callout" style="--accent:var(--teal)"><span class="tag">Lab step</span><p>Run the validator. Then act as the requirement owner and answer Q1 (e.g. <em>"yes, a refund record with status PENDING appears immediately"</em>). Update <code>REQ-2481.md</code> and re-run until the status is <strong>PASS</strong>. The run log should now have two lines for stage 1.</p></div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="deck-section" id="builder">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Part A · Stage 2 · 20 min</p>
+    <h2 class="section-title">The Builder decides what to test and in what order, not how</h2>
+    <p class="lede">The Builder turns validated ACs into an ordered test sequence with no implementation detail: setup, action and expected result for each scenario, and every scenario tagged with its AC-IDs. It reads only the <em>validated</em> artifact, never the original requirement, and never names a framework.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 230" role="img" aria-label="Coverage matrix with acceptance criteria as rows and scenarios as columns. AC-1 is covered by SEQ-1, SEQ-4 and SEQ-5. AC-2 by SEQ-2. AC-3 by SEQ-3. AC-4 by SEQ-4. Every row has at least one dot, so there are no coverage gaps, and every column has at least one dot, so there are no untraceable scenarios." style="min-width:680px">
+          <g class="lbl-strong" font-size="10" text-anchor="middle">
+            <text x="200" y="36">SEQ-1</text><text x="290" y="36">SEQ-2</text><text x="380" y="36">SEQ-3</text><text x="470" y="36">SEQ-4</text><text x="560" y="36">SEQ-5</text>
+          </g>
+          <g class="lbl" font-size="8" text-anchor="middle">
+            <text x="200" y="50">cancel PAID</text><text x="290" y="50">SHIPPED 409</text><text x="380" y="50">other cust.</text><text x="470" y="50">refund</text><text x="560" y="50">cancel PENDING</text>
+          </g>
+          <g stroke="var(--line)">
+            <line x1="40" y1="60" x2="840" y2="60"></line><line x1="40" y1="97" x2="840" y2="97"></line><line x1="40" y1="134" x2="840" y2="134"></line><line x1="40" y1="171" x2="840" y2="171"></line><line x1="40" y1="208" x2="840" y2="208"></line>
+          </g>
+          <g class="lbl-strong" font-size="10.5">
+            <text x="50" y="83">AC-1</text><text x="50" y="120">AC-2</text><text x="50" y="157">AC-3</text><text x="50" y="194">AC-4</text>
+          </g>
+          <g class="lbl" font-size="8.5">
+            <text x="92" y="83">cancel ok</text><text x="92" y="120">shipped</text><text x="92" y="157">ownership</text><text x="92" y="194">refund</text>
+          </g>
+          <g class="fill-plum">
+            <circle cx="200" cy="79" r="8"></circle><circle cx="470" cy="79" r="8"></circle><circle cx="560" cy="79" r="8"></circle>
+            <circle cx="290" cy="116" r="8"></circle>
+            <circle cx="380" cy="153" r="8"></circle>
+            <circle cx="470" cy="190" r="8"></circle>
+          </g>
+          <g font-size="9">
+            <text class="txt-teal" x="620" y="83">✔ covered (PAID + PENDING)</text>
+            <text class="txt-teal" x="620" y="120">✔ covered + state unchanged</text>
+            <text class="txt-teal" x="620" y="157">✔ covered</text>
+            <text class="txt-teal" x="620" y="194">✔ covered (after Q1)</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Check this before moving on. An <strong>empty row</strong> is a coverage gap and the sequence isn't ready. An <strong>empty column</strong> is a scenario with no AC behind it, which means scope creep.</figcaption>
+    </figure>
+
+    <div class="split">
+      <div>
+        <p class="code-label">02_test_sequence.json (one scenario)</p>
+<pre class="code">{
+  <span class="k">"id"</span>: <span class="s">"SEQ-2"</span>,
+  <span class="k">"ac_ids"</span>: [<span class="m">"AC-2"</span>],
+  <span class="k">"title"</span>: <span class="s">"Cancel SHIPPED order is rejected"</span>,
+  <span class="k">"setup"</span>: [<span class="s">"customer_a authenticated"</span>,
+            <span class="s">"order O2 owned by customer_a, SHIPPED"</span>],
+  <span class="k">"action"</span>: <span class="s">"POST /orders/{O2}/cancel as customer_a"</span>,
+  <span class="k">"expect"</span>: [<span class="s">"HTTP 409"</span>,
+             <span class="s">"body.error.code == ORDER_ALREADY_SHIPPED"</span>,
+             <span class="s">"order O2 status unchanged"</span>],
+  <span class="k">"evidence"</span>: <span class="c">"openapi.yaml#/…/cancel/post/responses/409"</span>
+}</pre>
+      </div>
+      <div class="mini-card warn">
+        <h3>What a good sequence looks like</h3>
+        <ul>
+          <li><strong>Coverage:</strong> ≥ 1 scenario per AC, plus negative cases for error ACs</li>
+          <li><strong>Independence:</strong> each scenario sets up its own state</li>
+          <li><strong>Data:</strong> named fixtures (<code>customer_a</code>, <code>paid_order</code>), no magic values</li>
+          <li><strong>Observability:</strong> every <code>expect</code> is something the API returns (cite the spec)</li>
+          <li><strong>Must not:</strong> add scenarios without an AC-ID, name libraries, or write code</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="checkpoint">
+      <span class="tag">End of Part A</span>
+      <p>You should have <code>01_validated_requirement.md</code> and <code>02_test_sequence.json</code>, both <code>status: PASS</code>, and at least two stage lines in <code>run_log.jsonl</code>. <strong>15-minute break.</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="deck-section" id="generator">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Part B · Stage 3 · 25 min</p>
+    <h2 class="section-title">One writer, one folder, a marker on every test</h2>
+    <p class="lede">The Generator is the only stage with write access, and only to <code>tests/</code>. It follows the repo's existing test conventions and <code>conftest.py</code> fixtures. The most important thing it does is put traceability in the code itself: every test names its scenario and AC-IDs, so any result can be traced back to the requirement.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 240" role="img" aria-label="The Test Generator reads the test sequence, conftest fixtures and test rules, and the API spec. It may write only to tests/test_req_2481_*.py, which is then smoke-checked with pytest collect-only. Writes to src, specs and requirements are denied. It also writes generation notes and a handoff envelope to the run folder." style="min-width:720px">
+          <g font-size="9.5">
+            <rect class="box-copper" x="20" y="30" width="190" height="40" rx="8"></rect><text class="txt-copper" x="115" y="54" text-anchor="middle">02_test_sequence.json</text>
+            <rect class="box" x="20" y="100" width="190" height="40" rx="8"></rect><text class="lbl-strong" x="115" y="118" text-anchor="middle">conftest.py +</text><text class="lbl" x="115" y="132" text-anchor="middle" font-size="8.5">test rules (Module 8)</text>
+            <rect class="box" x="20" y="170" width="190" height="40" rx="8"></rect><text class="lbl-strong" x="115" y="194" text-anchor="middle">openapi.yaml</text>
+          </g>
+          <path class="arrow" d="M210,50 L278,105" marker-end="url(#arrow)"></path>
+          <path class="arrow" d="M210,120 L278,120" marker-end="url(#arrow)"></path>
+          <path class="arrow" d="M210,190 L278,135" marker-end="url(#arrow)"></path>
+
+          <rect class="box-plum" x="280" y="85" width="150" height="70" rx="35"></rect>
+          <text class="txt-plum" x="355" y="117" text-anchor="middle" font-size="11">Test Generator</text>
+          <text class="lbl" x="355" y="133" text-anchor="middle" font-size="8.5">stage 3</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M430,105 L508,50" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="450" y="66" font-size="9">write ✔</text>
+          <rect class="box-teal" x="510" y="30" width="200" height="40" rx="8"></rect>
+          <text class="txt-teal" x="610" y="54" text-anchor="middle" font-size="9.5">tests/test_req_2481_*.py</text>
+
+          <path class="arrow" stroke="var(--brick)" stroke-dasharray="4 4" d="M430,120 L508,120" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="440" y="112" font-size="9">write ✕</text>
+          <rect class="box-brick" x="510" y="100" width="200" height="40" rx="8" stroke-dasharray="4 3"></rect>
+          <text class="txt-brick" x="610" y="124" text-anchor="middle" font-size="9.5">src/ · specs/ · requirements/</text>
+          <line x1="716" y1="108" x2="732" y2="132" stroke="var(--brick)" stroke-width="2.5"></line><line x1="732" y1="108" x2="716" y2="132" stroke="var(--brick)" stroke-width="2.5"></line>
+
+          <path class="arrow" d="M430,135 L508,190" marker-end="url(#arrow)"></path>
+          <rect class="box" x="510" y="170" width="200" height="40" rx="8"></rect>
+          <text class="lbl-strong" x="610" y="188" text-anchor="middle" font-size="9.5">03_generation_notes.md</text>
+          <text class="lbl" x="610" y="202" text-anchor="middle" font-size="8.5">+ handoff envelope</text>
+
+          <path class="arrow" d="M710,50 L748,50" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="750" y="22" width="92" height="56" rx="8"></rect>
+          <text class="txt-teal" x="796" y="42" text-anchor="middle" font-size="8.5">pytest</text>
+          <text class="txt-teal" x="796" y="55" text-anchor="middle" font-size="8.5">--collect-only</text>
+          <text class="lbl" x="796" y="69" text-anchor="middle" font-size="8">does it import?</text>
+        </svg>
+      </div>
+      <figcaption>If <code>--collect-only</code> fails, that's a quality failure. Send the error back to the Generator as structured feedback. That counts as correction round 1 of a maximum of 2.</figcaption>
+    </figure>
+
+    <div class="split">
+      <div>
+        <p class="code-label">tests/test_req_2481_order_cancellation.py</p>
+<pre class="code"><span class="k">pytestmark</span> = pytest.mark.<span class="m">req</span>(<span class="s">"REQ-2481"</span>)
+
+<span class="m">@pytest.mark.ac(</span><span class="s">"AC-2"</span><span class="m">)</span>
+<span class="m">@pytest.mark.seq(</span><span class="s">"SEQ-2"</span><span class="m">)</span>
+<span class="k">def</span> test_cancel_shipped_order_rejected(
+        api, customer_a, make_order):
+    <span class="c">"""SEQ-2 / AC-2: SHIPPED → 409, status unchanged."""</span>
+    order = make_order(owner=customer_a, status=<span class="s">"SHIPPED"</span>)
+    resp = api.as_user(customer_a).post(
+        f<span class="s">"/orders/{order.id}/cancel"</span>)
+
+    <span class="k">assert</span> resp.status_code == 409
+    <span class="k">assert</span> resp.json()[<span class="s">"error"</span>][<span class="s">"code"</span>] == <span class="s">"ORDER_ALREADY_SHIPPED"</span>
+    <span class="k">assert</span> api.as_user(customer_a).get(
+        f<span class="s">"/orders/{order.id}"</span>).json()[<span class="s">"status"</span>] == <span class="s">"SHIPPED"</span></pre>
+        <p class="code-label" style="margin-top:14px">pytest.ini: register the markers</p>
+<pre class="code">[pytest]
+markers =
+    <span class="m">req</span>(id): source requirement ID
+    <span class="m">ac</span>(id):  acceptance criterion ID
+    <span class="m">seq</span>(id): test sequence scenario ID</pre>
+      </div>
+      <div class="mini-card plum">
+        <h3>Generator discipline</h3>
+        <ul>
+          <li>One test per scenario (or <code>parametrize</code> for variants): SEQ ↔ test is 1:1</li>
+          <li>AC/SEQ IDs as <strong>markers</strong> (for machines) and in <strong>docstrings</strong> (for people)</li>
+          <li>Reuse fixtures; add new ones only to <code>conftest.py</code></li>
+          <li>No secrets or hard-coded URLs; read from env/config (Module 14)</li>
+          <li>Assert exactly the <code>expect</code> list, no more and no less</li>
+          <li>Never marks its own work as approved</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="deck-section" id="apivalidator">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Part B · Stage 4 · 20 min</p>
+    <h2 class="section-title">Well-written tests can still test the wrong thing</h2>
+    <p class="lede">Tests can have the wrong path, a status code the spec never declares, a field that doesn't exist, or an assertion the API can't satisfy. The API Validator checks the tests <strong>statically</strong> against <code>openapi.yaml</code>, then <strong>runs</strong> them against the sandbox, and classifies every failure before sending anything back.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 290" role="img" aria-label="API validation flow. Generated tests first get a static check against openapi.yaml. A mismatch is a test defect and goes back to the Generator with a spec citation. If they conform, they run against the sandbox API. If all pass, the stage passes and the report goes to the Reviewer. If a test fails, the failure is classified: a wrong assumption in the test is a test defect and goes back to the Generator; the API breaking its own spec is a product defect that gets logged and flagged while the test stays unchanged; a timeout or 5xx is an environment issue, retried once and then escalated as NEEDS_HUMAN." style="min-width:740px">
+          <rect class="box-plum" x="20" y="120" width="120" height="44" rx="8"></rect>
+          <text class="txt-plum" x="80" y="140" text-anchor="middle" font-size="9.5">tests/</text><text class="lbl" x="80" y="154" text-anchor="middle" font-size="8.5">test_req_2481_*</text>
+          <path class="arrow" d="M140,142 L168,142" marker-end="url(#arrow)"></path>
+
+          <rect class="box" x="170" y="120" width="140" height="44" rx="8"></rect>
+          <text class="lbl-strong" x="240" y="140" text-anchor="middle" font-size="9.5">static check</text><text class="lbl" x="240" y="154" text-anchor="middle" font-size="8.5">vs openapi.yaml</text>
+          <path class="arrow" stroke="var(--teal)" d="M310,142 L338,142" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="324" y="134" text-anchor="middle" font-size="8">ok</text>
+
+          <path class="arrow" stroke="var(--copper)" d="M240,164 L240,222" marker-end="url(#arrow-copper)"></path>
+          <text class="txt-copper" x="248" y="196" font-size="8.5">mismatch</text>
+
+          <rect class="box" x="340" y="120" width="150" height="44" rx="8"></rect>
+          <text class="lbl-strong" x="415" y="140" text-anchor="middle" font-size="9.5">run vs sandbox</text><text class="lbl" x="415" y="154" text-anchor="middle" font-size="8.5">pytest -m req</text>
+          <path class="arrow" d="M490,142 L518,142" marker-end="url(#arrow)"></path>
+
+          <path class="box-copper" d="M570,112 L620,142 L570,172 L520,142 Z"></path>
+          <text class="txt-copper" x="570" y="145" text-anchor="middle" font-size="9">results</text>
+
+          <path class="arrow" stroke="var(--teal)" d="M570,112 L570,70 L648,70" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="578" y="92" font-size="8.5">all pass</text>
+          <rect class="box-teal" x="650" y="48" width="190" height="44" rx="8"></rect>
+          <text class="txt-teal" x="745" y="68" text-anchor="middle" font-size="10">PASS</text><text class="lbl" x="745" y="83" text-anchor="middle" font-size="8.5">04 report → Reviewer</text>
+
+          <path class="arrow" stroke="var(--brick)" d="M620,142 L640,142 L640,236 L618,236" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="634" y="196" text-anchor="end" font-size="8.5">failure →</text>
+          <text class="txt-brick" x="634" y="208" text-anchor="end" font-size="8.5">classify</text>
+
+          <!-- classification outcomes -->
+          <rect class="box-copper" x="170" y="224" width="140" height="48" rx="8"></rect>
+          <text class="txt-copper" x="240" y="243" text-anchor="middle" font-size="9.5">TEST DEFECT</text><text class="lbl" x="240" y="259" text-anchor="middle" font-size="8.5">→ back to Generator</text>
+          <path class="arrow" stroke="var(--copper)" d="M378,248 L312,248" marker-end="url(#arrow-copper)"></path>
+          <rect class="box" x="380" y="224" width="236" height="48" rx="8"></rect>
+          <text class="lbl-strong" x="498" y="243" text-anchor="middle" font-size="9">which kind of failure?</text>
+          <text class="lbl" x="498" y="259" text-anchor="middle" font-size="8.5">test wrong · API wrong · env down</text>
+
+          <rect class="box-brick" x="668" y="170" width="172" height="48" rx="8"></rect>
+          <text class="txt-brick" x="754" y="189" text-anchor="middle" font-size="9.5">PRODUCT DEFECT</text><text class="lbl" x="754" y="205" text-anchor="middle" font-size="8.5">log, flag · test stays</text>
+          <rect class="box" x="668" y="230" width="172" height="48" rx="8"></rect>
+          <text class="lbl-strong" x="754" y="249" text-anchor="middle" font-size="9.5">ENVIRONMENT</text><text class="lbl" x="754" y="265" text-anchor="middle" font-size="8.5">retry once → NEEDS_HUMAN</text>
+          <path class="arrow-thin" stroke="var(--brick)" d="M616,240 L666,196" marker-end="url(#arrow-brick)"></path>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M616,256 L666,256" marker-end="url(#arrow)"></path>
+        </svg>
+      </div>
+      <figcaption>A failing test is not automatically the Generator's fault. It may have found a real bug. Only <strong>test defects</strong> go back to the Generator.</figcaption>
+    </figure>
+
+    <div class="split">
+      <div>
+        <p class="code-label">04_api_validation_report.md (excerpt)</p>
+<pre class="code"><span class="k">## Execution</span> <span class="c">(sandbox, 2026-09-23T10:42Z)</span>
+6 collected · <span class="s">5 passed</span> · <span class="e">1 failed</span>
+
+<span class="e">FAILED</span> test_cannot_cancel_other_customers_order
+  expected <span class="k">403</span>, got <span class="e">404</span>
+  Classification: <span class="e">PRODUCT_DEFECT?</span>
+  Spec declares 403 (openapi.yaml#/…/403)
+  Action: flagged to Reviewer + owner;
+          <span class="k">test NOT modified.</span></pre>
+      </div>
+      <div class="callout" style="--accent:var(--brick); margin-top:0">
+        <span class="tag">Watch for</span>
+        <p><strong>The validator did not "fix" the test to match the API.</strong> Changing the assertion to 404 would turn the suite green and hide a real spec violation. That refusal is the behaviour you want. The failing test is what makes the defect visible.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="deck-section" id="reviewer">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Part B · Stage 5 · 15 min</p>
+    <h2 class="section-title">The Reviewer judges against the source, not the story</h2>
+    <p class="lede">The Reviewer gets a fresh context: the <strong>original</strong> requirement, the tests, and the API validation report. It does not see the Generator's reasoning or the chat history. That way it can catch drift that built up across stages 1–3 instead of inheriting it.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 230" role="img" aria-label="The Reviewer runs in a fresh context. It is given three inputs: the original REQ-2481.md, the generated tests, and the 04 API validation report. Three things are withheld behind a context boundary: the reasoning from stages 1 to 3, the Generator's chat history, and prior verdicts." style="min-width:720px">
+          <text class="txt-teal" x="130" y="24" text-anchor="middle" font-size="10">GIVEN</text>
+          <g font-size="9.5">
+            <rect class="box-teal" x="20" y="38" width="220" height="40" rx="8"></rect><text class="txt-teal" x="130" y="62" text-anchor="middle">REQ-2481.md (ORIGINAL)</text>
+            <rect class="box-teal" x="20" y="95" width="220" height="40" rx="8"></rect><text class="txt-teal" x="130" y="119" text-anchor="middle">tests/test_req_2481_*.py</text>
+            <rect class="box-teal" x="20" y="152" width="220" height="40" rx="8"></rect><text class="txt-teal" x="130" y="176" text-anchor="middle">04_api_validation_report.md</text>
+          </g>
+          <path class="arrow" stroke="var(--teal)" d="M240,58 L318,100" marker-end="url(#arrow-teal)"></path>
+          <path class="arrow" stroke="var(--teal)" d="M240,115 L318,115" marker-end="url(#arrow-teal)"></path>
+          <path class="arrow" stroke="var(--teal)" d="M240,172 L318,130" marker-end="url(#arrow-teal)"></path>
+
+          <rect class="box-brick" x="320" y="70" width="190" height="90" rx="14"></rect>
+          <text class="txt-brick" x="415" y="103" text-anchor="middle" font-size="12">Reviewer</text>
+          <text class="lbl" x="415" y="121" text-anchor="middle" font-size="9">fresh context</text>
+          <text class="lbl" x="415" y="136" text-anchor="middle" font-size="9">reviewer@1.0.0</text>
+
+          <line x1="570" y1="20" x2="570" y2="210" stroke="var(--brick)" stroke-width="2" stroke-dasharray="6 5"></line>
+          <text class="txt-brick" x="570" y="224" text-anchor="middle" font-size="8.5">context boundary</text>
+
+          <text class="lbl-strong" x="730" y="24" text-anchor="middle" font-size="10">WITHHELD</text>
+          <g font-size="9.5" opacity=".75">
+            <rect class="box" x="620" y="38" width="220" height="40" rx="8" stroke-dasharray="4 3"></rect><text class="lbl" x="730" y="62" text-anchor="middle" text-decoration="line-through">stage 1–3 reasoning</text>
+            <rect class="box" x="620" y="95" width="220" height="40" rx="8" stroke-dasharray="4 3"></rect><text class="lbl" x="730" y="119" text-anchor="middle" text-decoration="line-through">Generator chat history</text>
+            <rect class="box" x="620" y="152" width="220" height="40" rx="8" stroke-dasharray="4 3"></rect><text class="lbl" x="730" y="176" text-anchor="middle" text-decoration="line-through">prior verdicts</text>
+          </g>
+          <g stroke="var(--ink-soft)" stroke-width="1.3" fill="none">
+            <path d="M620,58 L582,58"></path><path d="M620,115 L582,115"></path><path d="M620,172 L582,172"></path>
+          </g>
+          <g stroke="var(--brick)" stroke-width="2">
+            <path d="M574,52 L586,64 M586,52 L574,64"></path><path d="M574,109 L586,121 M586,109 L574,121"></path><path d="M574,166 L586,178 M586,166 L574,178"></path>
+          </g>
+        </svg>
+      </div>
+      <figcaption>In Cursor, start a fresh subagent or a new chat for this stage. If the Reviewer shares the Generator's context, it will tend to approve everything.</figcaption>
+    </figure>
+
+    <div class="activity-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="mini-card good"><h3>APPROVE</h3><p>All ACs covered, tests correct and maintainable, open defects acknowledged. <strong>→ human approves the commit.</strong></p></div>
+      <div class="mini-card warn"><h3>REQUEST_CHANGES</h3><p>Specific, actionable findings, each tied to an AC-ID or test. <strong>→ back to the Generator (bounded).</strong></p></div>
+      <div class="mini-card bad"><h3>ESCALATE</h3><p>Product defect, requirement conflict, or out-of-scope concern. <strong>→ human / owner decides.</strong></p></div>
+    </div>
+
+    <div class="split">
+      <div class="mini-card plum">
+        <h3>Reviewer checklist (put it in the agent definition)</h3>
+        <ul class="checklist">
+          <li>Coverage: every AC in the <em>original</em> requirement has a test with a matching <code>ac</code> marker</li>
+          <li>Correctness: assertions match the AC wording, not just the sequence</li>
+          <li>Negative paths assert the error <em>and</em> the unchanged state</li>
+          <li>Independence: no order-dependent tests or shared mutable state</li>
+          <li>Hygiene: no secrets, hard-coded URLs, sleeps or disabled asserts</li>
+          <li>Honesty: failures reported, never <code>xfail</code>-ed without a defect link</li>
+        </ul>
+      </div>
+      <div>
+        <p class="code-label">05_review_signoff.md</p>
+<pre class="code">Verdict: <span class="e">ESCALATE</span> <span class="c">(approve tests; 1 open defect)</span>
+Reviewer: reviewer@1.0.0 · req-2481-run-01 · attempt 1
+
+Coverage vs ORIGINAL requirement:
+  <span class="s">AC-1 ✔</span> (2 tests) · <span class="s">AC-2 ✔</span> · <span class="e">AC-3 ✘</span> · <span class="s">AC-4 ✔</span>
+Findings: none on test quality.
+Escalation: AC-3 returns <span class="e">404</span>, spec requires <span class="k">403</span>.
+  → commit tests, raise <span class="m">DEF-5520</span>,
+    keep test failing (no xfail without link)</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="deck-section" id="traceability">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Part B · End-to-end run · 15 min</p>
+    <h2 class="section-title">Start anywhere in the chain and walk to every other point</h2>
+    <p class="lede">"Traced back to its source requirement" means anyone can go from a requirement to its tests and results, or from a failing test back to the AC it protects, without asking whoever built it. The markers, the sequence JSON and the results together make that possible.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 290" role="img" aria-label="Traceability tree. REQ-2481 branches into four acceptance criteria. AC-1 maps to SEQ-1, SEQ-5 and also SEQ-4. AC-2 maps to SEQ-2, AC-3 to SEQ-3, AC-4 to SEQ-4. Each scenario maps to one test function. Four tests pass. The AC-3 test fails and is linked to defect DEF-5520." style="min-width:760px">
+          <g class="lbl" font-size="9" text-anchor="middle">
+            <text x="65" y="18">requirement</text><text x="175" y="18">criterion</text><text x="300" y="18">scenario</text><text x="505" y="18">test function</text><text x="755" y="18">result</text>
+          </g>
+          <rect class="box" x="20" y="130" width="90" height="36" rx="8"></rect>
+          <text class="lbl-strong" x="65" y="152" text-anchor="middle" font-size="10">REQ-2481</text>
+
+          <g stroke="var(--line-strong)" stroke-width="1.3" fill="none">
+            <path d="M110,148 C125,148 125,70 140,70"></path>
+            <path d="M110,148 C125,148 125,148 140,148"></path>
+            <path d="M110,148 C125,148 125,202 140,202"></path>
+            <path d="M110,148 C125,148 125,256 140,256"></path>
+            <path d="M210,70 C235,70 235,40 260,40"></path>
+            <path d="M210,70 C235,70 235,94 260,94"></path>
+            <path d="M210,148 L260,148"></path>
+            <path d="M210,202 L260,202"></path>
+            <path d="M210,256 L260,256"></path>
+          </g>
+          <path d="M210,76 C240,120 230,250 260,252" fill="none" stroke="var(--plum)" stroke-width="1.2" stroke-dasharray="3 3"></path>
+
+          <g font-size="10">
+            <rect class="box-teal" x="140" y="55" width="70" height="30" rx="6"></rect><text class="txt-teal" x="175" y="74" text-anchor="middle">AC-1</text>
+            <rect class="box-teal" x="140" y="133" width="70" height="30" rx="6"></rect><text class="txt-teal" x="175" y="152" text-anchor="middle">AC-2</text>
+            <rect class="box-teal" x="140" y="187" width="70" height="30" rx="6"></rect><text class="txt-teal" x="175" y="206" text-anchor="middle">AC-3</text>
+            <rect class="box-teal" x="140" y="241" width="70" height="30" rx="6"></rect><text class="txt-teal" x="175" y="260" text-anchor="middle">AC-4</text>
+          </g>
+          <g font-size="10">
+            <rect class="box-copper" x="260" y="25" width="80" height="30" rx="6"></rect><text class="txt-copper" x="300" y="44" text-anchor="middle">SEQ-1</text>
+            <rect class="box-copper" x="260" y="79" width="80" height="30" rx="6"></rect><text class="txt-copper" x="300" y="98" text-anchor="middle">SEQ-5</text>
+            <rect class="box-copper" x="260" y="133" width="80" height="30" rx="6"></rect><text class="txt-copper" x="300" y="152" text-anchor="middle">SEQ-2</text>
+            <rect class="box-copper" x="260" y="187" width="80" height="30" rx="6"></rect><text class="txt-copper" x="300" y="206" text-anchor="middle">SEQ-3</text>
+            <rect class="box-copper" x="260" y="241" width="80" height="30" rx="6"></rect><text class="txt-copper" x="300" y="260" text-anchor="middle">SEQ-4</text>
+          </g>
+          <g stroke="var(--line-strong)" stroke-width="1.3">
+            <line x1="340" y1="40" x2="370" y2="40"></line><line x1="340" y1="94" x2="370" y2="94"></line><line x1="340" y1="148" x2="370" y2="148"></line><line x1="340" y1="202" x2="370" y2="202"></line><line x1="340" y1="256" x2="370" y2="256"></line>
+            <line x1="640" y1="40" x2="670" y2="40"></line><line x1="640" y1="94" x2="670" y2="94"></line><line x1="640" y1="148" x2="670" y2="148"></line><line x1="640" y1="202" x2="670" y2="202"></line><line x1="640" y1="256" x2="670" y2="256"></line>
+          </g>
+          <g font-size="9">
+            <rect class="box-plum" x="370" y="25" width="270" height="30" rx="6"></rect><text class="txt-plum" x="380" y="44">test_customer_cancels_own_paid_order</text>
+            <rect class="box-plum" x="370" y="79" width="270" height="30" rx="6"></rect><text class="txt-plum" x="380" y="98">test_customer_cancels_own_pending_order</text>
+            <rect class="box-plum" x="370" y="133" width="270" height="30" rx="6"></rect><text class="txt-plum" x="380" y="152">test_cancel_shipped_order_rejected</text>
+            <rect class="box-plum" x="370" y="187" width="270" height="30" rx="6"></rect><text class="txt-plum" x="380" y="206">test_cannot_cancel_other_customers_order</text>
+            <rect class="box-plum" x="370" y="241" width="270" height="30" rx="6"></rect><text class="txt-plum" x="380" y="260">test_cancel_creates_refund</text>
+          </g>
+          <g font-size="9.5">
+            <rect class="box-teal" x="670" y="25" width="170" height="30" rx="15"></rect><text class="txt-teal" x="755" y="44" text-anchor="middle">✔ pass</text>
+            <rect class="box-teal" x="670" y="79" width="170" height="30" rx="15"></rect><text class="txt-teal" x="755" y="98" text-anchor="middle">✔ pass</text>
+            <rect class="box-teal" x="670" y="133" width="170" height="30" rx="15"></rect><text class="txt-teal" x="755" y="152" text-anchor="middle">✔ pass</text>
+            <rect class="box-brick" x="670" y="187" width="170" height="30" rx="15"></rect><text class="txt-brick" x="755" y="206" text-anchor="middle">✘ fail → DEF-5520</text>
+            <rect class="box-teal" x="670" y="241" width="170" height="30" rx="15"></rect><text class="txt-teal" x="755" y="260" text-anchor="middle">✔ pass</text>
+          </g>
+          <text class="txt-plum" x="226" y="284" font-size="8.5">AC-1 also covered by SEQ-4</text>
+        </svg>
+      </div>
+      <figcaption><code>traceability.md</code> is the table version of this tree. You can generate most of it from the markers: <code>pytest -m req --junitxml=runs/&lt;run_id&gt;/results.xml</code>, then have a small script or the Reviewer join markers, sequence and results.</figcaption>
+    </figure>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 280" role="img" aria-label="Run log for req-2481-run-01 shown as token bars, one per stage attempt. Validator attempt 1, needs human, 4.2K tokens. Validator attempt 2, pass, 4.0K. Builder, pass, 7.6K. Generator attempt 1, fail on a missing fixture, 15.2K. Generator attempt 2, pass, 12.9K. API Validator, pass with defect DEF-5520, 9.1K. Reviewer, escalate, 6.4K. Total about 59K tokens across 7 attempts, well under the 400K budget." style="min-width:720px">
+          <text class="lbl-strong" x="20" y="22" font-size="10.5">run_log.jsonl · req-2481-run-01</text>
+          <text class="lbl" x="840" y="22" text-anchor="end" font-size="9">bar = tokens per attempt</text>
+          <line x1="20" y1="32" x2="840" y2="32" stroke="var(--line-strong)"></line>
+          <g font-size="9.5" class="lbl">
+            <text x="20" y="55">validator #1</text><text x="20" y="85">validator #2</text><text x="20" y="115">builder</text><text x="20" y="145">generator #1</text><text x="20" y="175">generator #2</text><text x="20" y="205">api-validator</text><text x="20" y="235">reviewer</text>
+          </g>
+          <rect class="box-copper" x="150" y="43" width="101" height="16" rx="4"></rect><text class="txt-copper" x="259" y="55" font-size="9">NEEDS_HUMAN · 4.2K · 31s</text>
+          <rect class="box-teal" x="150" y="73" width="96" height="16" rx="4"></rect><text class="txt-teal" x="254" y="85" font-size="9">PASS · 4.0K · 27s</text>
+          <rect class="box-teal" x="150" y="103" width="183" height="16" rx="4"></rect><text class="txt-teal" x="341" y="115" font-size="9">PASS · 7.6K · 44s</text>
+          <rect class="box-brick" x="150" y="133" width="365" height="16" rx="4"></rect><text class="txt-brick" x="523" y="145" font-size="9">FAIL · 15.2K · missing fixture make_order</text>
+          <rect class="box-teal" x="150" y="163" width="310" height="16" rx="4"></rect><text class="txt-teal" x="468" y="175" font-size="9">PASS · 12.9K · 88s</text>
+          <rect class="box-teal" x="150" y="193" width="218" height="16" rx="4"></rect><text class="txt-teal" x="376" y="205" font-size="9">PASS · 9.1K · defects: DEF-5520</text>
+          <rect class="box-brick" x="150" y="223" width="154" height="16" rx="4"></rect><text class="txt-brick" x="312" y="235" font-size="9">ESCALATE · 6.4K · 52s</text>
+          <line x1="20" y1="252" x2="840" y2="252" stroke="var(--line)"></line>
+          <text class="lbl-strong" x="20" y="272" font-size="10">≈ 59K tokens · 7 attempts · 2 retries</text>
+          <text class="txt-teal" x="840" y="272" text-anchor="end" font-size="9.5">well under the 400K run budget</text>
+        </svg>
+      </div>
+      <figcaption>This log is what Module 17 needs for automated PASS/FAIL gates and Module 18 needs for downstream reruns. If only the Generator's output changes, re-run stages 3–5 and reuse 1–2.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="deck-section" id="deliverable">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Part B · Deliverable and peer review · 15 min</p>
+    <h2 class="section-title">An executable, validated suite, traced to its requirement, then someone else tries to break it</h2>
+    <p class="lede">The lab is done when another pair can run your pipeline themselves, on a second requirement, and it still holds up. Reading the files isn't enough for them to judge that.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 158" role="img" aria-label="Deliverable lifecycle: define five agents and PIPELINE.md, run end to end on REQ-2481, produce traceability.md and run_log.jsonl, get human approval, commit agents, tests and the run folder, then a peer runs the pipeline on a second requirement. Issues loop back to the define step. A clean result gets added to the shared agent library from Module 11." style="min-width:720px">
+          <g font-size="9">
+            <rect class="box" x="10" y="50" width="112" height="44" rx="8"></rect><text class="lbl-strong" x="66" y="69" text-anchor="middle">define 5 agents</text><text class="lbl" x="66" y="83" text-anchor="middle" font-size="8">+ PIPELINE.md</text>
+            <rect class="box" x="142" y="50" width="112" height="44" rx="8"></rect><text class="lbl-strong" x="198" y="69" text-anchor="middle">run end-to-end</text><text class="lbl" x="198" y="83" text-anchor="middle" font-size="8">on REQ-2481</text>
+            <rect class="box" x="274" y="50" width="112" height="44" rx="8"></rect><text class="lbl-strong" x="330" y="69" text-anchor="middle">traceability.md</text><text class="lbl" x="330" y="83" text-anchor="middle" font-size="8">+ run_log.jsonl</text>
+            <rect class="box-copper" x="406" y="50" width="112" height="44" rx="8"></rect><text class="txt-copper" x="462" y="76" text-anchor="middle">human approval</text>
+            <rect class="box" x="538" y="50" width="112" height="44" rx="8"></rect><text class="lbl-strong" x="594" y="69" text-anchor="middle">commit</text><text class="lbl" x="594" y="83" text-anchor="middle" font-size="8">agents · tests · run</text>
+            <rect class="box-plum" x="670" y="50" width="112" height="44" rx="8"></rect><text class="txt-plum" x="726" y="69" text-anchor="middle">peer runs it</text><text class="lbl" x="726" y="83" text-anchor="middle" font-size="8">on a 2nd req</text>
+          </g>
+          <g>
+            <path class="arrow" d="M122,72 L140,72" marker-end="url(#arrow)"></path><path class="arrow" d="M254,72 L272,72" marker-end="url(#arrow)"></path><path class="arrow" d="M386,72 L404,72" marker-end="url(#arrow)"></path><path class="arrow" d="M518,72 L536,72" marker-end="url(#arrow)"></path><path class="arrow" d="M650,72 L668,72" marker-end="url(#arrow)"></path>
+          </g>
+          <path class="arrow-thin" stroke="var(--brick)" stroke-dasharray="4 4" d="M726,94 C726,140 66,140 66,96" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="396" y="150" text-anchor="middle" font-size="9">issues found → fix and re-run</text>
+          <path class="arrow" stroke="var(--teal)" d="M726,50 L726,36" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="726" y="24" text-anchor="middle" font-size="9">clean → add to shared agent library (Module 11)</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="split">
+      <div class="mini-card good">
+        <h3>Deliverable checklist</h3>
+        <ul class="checklist">
+          <li>Five agent definitions under version control: role, inputs, tools, "must NOT", outputs</li>
+          <li><code>PIPELINE.md</code> + the shared <code>pipeline-handoff.mdc</code> rule</li>
+          <li>One complete run folder: 01–05 + <code>traceability.md</code> + <code>run_log.jsonl</code></li>
+          <li>Tests in <code>tests/</code> that collect and run, with <code>req</code>/<code>ac</code>/<code>seq</code> markers</li>
+          <li>Human approval recorded in the commit or PR (run ID + reviewer verdict)</li>
+        </ul>
+      </div>
+      <div>
+        <p class="code-label">Example commit message</p>
+<pre class="code"><span class="k">test(REQ-2481):</span> add order-cancellation suite
+from requirement-to-test pipeline
+
+Run: runs/req-2481-run-01
+Reviewer verdict: <span class="e">ESCALATE</span> (tests approved;
+  <span class="m">DEF-5520</span> open)
+Coverage: <span class="s">AC-1..AC-4</span> · 6 tests
+  5 pass / 1 fail (known product defect)</pre>
+      </div>
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead><tr><th>Peer-review dimension</th><th>Ask</th><th>Red flag</th></tr></thead>
+        <tbody>
+          <tr><th>Role separation</th><td>Does each agent stay in its lane?</td><td>Validator rewrote an AC; Generator changed the sequence</td></tr>
+          <tr><th>Least privilege</th><td>Could any agent except the Generator write files?</td><td>Reviewer "fixed" a test directly</td></tr>
+          <tr><th>Handoff quality</th><td>Can stage N run on stage N-1's artifact alone?</td><td>A stage relies on chat history</td></tr>
+          <tr><th>Independent review</th><td>Did the Reviewer see only original req + tests + report?</td><td>Reviewer was given generator notes</td></tr>
+          <tr><th>Traceability</th><td>Random test → its AC in under 30 s? And the reverse?</td><td>Orphan tests or uncovered ACs</td></tr>
+          <tr><th>Failure honesty</th><td>Are failing tests reported, not hidden?</td><td>Assertions changed to match a buggy API</td></tr>
+          <tr><th>Bounded execution</th><td>Were correction rounds counted and capped?</td><td>"Kept asking until it passed"</td></tr>
+          <tr><th>Granularity</th><td>Does every agent earn its place (Module 15)?</td><td>Two stages that could clearly merge</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="deck-section" id="pitfalls">
+  <div class="section-inner">
+    <p class="eyebrow">09 — What usually goes wrong</p>
+    <h2 class="section-title">Six pitfalls you'll probably hit, and how to fix each</h2>
+    <div class="pit-grid">
+      <div class="pit"><h3>Validator "helps"</h3><p class="see">It rewrites vague ACs; tests pass but miss what the owner meant.</p><p class="fix">"Must NOT invent" guardrail; emit clarification questions.</p></div>
+      <div class="pit"><h3>AC-IDs drift</h3><p class="see">Renumbered or merged IDs; the traceability table doesn't line up.</p><p class="fix">Handoff rule: carry AC-IDs forward unchanged.</p></div>
+      <div class="pit"><h3>Writes outside tests/</h3><p class="see">Edited spec, or fixtures added under <code>src/</code>.</p><p class="fix">Scope write permission; Reviewer checks diff paths.</p></div>
+      <div class="pit"><h3>Tests bent to a bug</h3><p class="see">Suite goes green; the defect disappears from view.</p><p class="fix">API Validator classifies failures; product defects never get "fixed" in tests.</p></div>
+      <div class="pit"><h3>Reviewer shares context</h3><p class="see">It approves everything.</p><p class="fix">Fresh subagent/chat; pass only original req + tests + report.</p></div>
+      <div class="pit"><h3>Endless "try again"</h3><p class="see">Many attempts, rising token cost.</p><p class="fix">Count rounds in <code>run_log.jsonl</code>; cap at 2, then escalate.</p></div>
+    </div>
+    <div class="callout" style="--accent:var(--copper)">
+      <span class="tag">Stretch goals</span>
+      <p><strong>Parallel fan-out:</strong> split the Generator per endpoint and add a merge step, then compare time and tokens in the run log. <strong>Router:</strong> send UI requirements down a Playwright path instead of PyTest. <strong>Reuse:</strong> run the unchanged pipeline on a new requirement to check the agents aren't over-fitted to REQ-2481.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">10 — Before Module 17</p>
+    <h2 class="section-title">Carry these four ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Validate before you generate. Unclear criteria stop the run as questions for the owner. They never get filled in by guesswork.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Each stage reads only the previous stage's files and writes one named artifact. Only the Generator writes code, and only in <code>tests/</code>.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Classify failures before routing them. A test that exposes a real bug stays failing, and an independent Reviewer judges against the original requirement.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>AC-IDs are the traceability spine: requirement → AC → scenario → test → result, in both directions, backed by <code>run_log.jsonl</code>.</p></div>
+    </div>
+
+    <div class="qa">
+      <details><summary>Why should the Validator return NEEDS_HUMAN for AC-4 instead of assuming how a refund is observed?</summary><p>Filling the gap would be inventing a requirement, and the tests would then check the agent's guess instead of the owner's intent. Surfacing the ambiguity at stage 1 is also the cheapest point to do it.</p></details>
+      <details><summary>Why does the Builder read the validated requirement while the Reviewer reads the original?</summary><p>The Builder should work from the checked, clarified artifact so each stage stays isolated. The Reviewer judges against the source of truth, so any drift introduced by stages 1–3 gets caught instead of passed along.</p></details>
+      <details><summary>A generated test gets 404 where the spec says 403. Who changes what?</summary><p>Nobody changes the assertion. The API Validator classifies it as a product defect, the Reviewer escalates, and the owner raises a defect. The test keeps failing until the API is fixed.</p></details>
+      <details><summary>Only the Generator's output changed. Which stages re-run?</summary><p>Stages 3–5 (Generator, API Validator, Reviewer). Stages 1–2 are upstream and unaffected, so their artifacts are reused. Module 18 automates this downstream-rerun pattern.</p></details>
+      <details><summary>What concretely makes the suite "traced back to its source requirement"?</summary><p>Every test carries <code>req</code>/<code>ac</code>/<code>seq</code> markers, <code>traceability.md</code> maps each AC to scenarios, tests and results in both directions, and the run folder plus <code>run_log.jsonl</code> show how each artifact was produced.</p></details>
+    </div>
+
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 17: Quality Gates, Hooks &amp; Self-Correction Fundamentals.</strong> The <code>status</code> fields and manual "send it back" steps you used today become automated PASS/FAIL gates, hooks enforce validation and logging, and correction loops get explicit limits.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 16 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+  }catch(e){}
+})();
+</script>
