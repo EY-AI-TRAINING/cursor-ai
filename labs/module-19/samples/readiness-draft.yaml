@@ -1,0 +1,16 @@
+version: 0.9.0
+environment: production
+require:
+  ci_checks: [gates]
+  ac_coverage:
+    source: tests/
+    min_tests_per_ac: 0
+  human_signoff:
+    hash_bound: false
+known_defects:
+  allow_xfail_if:
+    defect_ticket_open: true
+report:
+  out: reports/readiness_report.md
+  include: [ac_table]
+on_unknown: READY

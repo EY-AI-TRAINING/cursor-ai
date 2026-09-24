@@ -1,0 +1,47 @@
+# gates.yaml — DRAFT v1.1.0 (not yet reviewed)
+# Carried over from Module 17 and edited in a hurry. The lab asks you to repair it.
+version: 1.0.0
+
+gates:
+  G1_requirement_ready:
+    after: requirement-validator
+    checks:
+      - envelope_valid
+      - all_acs_testable
+    on_fail: retry_producer
+
+  G2_sequence_coverage:
+    after: sequence-builder
+    checks:
+      - envelope_valid
+      - sequence_schema
+      - ac_set_equal
+      - no_orphan_scenarios
+    on_fail: {route_to: sequence-builder, counter: sequence}
+
+  G3_tests_collect_and_conform:
+    after: test-generator
+    checks:
+      - envelope_valid
+      - write_scope
+      - tests_collect
+      - lint_clean
+      - markers_present
+    on_fail: {route_to: test-generator, counter: generator_g3}
+
+  G4_no_test_defects:
+    after: api-validator
+    checks:
+      - envelope_valid
+      - report_parses
+      - no_test_defects
+    on_fail: {route_to: test-generator, counter: generator_g4}
+
+  G5_review_verdict:
+    after: reviewer
+    checks:
+      - envelope_valid
+      - verdict_known
+      - reviewer_cites_original_acs
+      - findings_have_owner
+    on_request_changes: {route_to: from_findings}

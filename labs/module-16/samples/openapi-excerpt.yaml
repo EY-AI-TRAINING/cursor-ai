@@ -1,0 +1,158 @@
+# Orders API — training sandbox contract (excerpt)
+# Fixture for Module 16: copy to `specs/openapi.yaml` in your pipeline repo.
+# This is the CONTRACT OF RECORD. Where the running API disagrees with it, that is a finding.
+
+openapi: 3.0.3
+info:
+  title: Orders API (training sandbox)
+  version: 1.0.0
+  description: Minimal order-cancellation and refund interface used by the requirement-to-test pipeline.
+
+servers:
+  - url: http://127.0.0.1:8000
+
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      summary: Fetch one order
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Order does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /orders/{id}/cancel:
+    post:
+      operationId: cancelOrder
+      summary: Cancel an order; only the owning customer may do so
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/Customer'
+      responses:
+        '200':
+          description: Order cancelled; status is CANCELLED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: Missing or unknown customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The order belongs to another customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Order does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Order cannot be cancelled in its current state (SHIPPED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /refunds:
+    get:
+      operationId: listRefunds
+      summary: Refund records for one order (empty list when there are none)
+      parameters:
+        - name: order_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refund records; `refunds` is an empty list when the order has no refunds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundList'
+        '400':
+          description: Missing order_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  parameters:
+    OrderId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Customer:
+      name: X-Customer
+      in: header
+      required: true
+      description: Customer identity for authorization checks
+      schema:
+        type: string
+
+  schemas:
+    Order:
+      type: object
+      required: [id, owner, status, amount]
+      properties:
+        id:
+          type: string
+        owner:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, PAID, SHIPPED, CANCELLED]
+        amount:
+          type: number
+    Refund:
+      type: object
+      required: [order_id, status, amount]
+      properties:
+        order_id:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, PROCESSED]
+        amount:
+          type: number
+    RefundList:
+      type: object
+      required: [refunds]
+      properties:
+        refunds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Refund'
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string

@@ -1,0 +1,4 @@
+{"ts":"2026-09-24T08:33:10Z","stage":"requirement-validator","attempt":1,"status":"NEEDS_HUMAN","tokens":18000,"duration_s":95}
+{"ts":"2026-09-24T08:41:22Z","stage":"requirement-validator","attempt":2,"status":"PASS","tokens":12000,"duration_s":70}
+{"ts":"2026-09-24T08:52:40Z","stage":"sequence-builder","attempt":1,"status":"PASS","tokens":24000,"duration_s":150}
+{"ts":"2026-09-24T09:07:55Z","stage":"test-generator","attempt":1,"status":"PASS","tokens":42000,"duration_s":255}

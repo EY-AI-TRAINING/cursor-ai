@@ -1,0 +1,15 @@
+{
+  "run_id": "req-2481-run-02",
+  "req": "REQ-2481",
+  "generated_at": "2026-09-24T09:15:02Z",
+  "summary": {"total": 5, "passed": 3, "failed": 2},
+  "failures": [
+    {"test": "test_cancel_shipped_order_rejected",
+     "class": "TEST_DEFECT",
+     "detail": "asserts body[\"errorCode\"]; spec says body[\"error\"][\"code\"] (specs/openapi.yaml, 409 schema)"},
+    {"test": "test_cannot_cancel_other_customers_order",
+     "class": "PRODUCT_DEFECT",
+     "defect": "DEF-5520",
+     "detail": "sandbox returned 404; spec requires 403 (specs/openapi.yaml, 403 response)"}
+  ]
+}

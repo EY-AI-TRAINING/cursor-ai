@@ -1,0 +1,37 @@
+$ git branch --show-current
+req2481-fix
+
+$ git log --oneline -6
+f4e5d6c update
+c3d4e5f fix tests
+b2c3d4e wip
+a1b2c3d more tests
+9f8e7d6 tests
+8e7d6c5 initial
+
+$ git show --stat 9f8e7d6 | head -10
+commit 9f8e7d6a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e
+Author: cursor-agent <agent@cursor.local>
+Date:   Wed Sep 24 09:31:02 2026 +0530
+
+    tests
+
+ creds/token.txt                           |   1 +
+ tests/test_req_2481_order_cancellation.py | 158 ++++++++++++++++++++++++++++++
+ runs/req-2481-run-02/gate_log.jsonl       |   0
+ 3 files changed, 159 insertions(+)
+
+$ git log -1 --format=full f4e5d6c
+commit f4e5d6c9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e
+Author: cursor-agent <agent@cursor.local>
+Date:   Wed Sep 24 11:47:55 2026 +0530
+
+    update
+
+    changed some tests after review comments; also touched
+    .github/workflows/agent-pipeline.yml to relax a check
+
+$ git log --format='%(trailers:key=Ticket)' -3
+
+$ git log --format='%(trailers:key=Run-Id)' -3
+

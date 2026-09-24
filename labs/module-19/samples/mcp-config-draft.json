@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "jira": {
+      "url": "https://contoso.atlassian.net/mcp/v1/sse",
+      "env": {
+        "JIRA_API_TOKEN": "pat_9f4c2a7e1b3d5f8a0c6e2b4d7a9f1c3e",
+        "JIRA_USER": "admin@contoso.com"
+      }
+    },
+    "azure-devops": {
+      "command": "npx",
+      "args": ["-y", "@azure-devops/mcp", "contoso-prod"],
+      "env": {
+        "AZURE_DEVOPS_EXT_PAT": "azd_pat_5d8e2c4f6a1b3d7e9f0a2c4e6b8d1f3a"
+      }
+    },
+    "tickets-mock": {
+      "command": "python3",
+      "args": ["tools/mock_ticket_mcp.py", "--fixtures", "tickets/"]
+    }
+  },
+  "notes": "The agent may comment on and transition issues once tests pass. If Priya's token expires, use the admin PAT from the env block above."
+}

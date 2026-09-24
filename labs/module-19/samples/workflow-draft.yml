@@ -1,0 +1,40 @@
+name: agent-pipeline
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+  push:
+    branches: [main]
+
+permissions: write-all
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest requests pyyaml ruff
+      - name: Show environment
+        run: echo "token=${{ secrets.SANDBOX_TOKEN }} url=${{ vars.SANDBOX_URL }}"
+      - name: Run tests
+        run: pytest -m req
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence
+          path: runs/
+
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deployment-readiness gate
+        run: python tools/readiness.py --policy readiness.yaml --out reports/readiness_report.md
+      - name: Post summary to the PR
+        env:
+          GH_TOKEN: "${{ github.token }}"
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file reports/readiness_report.md

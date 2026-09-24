@@ -1,0 +1,18 @@
+{
+  "key": "REQ-2490",
+  "rev": 2,
+  "self": "https://sandbox.atlassian.net/rest/api/3/issue/REQ-2490",
+  "fields": {
+    "summary": "Bulk order cancellation",
+    "status": {"name": "In Progress"},
+    "priority": {"name": "Low"},
+    "components": [{"name": "orders-api"}],
+    "labels": ["cancellation", "bulk"],
+    "updated": "2026-09-24T09:01:00Z",
+    "customfield_10044": "AC-1: An operator can cancel up to 100 orders in one request.\nAC-2: Partial failures are reported per order.",
+    "description": "Bulk cancellation for the operations console. Not ready for development — design review is still open.",
+    "issuelinks": [],
+    "attachment": [],
+    "comment": {"comments": []}
+  }
+}

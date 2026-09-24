@@ -1,0 +1,17 @@
+{
+  "req": "REQ-2481",
+  "version": "1.0.0",
+  "source": "runs/req-2481-run-02/01_validated_requirement.md",
+  "scenarios": [
+    {"id": "SEQ-1", "ac_ids": ["AC-1"], "title": "customer cancels own PAID order",
+     "expected": "200; order CANCELLED"},
+    {"id": "SEQ-2", "ac_ids": ["AC-2"], "title": "cancel SHIPPED order rejected",
+     "expected": "409; order unchanged"},
+    {"id": "SEQ-3", "ac_ids": ["AC-3"], "title": "cancel another customer's order rejected",
+     "expected": "403; order unchanged"},
+    {"id": "SEQ-4", "ac_ids": ["AC-4"], "title": "cancellation creates a PENDING refund",
+     "expected": "one refund for the full amount, status PENDING"},
+    {"id": "SEQ-5", "ac_ids": ["AC-1"], "title": "customer cancels own PENDING order",
+     "expected": "200; order CANCELLED"}
+  ]
+}

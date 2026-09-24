@@ -1,0 +1,1202 @@
+<title>Self-Correcting Orchestration</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ fill:var(--ink-soft); }
+  .lbl-strong{ fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+
+  /* Module 15 additions */
+  .hero-figure{ margin:0 0 44px; padding:18px 22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .hero-figure svg{ display:block; width:100%; height:auto; min-width:560px; }
+  .flow-dot{ fill:var(--plum); }
+  .flow-dot.copper{ fill:var(--copper); } .flow-dot.teal{ fill:var(--teal); }
+  .dash-flow{ stroke-dasharray:5 6; animation:dashmove 1.4s linear infinite; }
+  @keyframes dashmove{ to{ stroke-dashoffset:-22; } }
+  @media (prefers-reduced-motion:reduce){ .dash-flow{ animation:none; } }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+  @media (max-width:680px){ .split{ grid-template-columns:1fr; } }
+  .mini-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .mini-card h3{ font-size:16px; margin:0 0 8px; }
+  .mini-card p, .mini-card li{ font-size:13.5px; color:var(--ink-soft); }
+  .mini-card p{ margin:0; }
+  .mini-card ul{ margin:0; padding-left:18px; }
+  .mini-card li{ margin:3px 0; }
+  .mini-card.good{ border-top:3px solid var(--teal); }
+  .mini-card.warn{ border-top:3px solid var(--copper); }
+  .mini-card.bad{ border-top:3px solid var(--brick); }
+  .mini-card.plum{ border-top:3px solid var(--plum); }
+
+  .role-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:32px; }
+  @media (max-width:900px){ .role-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .role-grid{ grid-template-columns:1fr; } }
+  .role-card{ position:relative; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 18px 18px; overflow:hidden; }
+  .role-card::before{ content:""; position:absolute; left:0; top:0; right:0; height:4px; background:var(--accent); }
+  .role-icon{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); margin-bottom:12px; }
+  .role-icon svg{ width:22px; height:22px; }
+  .role-step{ font-family:var(--font-mono); font-size:11px; color:var(--accent); letter-spacing:.06em; text-transform:uppercase; margin:0 0 4px; }
+  .role-card h3{ font-size:19px; margin:0 0 6px; }
+  .role-card .q{ font-size:13.5px; font-style:italic; color:var(--ink); margin:0 0 12px; }
+  .role-card dl{ margin:0; font-size:12.5px; }
+  .role-card dt{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:8px; }
+  .role-card dd{ margin:2px 0 0; color:var(--ink); }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+  .chip{ font-family:var(--font-mono); font-size:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-radius:999px; padding:6px 14px; }
+  .chip b{ color:var(--plum); font-weight:600; }
+
+  .compare{ width:100%; border-collapse:collapse; margin-top:28px; font-size:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .compare-wrap{ overflow-x:auto; }
+  .compare th, .compare td{ text-align:left; padding:12px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .compare thead th{ font-family:var(--font-mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); background:var(--plum-tint); }
+  .compare tbody th{ font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--ink-soft); width:22%; }
+  .compare tr:last-child th, .compare tr:last-child td{ border-bottom:none; }
+
+  .toggle{ display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; padding:3px; margin-top:24px; background:var(--paper-raised); }
+  .toggle button{ font-family:var(--font-mono); font-size:12px; border:0; background:transparent; color:var(--ink-soft); padding:7px 16px; border-radius:999px; cursor:pointer; }
+  .toggle button[aria-pressed="true"]{ background:var(--plum); color:var(--paper); }
+
+  .walk{ list-style:none; margin:28px 0 0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:12px; counter-reset:walk; }
+  @media (max-width:680px){ .walk{ grid-template-columns:1fr; } }
+  .walk li{ counter-increment:walk; display:flex; gap:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; font-size:14px; }
+  .walk li::before{ content:counter(walk); flex:none; width:26px; height:26px; border-radius:50%; background:var(--plum); color:var(--paper); font-family:var(--font-mono); font-size:12px; display:grid; place-items:center; }
+  .walk strong{ display:block; margin-bottom:2px; }
+  .walk span{ color:var(--ink-soft); font-size:13.5px; }
+
+  /* Module 16 additions */
+  .timebar{ display:flex; gap:3px; margin:0 0 44px; max-width:860px; font-family:var(--font-mono); font-size:10.5px; }
+  .timebar .seg{ border-radius:6px; padding:8px 8px 7px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .timebar .seg b{ display:block; font-size:12px; font-weight:600; }
+  .timebar .a{ background:color-mix(in srgb, var(--teal) 16%, transparent); color:var(--teal); }
+  .timebar .brk{ background:var(--line); color:var(--ink-soft); }
+  .timebar .b{ background:color-mix(in srgb, var(--plum) 14%, transparent); color:var(--plum); }
+  .timebar-legend{ display:flex; gap:18px; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin:0 0 8px; }
+  @media (max-width:680px){ .timebar{ flex-wrap:wrap; } .timebar .seg{ flex:1 1 30% !important; } }
+
+  .split > *{ min-width:0; }
+  .split > .callout, .split > .mini-card{ align-self:start; }
+  pre.code{ margin:0; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-family:var(--font-mono); font-size:12.5px; line-height:1.6; color:var(--ink); }
+  pre.code .c{ color:var(--ink-soft); } pre.code .k{ color:var(--plum); font-weight:600; } pre.code .s{ color:var(--teal); } pre.code .m{ color:var(--copper); font-weight:600; } pre.code .e{ color:var(--brick); font-weight:600; }
+  .code-label{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:0 0 8px; }
+  .stack{ margin-top:24px; }
+
+  .doc-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:14px; }
+  .doc-card h3{ font-size:16px; margin:0 0 6px; }
+  .doc-card .story{ color:var(--ink-soft); font-style:italic; margin:0 0 10px; }
+  .doc-card ul{ list-style:none; margin:0; padding:0; }
+  .doc-card li{ padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .doc-card li code{ margin-right:6px; }
+  .doc-card li.flag{ background:color-mix(in srgb, var(--copper) 12%, transparent); border-radius:6px; padding:7px 8px; border-top-color:transparent; }
+  .flag-note{ font-family:var(--font-mono); font-size:11px; color:var(--copper); display:block; margin-top:4px; }
+
+  .callout{ margin-top:24px; display:flex; gap:14px; align-items:flex-start; padding:16px 20px; border-radius:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-left:4px solid var(--accent, var(--plum)); }
+  .callout p{ margin:0; font-size:14.5px; }
+  .callout .tag{ flex:none; font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent, var(--plum)); padding-top:2px; }
+
+  .checklist{ list-style:none; margin:0; padding:0; }
+  .checklist li{ position:relative; padding:6px 0 6px 24px; font-size:13.5px; color:var(--ink); }
+  .checklist li::before{ content:""; position:absolute; left:0; top:9px; width:14px; height:14px; border:1.5px solid var(--teal); border-radius:4px; background:color-mix(in srgb, var(--teal) 14%, transparent); }
+
+  .checkpoint{ margin-top:32px; display:flex; flex-wrap:wrap; gap:14px 22px; align-items:center; padding:18px 22px; border-radius:14px; border:1.5px dashed var(--teal); background:color-mix(in srgb, var(--teal) 7%, var(--paper-raised)); }
+  .checkpoint .tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); border:1px solid var(--teal); border-radius:999px; padding:5px 12px; }
+  .checkpoint p{ margin:0; font-size:14.5px; flex:1 1 320px; }
+
+  .pit-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:28px; }
+  @media (max-width:900px){ .pit-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .pit-grid{ grid-template-columns:1fr; } }
+  .pit{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .pit h3{ font-size:15px; margin:0 0 8px; }
+  .pit .see{ font-size:13px; color:var(--brick); margin:0 0 6px; }
+  .pit .fix{ font-size:13px; color:var(--teal); margin:0; }
+  .pit .see::before{ content:"You'll see: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+  .pit .fix::before{ content:"Fix: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+
+  .qa{ margin-top:28px; display:flex; flex-direction:column; gap:10px; }
+  .qa details{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:14px 18px; }
+  .qa summary{ cursor:pointer; font-size:14.5px; font-weight:600; list-style:none; display:flex; gap:12px; }
+  .qa summary::-webkit-details-marker{ display:none; }
+  .qa summary::before{ content:"+"; font-family:var(--font-mono); color:var(--plum); flex:none; width:12px; }
+  .qa details[open] summary::before{ content:"−"; }
+  .qa details p{ margin:10px 0 0 24px; font-size:14px; color:var(--ink-soft); }
+
+  /* Module 17 additions */
+  .trio{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:0 0 44px; }
+  @media (max-width:760px){ .trio{ grid-template-columns:1fr; } }
+  .trio .role-card .checks{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin:12px 0 6px; }
+  .trio .role-card .outs{ display:flex; flex-wrap:wrap; gap:6px; }
+  .trio .role-card .outs span{ font-family:var(--font-mono); font-size:11px; border:1px solid var(--accent); color:var(--accent); border-radius:999px; padding:2px 9px; }
+  .trio .role-card p.desc{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .sim{ margin-top:28px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .sim h3{ font-size:17px; margin:0 0 4px; }
+  .sim .hint{ font-size:13.5px; color:var(--ink-soft); margin:0 0 14px; }
+  .sim-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .sim-btns button{ font-family:var(--font-mono); font-size:12px; background:var(--paper); color:var(--ink); border:1px solid var(--line-strong); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  .sim-btns button:hover{ border-color:var(--plum); color:var(--plum); }
+  .sim-btns button[aria-pressed="true"]{ background:var(--plum); border-color:var(--plum); color:var(--paper); }
+  .sim-out{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  @media (max-width:680px){ .sim-out{ grid-template-columns:1fr; } }
+  .sim-cell{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-height:74px; }
+  .sim-cell .k{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:0 0 6px; }
+  .sim-cell .v{ font-family:var(--font-mono); font-size:13px; margin:0; word-break:break-word; }
+  .badge{ display:inline-block; font-family:var(--font-mono); font-size:12px; font-weight:600; border-radius:999px; padding:3px 12px; }
+  .badge.allow{ color:var(--teal); background:color-mix(in srgb, var(--teal) 16%, transparent); }
+  .badge.deny{ color:var(--brick); background:color-mix(in srgb, var(--brick) 16%, transparent); }
+  .badge.ask{ color:var(--copper); background:color-mix(in srgb, var(--copper) 18%, transparent); }
+  .sim-log{ margin-top:12px; }
+  .sim-log pre.code{ font-size:11.5px; }
+
+  .grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:24px; }
+  @media (max-width:900px){ .grid4{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .grid4{ grid-template-columns:1fr; } }
+  .grid4 .role-card h3{ font-size:16px; }
+  .grid4 .role-card p{ font-size:13px; color:var(--ink-soft); margin:0; }
+
+  .compare td.row-bad{ color:var(--brick); font-weight:600; }
+  .compare td.row-ok{ color:var(--copper); font-weight:600; }
+
+  /* Module 18 additions */
+  .sub-title{ font-family:var(--font-display); font-size:22px; font-weight:600; margin:44px 0 0; }
+  .chip-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-top:28px; }
+  .chip-btns button, .run-ctrl button{ font-family:var(--font-mono); font-size:12px; background:var(--paper-raised); color:var(--ink); border:1px solid var(--line-strong); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  .chip-btns button:hover, .run-ctrl button:hover{ border-color:var(--plum); color:var(--plum); }
+  .chip-btns button[aria-pressed="true"], .run-ctrl button.primary{ background:var(--plum); border-color:var(--plum); color:var(--paper); }
+  .run-ctrl button:disabled{ opacity:.4; cursor:default; }
+
+  .rr-stage{ transition:opacity .25s; }
+  .rr-stage.skip{ opacity:.32; }
+  .rr-stage.hot rect{ stroke-width:3; }
+  .rr-st{ font-family:var(--font-mono); }
+  .rr-st.skip{ fill:var(--ink-soft); } .rr-st.regate{ fill:var(--copper); } .rr-st.rerun{ fill:var(--plum); }
+
+  .runner{ margin-top:28px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .run-head{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:16px; }
+  .run-head h3{ font-size:17px; margin:0; }
+  .round-meter{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
+  .round-meter #rmUsed{ color:var(--copper); font-weight:600; }
+  .pips i{ display:inline-block; width:14px; height:14px; border-radius:4px; border:1.5px solid var(--copper); margin-left:4px; vertical-align:middle; transition:background .25s; }
+  .pips i.on{ background:var(--copper); }
+  .run-track{ list-style:none; margin:0 0 14px; padding:0; display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+  @media (max-width:760px){ .run-track{ grid-template-columns:repeat(3,1fr); } }
+  .run-track li{ --c:var(--line-strong); border:1.5px solid var(--c); border-radius:10px; padding:10px 10px 9px; transition:all .25s; background:color-mix(in srgb, var(--c) 8%, transparent); }
+  .run-track li b{ display:block; font-size:12.5px; font-weight:600; margin-bottom:3px; }
+  .run-track li span{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--c); font-weight:600; }
+  .run-track li[data-s="idle"] span{ color:var(--ink-soft); font-weight:400; }
+  .run-track li[data-s="run"]{ --c:var(--plum); }
+  .run-track li[data-s="pass"], .run-track li[data-s="approved"]{ --c:var(--teal); }
+  .run-track li[data-s="fail"]{ --c:var(--brick); }
+  .run-track li[data-s="flag"], .run-track li[data-s="esc"]{ --c:var(--copper); }
+  .run-track li[data-s="rerun"]{ --c:var(--plum); border-style:dashed; }
+  .run-track li[data-s="skip"]{ opacity:.5; border-style:dashed; }
+  .run-step{ border:1px solid var(--line); border-radius:10px; padding:14px 16px; min-height:124px; }
+  .run-step .k{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:0 0 6px; }
+  .run-step h4{ margin:0 0 6px; font-size:15.5px; font-family:var(--font-body); }
+  .run-step p.body{ margin:0; font-size:14px; color:var(--ink-soft); }
+  .run-ctrl{ display:flex; gap:8px; margin:14px 0 14px; flex-wrap:wrap; }
+  pre.run-log{ font-size:11.5px; min-height:120px; max-height:320px; overflow:auto; }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#architecture" data-target="architecture"><span class="dot"></span><span class="rail-label">01 · Lab architecture</span></a>
+  <a href="#gates" data-target="gates"><span class="dot"></span><span class="rail-label">02 · Automated gates</span></a>
+  <a href="#correction" data-target="correction"><span class="dot"></span><span class="rail-label">03 · Correction loop</span></a>
+  <a href="#reruns" data-target="reruns"><span class="dot"></span><span class="rail-label">04 · Downstream reruns</span></a>
+  <a href="#hooks" data-target="hooks"><span class="dot"></span><span class="rail-label">05 · Validation hooks</span></a>
+  <a href="#approval" data-target="approval"><span class="dot"></span><span class="rail-label">06 · Human approval</span></a>
+  <a href="#run" data-target="run"><span class="dot"></span><span class="rail-label">07 · Watch a run</span></a>
+  <a href="#deliverable" data-target="deliverable"><span class="dot"></span><span class="rail-label">08 · Deliverable &amp; peer review</span></a>
+  <a href="#pitfalls" data-target="pitfalls"><span class="dot"></span><span class="rail-label">09 · Pitfalls</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">10 · Recap &amp; self-check</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#architecture" data-target="architecture">01</a>
+  <a href="#gates" data-target="gates">02</a>
+  <a href="#correction" data-target="correction">03</a>
+  <a href="#reruns" data-target="reruns">04</a>
+  <a href="#hooks" data-target="hooks">05</a>
+  <a href="#approval" data-target="approval">06</a>
+  <a href="#run" data-target="run">07</a>
+  <a href="#deliverable" data-target="deliverable">08</a>
+  <a href="#pitfalls" data-target="pitfalls">09</a>
+  <a href="#recap" data-target="recap">10</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-teal" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-brick" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-brick" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-copper" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-copper" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-plum" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-plum" d="M0,0 L10,5 L0,10 Z"></path></marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 6 · Self-Correction &amp; Deployment Readiness — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Self-Correcting Agent Orchestration</h1>
+    <p class="lede hero-lede">Module 18 — Use Case Lab 4, 120 minutes, hands-on with peer review. In Module 17 you <strong>designed</strong> gates, hooks, loops and checkpoints, and in the rehearsal you played the gate engine by hand. Today the Lab 3 pipeline runs them itself: a FAIL goes back to its owner with findings, only affected stages rerun, and a person signs off at the end.</p>
+
+    <figure class="hero-figure">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 150" role="img" aria-label="Animated overview: a run moves through the five Lab 3 stages with a gate after each. At gate G3 it fails, loops back to the Test Generator with findings, is patched, and continues through the remaining gates to a human sign-off." style="min-width:720px">
+          <path id="heroPath" d="M70,62 L474,62 C474,122 406,122 406,86 L406,62 L846,62" fill="none" stroke="none"></path>
+          <circle r="6" class="fill-plum" opacity=".85">
+            <animateMotion dur="7s" repeatCount="indefinite" rotate="0"><mpath href="#heroPath"></mpath></animateMotion>
+          </circle>
+          <g font-size="10">
+            <rect class="box-teal" x="10" y="40" width="120" height="44" rx="10"></rect><text class="txt-teal" x="70" y="59" text-anchor="middle">1 · Req</text><text class="txt-teal" x="70" y="72" text-anchor="middle">Validator</text>
+            <rect class="box-copper" x="178" y="40" width="120" height="44" rx="10"></rect><text class="txt-copper" x="238" y="59" text-anchor="middle">2 · Sequence</text><text class="txt-copper" x="238" y="72" text-anchor="middle">Builder</text>
+            <rect class="box-plum" x="346" y="40" width="120" height="44" rx="10"></rect><text class="txt-plum" x="406" y="59" text-anchor="middle">3 · Test</text><text class="txt-plum" x="406" y="72" text-anchor="middle">Generator</text>
+            <rect class="box-teal" x="514" y="40" width="120" height="44" rx="10"></rect><text class="txt-teal" x="574" y="59" text-anchor="middle">4 · API</text><text class="txt-teal" x="574" y="72" text-anchor="middle">Validator</text>
+            <rect class="box-brick" x="682" y="40" width="120" height="44" rx="10"></rect><text class="txt-brick" x="742" y="66" text-anchor="middle">5 · Reviewer</text>
+          </g>
+          <g font-size="9">
+            <path class="box-copper" d="M154,46 L170,62 L154,78 L138,62 Z"></path><text class="txt-copper" x="154" y="65" text-anchor="middle">G1</text>
+            <path class="box-copper" d="M322,46 L338,62 L322,78 L306,62 Z"></path><text class="txt-copper" x="322" y="65" text-anchor="middle">G2</text>
+            <path class="box-copper" d="M490,46 L506,62 L490,78 L474,62 Z"></path><text class="txt-copper" x="490" y="65" text-anchor="middle">G3</text>
+            <path class="box-copper" d="M658,46 L674,62 L658,78 L642,62 Z"></path><text class="txt-copper" x="658" y="65" text-anchor="middle">G4</text>
+            <path class="box-copper" d="M826,46 L842,62 L826,78 L810,62 Z"></path><text class="txt-copper" x="826" y="65" text-anchor="middle">G5</text>
+          </g>
+          <path class="arrow-thin" stroke="var(--brick)" stroke-width="1.5" d="M490,78 C490,128 406,128 406,90" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="500" y="116" font-size="9.5">FAIL → findings → patch (round 1 of 2)</text>
+          <text class="lbl" x="826" y="104" text-anchor="middle" font-size="9.5">🧑 sign-off</text>
+          <text class="lbl" x="10" y="20" font-size="9.5">gate engine: gates.yaml v1.1.0 · every verdict → gate_log.jsonl</text>
+        </svg>
+      </div>
+    </figure>
+
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">lab activities</span></li>
+      <li class="stat-tile"><span class="stat-num">5</span><span class="stat-label">automated gates</span></li>
+      <li class="stat-tile"><span class="stat-num">2</span><span class="stat-label">correction rounds, max</span></li>
+      <li class="stat-tile"><span class="stat-num">120</span><span class="stat-label">minutes, incl. peer review</span></li>
+    </ul>
+
+    <p class="timebar-legend"><span>Suggested pacing · 120 min</span></p>
+    <div class="timebar" role="list" aria-label="Suggested pacing">
+      <div class="seg brk" style="flex:10" role="listitem"><b>10</b>setup</div>
+      <div class="seg b" style="flex:25" role="listitem"><b>25</b>gates</div>
+      <div class="seg b" style="flex:25" role="listitem"><b>25</b>correction loop</div>
+      <div class="seg b" style="flex:15" role="listitem"><b>15</b>reruns</div>
+      <div class="seg b" style="flex:15" role="listitem"><b>15</b>hooks</div>
+      <div class="seg b" style="flex:10" role="listitem"><b>10</b>approval</div>
+      <div class="seg a" style="flex:20" role="listitem"><b>20</b>evidence + peer review</div>
+    </div>
+
+    <ol class="agenda" role="list">
+      <li><a href="#architecture"><span class="agenda-index">01</span><span>Lab architecture: from "you are the gate" to a gate engine</span></a></li>
+      <li><a href="#gates"><span class="agenda-index">02</span><span>Activity 1 — automated gates between generator, validator and reviewer</span></a></li>
+      <li><a href="#correction"><span class="agenda-index">03</span><span>Activity 2 — a correction loop with structured feedback</span></a></li>
+      <li><a href="#reruns"><span class="agenda-index">04</span><span>Activity 3 — downstream reruns: only affected stages re-execute</span></a></li>
+      <li><a href="#hooks"><span class="agenda-index">05</span><span>Activity 4 — validation hooks for selected engineering checks</span></a></li>
+      <li><a href="#approval"><span class="agenda-index">06</span><span>Activity 5 — a human approval checkpoint before sign-off</span></a></li>
+      <li><a href="#run"><span class="agenda-index">07</span><span>Watch a run: step through req-2481-run-02</span></a></li>
+      <li><a href="#deliverable"><span class="agenda-index">08</span><span>Deliverable: gate logs, validation evidence, approval trail</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 01 -->
+<section class="deck-section" id="architecture">
+  <div class="section-inner">
+    <p class="eyebrow">01 — What changes since Lab 3</p>
+    <h2 class="section-title">You stop being the gate</h2>
+    <p class="lede">The agents from Lab 3 stay as they are. What's new is a small <strong>control plane</strong> around them: a script that evaluates each gate from the artifact, a script that decides what happens next, and hooks that check actions inside the agents. The agent that orchestrates follows <code>next_step.py</code>; it doesn't get to decide on its own that a stage is "good enough".</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 305" role="img" aria-label="The Module 18 control plane. Three config files feed a loop: hooks.json fires inside the running stage, gates.yaml drives the gate evaluation in gate.py, and PIPELINE.md drives the decision in next_step.py. After each stage, gate.py evaluates the gate and next_step.py picks one of four outcomes: PASS moves to the next stage, FAIL sends findings to the owning stage, a rerun plan re-executes affected stages, and NEEDS_HUMAN or ESCALATE goes to a person. Failures and reruns loop back into the pipeline, limited to two rounds and progress-checked. Every verdict, retry, rerun and approval is appended to gate_log.jsonl." style="min-width:760px">
+          <g font-size="10">
+            <rect class="box-plum" x="40" y="16" width="170" height="44" rx="10" stroke-dasharray="5 4"></rect>
+            <text class="txt-plum" x="125" y="35" text-anchor="middle">.cursor/hooks.json</text><text class="lbl" x="125" y="49" text-anchor="middle" font-size="8.5">checks inside the agent</text>
+            <rect class="box-copper" x="260" y="16" width="170" height="44" rx="10" stroke-dasharray="5 4"></rect>
+            <text class="txt-copper" x="345" y="35" text-anchor="middle">gates.yaml v1.1.0</text><text class="lbl" x="345" y="49" text-anchor="middle" font-size="8.5">criteria + bounds</text>
+            <rect class="box-teal" x="480" y="16" width="170" height="44" rx="10" stroke-dasharray="5 4"></rect>
+            <text class="txt-teal" x="565" y="35" text-anchor="middle">PIPELINE.md</text><text class="lbl" x="565" y="49" text-anchor="middle" font-size="8.5">stage order + Reads column</text>
+          </g>
+          <g class="arrow-thin" stroke="var(--ink-soft)" stroke-width="1.3" stroke-dasharray="3 3">
+            <path d="M125,60 L125,126" marker-end="url(#arrow)"></path>
+            <path d="M345,60 L345,126" marker-end="url(#arrow)"></path>
+            <path d="M565,60 L565,126" marker-end="url(#arrow)"></path>
+          </g>
+
+          <rect class="box-plum" x="40" y="130" width="170" height="56" rx="12"></rect>
+          <text class="txt-plum" x="125" y="153" text-anchor="middle" font-size="11">① run stage</text>
+          <text class="lbl" x="125" y="170" text-anchor="middle" font-size="9">Lab 3 agent · writes artifact</text>
+          <rect class="box-copper" x="260" y="130" width="170" height="56" rx="12"></rect>
+          <text class="txt-copper" x="345" y="153" text-anchor="middle" font-size="11">② evaluate gate</text>
+          <text class="lbl" x="345" y="170" text-anchor="middle" font-size="9">gate.py · reads the artifact</text>
+          <rect class="box-teal" x="480" y="130" width="170" height="56" rx="12"></rect>
+          <text class="txt-teal" x="565" y="153" text-anchor="middle" font-size="11">③ decide next</text>
+          <text class="lbl" x="565" y="170" text-anchor="middle" font-size="9">next_step.py · guards</text>
+          <path class="arrow" d="M210,158 L256,158" marker-end="url(#arrow)"></path>
+          <path class="arrow" d="M430,158 L476,158" marker-end="url(#arrow)"></path>
+
+          <g font-size="9.5">
+            <rect class="box-teal" x="700" y="100" width="150" height="30" rx="8"></rect><text class="txt-teal" x="775" y="119" text-anchor="middle">PASS → next stage</text>
+            <rect class="box-copper" x="700" y="142" width="150" height="30" rx="8"></rect><text class="txt-copper" x="775" y="161" text-anchor="middle">FAIL → owner + findings</text>
+            <rect class="box-plum" x="700" y="184" width="150" height="30" rx="8"></rect><text class="txt-plum" x="775" y="203" text-anchor="middle">rerun affected stages</text>
+            <rect class="box-brick" x="700" y="226" width="150" height="30" rx="8"></rect><text class="txt-brick" x="775" y="245" text-anchor="middle">NEEDS_HUMAN · ESCALATE</text>
+          </g>
+          <g class="arrow-thin" stroke="var(--ink-soft)" stroke-width="1.3" fill="none">
+            <path d="M650,158 C676,158 672,115 696,115" marker-end="url(#arrow)"></path>
+            <path d="M650,158 L696,157" marker-end="url(#arrow)"></path>
+            <path d="M650,158 C676,158 672,199 696,199" marker-end="url(#arrow)"></path>
+            <path d="M650,158 C676,158 672,241 696,241" marker-end="url(#arrow)"></path>
+          </g>
+
+          <path class="arrow" stroke="var(--copper)" d="M565,186 L565,216 L125,216 L125,190" marker-end="url(#arrow-copper)"></path>
+          <text class="txt-copper" x="345" y="234" text-anchor="middle" font-size="9.5">next stage, or back to the owning stage · max 2 rounds · progress-checked</text>
+
+          <rect class="box-copper" x="40" y="262" width="810" height="32" rx="8" stroke-dasharray="4 3"></rect>
+          <text class="txt-copper" x="445" y="282" text-anchor="middle" font-size="10">every verdict, retry, rerun and approval → runs/req-2481-run-02/gate_log.jsonl (append-only)</text>
+        </svg>
+      </div>
+      <figcaption>The model still does the creative work in each stage. Scripts make the <strong>decisions</strong>, so the same artifacts always lead to the same next step.</figcaption>
+    </figure>
+
+    <div class="split">
+      <div class="mini-card">
+        <h3>Bring from Module 16–17</h3>
+        <ul class="checklist">
+          <li>The five Lab 3 agents, <code>PIPELINE.md</code> and the handoff rule</li>
+          <li><code>gates.yaml</code> v1.0.0 and the gate-log schema (Lab 17.1, 17.3)</li>
+          <li><code>.cursor/hooks.json</code> with the Module 17 hook scripts</li>
+          <li><code>runs/req-2481-run-01/</code> as the baseline to compare with</li>
+          <li>Your Lab 17.4 automation-gap table, if you did it</li>
+        </ul>
+      </div>
+      <div class="mini-card">
+        <h3>Build today</h3>
+        <ul class="checklist">
+          <li><code>scripts/gate.py</code>: one gate in, one logged verdict out</li>
+          <li><code>scripts/next_step.py</code>: guards, routing, rerun plan</li>
+          <li>Validation hooks wired to the engineering checks you choose</li>
+          <li>A decision packet and a hash-bound approval before commit</li>
+          <li>A fresh run, <code>req-2481-run-02</code>, with its complete trail</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout" style="--accent:var(--copper)"><span class="tag">Names</span><p>Script and file names on these slides are suggestions. If your Module 17 work used different names, keep yours. What matters is that each decision is made by code, from the artifact, and logged.</p></div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="deck-section" id="gates">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Activity 1 · Automated gates</p>
+    <h2 class="section-title">Put a gate between every hand-off</h2>
+    <p class="lede">G1 and G2 carry over from Module 17. The work today is on the three gates between the <strong>generator</strong>, the <strong>validator</strong> and the <strong>reviewer</strong>, where most failures happen and where a wrong route costs the most.</p>
+
+    <div class="diagram-wrap" style="margin-top:28px">
+      <table class="compare">
+        <thead><tr><th>Gate</th><th>Checks, cheapest first</th><th>PASS when</th><th>On FAIL</th></tr></thead>
+        <tbody>
+          <tr><th>G3 · Generator → Validator</th><td><strong>L1</strong> envelope valid, test file exists · <strong>L2</strong> <code>ruff</code> clean, <code>pytest --collect-only</code> succeeds, every test has <code>@pytest.mark.ac</code>, writes only under <code>tests/</code></td><td>All L1–L2 checks pass</td><td>Findings → Test Generator, patch the file. Uses the shared round counter.</td></tr>
+          <tr><th>G4 · Validator → Reviewer</th><td><strong>L3</strong> run the suite in the sandbox → <code>results.xml</code>; every failure classified TEST_DEFECT, PRODUCT_DEFECT or ENVIRONMENT</td><td>No TEST_DEFECT and no ENVIRONMENT failure. PRODUCT_DEFECT passes but is <strong>flagged</strong>.</td><td>TEST_DEFECT → Test Generator. ENVIRONMENT → rerun the stage once, then NEEDS_HUMAN.</td></tr>
+          <tr><th>G5 · Reviewer → sign-off</th><td><strong>L1</strong> verdict present and one of APPROVE, ESCALATE, REQUEST_CHANGES · every finding cites a test and an AC</td><td>APPROVE or ESCALATE, then the human checkpoint</td><td>REQUEST_CHANGES → Test Generator with the reviewer's findings</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="split">
+      <div>
+        <p class="code-label">gates.yaml (excerpt, v1.1.0)</p>
+<pre class="code"><span class="k">version</span>: <span class="s">1.1.0</span>        <span class="c"># logged with every verdict</span>
+<span class="k">bounds</span>:
+  <span class="k">max_rounds</span>: <span class="m">2</span>         <span class="c"># shared by G3, G4, G5</span>
+  <span class="k">on_no_progress</span>: <span class="s">escalate</span>
+  <span class="k">on_error</span>: <span class="e">NEEDS_HUMAN</span>  <span class="c"># never PASS</span>
+<span class="k">gates</span>:
+  <span class="m">G3</span>:
+    <span class="k">after</span>: <span class="s">test-generator</span>
+    <span class="k">checks</span>:
+      <span class="k">L1</span>: [<span class="s">envelope_valid</span>, <span class="s">file_exists</span>]
+      <span class="k">L2</span>: [<span class="s">ruff_clean</span>, <span class="s">collect_only</span>,
+           <span class="s">ac_marker_every_test</span>,
+           <span class="s">writes_within_tests</span>]
+    <span class="k">on_fail</span>: {<span class="k">route</span>: <span class="s">test-generator</span>, <span class="k">mode</span>: <span class="s">patch</span>}
+  <span class="m">G4</span>:
+    <span class="k">after</span>: <span class="s">api-validator</span>
+    <span class="k">checks</span>: {<span class="k">L3</span>: [<span class="s">run_suite</span>, <span class="s">classify_failures</span>]}
+    <span class="k">allow_flagged</span>: [<span class="s">PRODUCT_DEFECT</span>]
+    <span class="k">on_fail</span>:
+      <span class="k">TEST_DEFECT</span>: {<span class="k">route</span>: <span class="s">test-generator</span>}
+      <span class="k">ENVIRONMENT</span>: {<span class="k">rerun_stage</span>: <span class="m">1</span>, <span class="k">then</span>: <span class="e">NEEDS_HUMAN</span>}
+  <span class="m">G5</span>:
+    <span class="k">after</span>: <span class="s">reviewer</span>
+    <span class="k">accept</span>: [<span class="s">APPROVE</span>, <span class="s">ESCALATE</span>]
+    <span class="k">on_fail</span>: {<span class="k">route</span>: <span class="s">test-generator</span>, <span class="k">mode</span>: <span class="s">patch</span>}
+    <span class="k">then</span>: <span class="s">HITL_commit</span></pre>
+      </div>
+      <div>
+        <p class="code-label">scripts/gate.py (sketch)</p>
+<pre class="code"><span class="k">def</span> evaluate(gate_id, run, cfg):
+    <span class="k">try</span>:
+        v = _ladder(cfg.gates[gate_id], run)
+    <span class="k">except</span> Exception <span class="k">as</span> e:   <span class="c"># checker broke</span>
+        v = Verdict(<span class="e">"NEEDS_HUMAN"</span>,
+                    error=repr(e))  <span class="c"># never PASS</span>
+    log_verdict(v, gate_id, run,
+                cfg.version)        <span class="c"># always</span>
+    <span class="k">return</span> v
+
+<span class="k">def</span> _ladder(gate, run):
+    done = []
+    <span class="k">for</span> level <span class="k">in</span> (<span class="s">"L1"</span>, <span class="s">"L2"</span>, <span class="s">"L3"</span>, <span class="s">"L4"</span>):
+        <span class="k">for</span> name <span class="k">in</span> gate.checks.get(level, []):
+            r = CHECKS[name](run)  <span class="c"># the artifact,</span>
+            done.append(r)         <span class="c"># not the claim</span>
+            <span class="k">if</span> r.status == <span class="e">"FAIL"</span>:
+                <span class="k">return</span> Verdict(<span class="e">"FAIL"</span>, done,
+                    route=gate.route_for(r))
+    <span class="k">return</span> Verdict(<span class="s">"PASS"</span>, done)</pre>
+        <div class="callout" style="--accent:var(--teal)"><span class="tag">Rule</span><p>The gate re-derives everything from the artifact. An envelope that says <code>"status": "PASS"</code> is a claim to check, not a verdict.</p></div>
+      </div>
+    </div>
+
+    <div class="checkpoint"><span class="tag">Checkpoint</span><p>Run <code>gate.py G3</code> against run 01's test file and get a logged verdict. Then rename <code>gates.yaml</code> and run it again: you should get <strong>NEEDS_HUMAN</strong> with the error in the log, not PASS.</p></div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="deck-section" id="correction">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Activity 2 · Correction loop</p>
+    <h2 class="section-title">A FAIL goes back with findings, not "try again"</h2>
+    <p class="lede">When a gate fails, <code>next_step.py</code> first checks whether another round is allowed and worthwhile. Only then does it write a findings file and re-invoke the owning stage, telling it to <strong>patch</strong> the existing artifact rather than start over.</p>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 262" role="img" aria-label="The correction loop. A gate FAIL with findings goes to four guards in next_step.py that must all hold: rounds used below the maximum of two, the artifact hash changed since the last round, the findings count decreased, and invariants hold with no weaker tests. If all hold, findings.json is written and the owning stage is re-invoked to patch, then the gate re-runs on the new hash; if it still fails, the loop starts the next round. If any guard fails, the run escalates to a human with the full history and a decision packet." style="min-width:760px">
+          <rect class="box-brick" x="20" y="100" width="130" height="52" rx="10"></rect>
+          <text class="txt-brick" x="85" y="122" text-anchor="middle" font-size="11">G3 / G4 / G5 FAIL</text>
+          <text class="lbl" x="85" y="139" text-anchor="middle" font-size="9">+ findings[]</text>
+          <path class="arrow" d="M150,126 L186,126" marker-end="url(#arrow)"></path>
+
+          <rect class="box-plum" x="190" y="30" width="270" height="222" rx="12" stroke-dasharray="5 4"></rect>
+          <text class="txt-plum" x="325" y="52" text-anchor="middle" font-size="10.5">next_step.py guards (all must hold)</text>
+          <g font-size="9.5">
+            <rect class="box" x="206" y="66" width="238" height="36" rx="8"></rect>
+            <text class="lbl-strong" x="218" y="82">① rounds used &lt; max_rounds (2)</text><text class="lbl" x="218" y="95" font-size="8.5">one counter shared by G3, G4, G5</text>
+            <rect class="box" x="206" y="110" width="238" height="36" rx="8"></rect>
+            <text class="lbl-strong" x="218" y="126">② artifact hash changed</text><text class="lbl" x="218" y="139" font-size="8.5">same hash twice = no progress</text>
+            <rect class="box" x="206" y="154" width="238" height="36" rx="8"></rect>
+            <text class="lbl-strong" x="218" y="170">③ findings count decreased</text><text class="lbl" x="218" y="183" font-size="8.5">compared per gate, round to round</text>
+            <rect class="box" x="206" y="198" width="238" height="36" rx="8"></rect>
+            <text class="lbl-strong" x="218" y="214">④ invariants hold</text><text class="lbl" x="218" y="227" font-size="8.5">no fewer asserts · no new skip/xfail</text>
+          </g>
+
+          <path class="arrow" stroke="var(--teal)" d="M460,100 C490,100 490,70 516,70" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="468" y="66" font-size="9">all hold</text>
+          <rect class="box-copper" x="520" y="44" width="200" height="52" rx="10"></rect>
+          <text class="txt-copper" x="620" y="66" text-anchor="middle" font-size="10">write findings.json</text>
+          <text class="txt-copper" x="620" y="81" text-anchor="middle" font-size="10">re-invoke owner · mode: patch</text>
+          <path class="arrow" d="M720,70 L736,70" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="740" y="44" width="110" height="52" rx="10"></rect>
+          <text class="txt-teal" x="795" y="66" text-anchor="middle" font-size="10">gate re-runs</text>
+          <text class="txt-teal" x="795" y="81" text-anchor="middle" font-size="10">on new hash</text>
+          <path class="arrow-thin" stroke="var(--copper)" stroke-width="1.4" d="M795,44 L795,14 L85,14 L85,96" marker-end="url(#arrow-copper)"></path>
+          <text class="txt-copper" x="620" y="29" text-anchor="middle" font-size="9">still FAIL → next round</text>
+
+          <path class="arrow" stroke="var(--brick)" d="M460,170 C490,170 490,200 516,200" marker-end="url(#arrow-brick)"></path>
+          <text class="txt-brick" x="468" y="226" font-size="9">any fails</text>
+          <rect class="box-brick" x="520" y="174" width="200" height="52" rx="10"></rect>
+          <text class="txt-brick" x="620" y="196" text-anchor="middle" font-size="10">ESCALATE → human</text>
+          <text class="txt-brick" x="620" y="211" text-anchor="middle" font-size="10">with every round's history</text>
+          <path class="arrow" d="M720,200 L736,200" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="740" y="174" width="110" height="52" rx="10"></rect>
+          <text class="txt-teal" x="795" y="196" text-anchor="middle" font-size="10">decision</text>
+          <text class="txt-teal" x="795" y="211" text-anchor="middle" font-size="10">packet</text>
+        </svg>
+      </div>
+      <figcaption>Remaining rounds are a <strong>limit</strong>, not a target. Guards ② – ④ stop a loop early when it isn't getting anywhere.</figcaption>
+    </figure>
+
+    <div class="split">
+      <div>
+        <p class="code-label">runs/…/findings/G5-r2.json · the structured feedback</p>
+<pre class="code">{
+  <span class="k">"gate"</span>: <span class="s">"G5"</span>, <span class="k">"round"</span>: <span class="m">2</span>,
+  <span class="k">"route_to"</span>: <span class="s">"test-generator"</span>, <span class="k">"mode"</span>: <span class="s">"patch"</span>,
+  <span class="k">"artifact"</span>: <span class="s">"tests/test_cancel_order.py@c07e"</span>,
+  <span class="k">"findings"</span>: [{
+    <span class="k">"test"</span>: <span class="s">"test_cancel_shipped_order_rejected"</span>,
+    <span class="k">"ac"</span>: <span class="s">"AC-3"</span>,
+    <span class="k">"criterion"</span>: <span class="s">"rejected cancel leaves order unchanged"</span>,
+    <span class="k">"observed"</span>: <span class="s">"asserts 409 only"</span>,
+    <span class="k">"expected"</span>: <span class="s">"also GET order → still SHIPPED"</span>,
+    <span class="k">"evidence"</span>: <span class="s">"05_review_signoff.md#F-1"</span>
+  }],
+  <span class="k">"do_not_change"</span>: [<span class="s">"test_cancel_creates_refund"</span>,
+                    <span class="s">"AC markers"</span>, <span class="s">"pytest.ini"</span>],
+  <span class="k">"previous_attempts"</span>: [
+    <span class="s">"r1 (G3): added missing AC marker"</span>]
+}</pre>
+      </div>
+      <div>
+        <p class="code-label">scripts/next_step.py · after a FAIL (sketch)</p>
+<pre class="code"><span class="k">def</span> after_fail(v, state, cfg):
+    state.rounds += <span class="m">1</span>          <span class="c"># shared counter</span>
+    prev = state.history.get(v.gate)
+    <span class="k">if</span> state.rounds &gt; cfg.max_rounds:
+        <span class="k">return</span> escalate(<span class="s">"round limit"</span>, v)
+    <span class="k">if</span> prev <span class="k">and</span> v.hash == prev.hash:
+        <span class="k">return</span> escalate(<span class="s">"no progress"</span>, v)
+    <span class="k">if</span> prev <span class="k">and</span> len(v.findings) &gt;= \
+            len(prev.findings):
+        <span class="k">return</span> escalate(<span class="s">"not converging"</span>, v)
+    <span class="k">if</span> weakened(v, prev):   <span class="c"># asserts, skips</span>
+        <span class="k">return</span> escalate(<span class="s">"invariant"</span>, v)
+    write_findings(v, state)
+    <span class="k">return</span> retry(v.route, mode=<span class="s">"patch"</span>)</pre>
+        <div class="callout" style="--accent:var(--copper)"><span class="tag">Why patch</span><p>Regenerating the whole file throws away tests that already passed review. <code>do_not_change</code> and <code>previous_attempts</code> stop the generator from undoing earlier fixes.</p></div>
+      </div>
+    </div>
+
+    <div class="grid4">
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">What</p><h3>Observed vs expected</h3><p>The exact assertion that's wrong, and what the spec or reviewer expects instead.</p></article>
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">Where</p><h3>Test + AC + evidence</h3><p>A test name, an AC-ID and a link to the report line, so the fix is targeted.</p></article>
+      <article class="role-card" style="--accent:var(--teal)"><p class="role-step">Keep</p><h3>do_not_change</h3><p>Tests and files that already passed. Changing them is out of scope for this round.</p></article>
+      <article class="role-card" style="--accent:var(--brick)"><p class="role-step">History</p><h3>previous_attempts</h3><p>One line per earlier round, so the agent doesn't repeat a fix that already failed.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="deck-section" id="reruns">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Activity 3 · Downstream reruns</p>
+    <h2 class="section-title">Rerun what depends on the change, and nothing else</h2>
+    <p class="lede">The <strong>Reads</strong> column in <code>PIPELINE.md</code> says which artifacts each stage consumes. Each envelope records the hash of its inputs, so <code>next_step.py</code> can tell which stages now have different inputs. Those rerun; the rest are reused as they are.</p>
+
+    <div class="chip-btns" role="group" aria-label="Choose where the fix landed">
+      <button type="button" data-from="1" aria-pressed="false">Fix in 01 · requirement</button>
+      <button type="button" data-from="2" aria-pressed="false">Fix in 02 · sequence</button>
+      <button type="button" data-from="3" aria-pressed="true">Fix in 03 · tests</button>
+      <button type="button" data-from="4" aria-pressed="false">Sandbox 503 · rerun 04</button>
+    </div>
+    <figure class="diagram" style="margin-top:12px">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 200" role="img" aria-label="Rerun map. Stage 2 reads 01. Stage 3 reads 01, 02 and the OpenAPI spec. Stage 4 reads 03 and runs in the sandbox. Stage 5 reads 01 to 04. The stage where the fix landed is re-gated, every stage after it has a changed input and reruns, and every stage before it is reused because its input hash is unchanged. Use the buttons to choose where the fix landed." style="min-width:720px">
+          <g id="rr1" class="rr-stage"><rect class="box-teal" x="10" y="54" width="148" height="56" rx="12"></rect><text class="txt-teal" x="84" y="77" text-anchor="middle" font-size="10.5">1 · Req Validator</text><text class="lbl" x="84" y="94" text-anchor="middle" font-size="9">writes 01</text></g>
+          <g id="rr2" class="rr-stage"><rect class="box-copper" x="184" y="54" width="148" height="56" rx="12"></rect><text class="txt-copper" x="258" y="77" text-anchor="middle" font-size="10.5">2 · Sequence Builder</text><text class="lbl" x="258" y="94" text-anchor="middle" font-size="9">writes 02</text></g>
+          <g id="rr3" class="rr-stage"><rect class="box-plum" x="358" y="54" width="148" height="56" rx="12"></rect><text class="txt-plum" x="432" y="77" text-anchor="middle" font-size="10.5">3 · Test Generator</text><text class="lbl" x="432" y="94" text-anchor="middle" font-size="9">writes 03 · tests</text></g>
+          <g id="rr4" class="rr-stage"><rect class="box-teal" x="532" y="54" width="148" height="56" rx="12"></rect><text class="txt-teal" x="606" y="77" text-anchor="middle" font-size="10.5">4 · API Validator</text><text class="lbl" x="606" y="94" text-anchor="middle" font-size="9">writes 04 · results.xml</text></g>
+          <g id="rr5" class="rr-stage"><rect class="box-brick" x="706" y="54" width="148" height="56" rx="12"></rect><text class="txt-brick" x="780" y="77" text-anchor="middle" font-size="10.5">5 · Reviewer</text><text class="lbl" x="780" y="94" text-anchor="middle" font-size="9">writes 05</text></g>
+          <g class="arrow-thin" stroke="var(--ink-soft)" stroke-width="1.3">
+            <path d="M158,82 L180,82" marker-end="url(#arrow)"></path><path d="M332,82 L354,82" marker-end="url(#arrow)"></path><path d="M506,82 L528,82" marker-end="url(#arrow)"></path><path d="M680,82 L702,82" marker-end="url(#arrow)"></path>
+          </g>
+          <g class="arrow-thin" stroke="var(--ink-soft)" stroke-width="1" fill="none" stroke-dasharray="3 3" opacity=".7">
+            <path d="M84,54 C84,20 432,20 432,50" marker-end="url(#arrow)"></path>
+            <path d="M606,54 C606,30 780,30 780,50" marker-end="url(#arrow)"></path>
+          </g>
+          <text class="lbl" x="258" y="18" text-anchor="middle" font-size="8.5">01 also read by stage 3</text>
+          <text class="lbl" x="693" y="26" text-anchor="middle" font-size="8.5">stage 5 reads 01–04</text>
+          <g font-size="9">
+            <text class="lbl" x="84" y="130" text-anchor="middle">reads: REQ-2481, openapi</text>
+            <text class="lbl" x="258" y="130" text-anchor="middle">reads: 01</text>
+            <text class="lbl" x="432" y="130" text-anchor="middle">reads: 01, 02, openapi</text>
+            <text class="lbl" x="606" y="130" text-anchor="middle">reads: 03 · sandbox</text>
+            <text class="lbl" x="780" y="130" text-anchor="middle">reads: 01–04</text>
+          </g>
+          <g font-size="10" font-weight="600">
+            <text id="rrs1" class="rr-st" x="84" y="160" text-anchor="middle"></text>
+            <text id="rrs2" class="rr-st" x="258" y="160" text-anchor="middle"></text>
+            <text id="rrs3" class="rr-st" x="432" y="160" text-anchor="middle"></text>
+            <text id="rrs4" class="rr-st" x="606" y="160" text-anchor="middle"></text>
+            <text id="rrs5" class="rr-st" x="780" y="160" text-anchor="middle"></text>
+          </g>
+          <text id="rrSum" class="lbl-strong" x="430" y="190" text-anchor="middle" font-size="10.5"></text>
+        </svg>
+      </div>
+      <figcaption>Pick where the fix landed. The changed stage is <strong>re-gated</strong>, later stages <strong>rerun</strong> because an input hash changed, and earlier stages are <strong>reused</strong>.</figcaption>
+    </figure>
+
+    <div class="split">
+      <div class="mini-card">
+        <h3>Why not just rerun everything?</h3>
+        <p style="font-size:14px;margin:0 0 8px">It costs more, but that's the smaller problem. Rerunning stage 2 regenerates a sequence that was already checked, and it can come back <strong>different</strong>. Then tests and the review have to be redone against something nobody asked to change.</p>
+        <p style="font-size:14px;margin:0;color:var(--ink-soft)">Reuse is safe only when the input hash matches. That turns the question into a mechanical check, the same way a build system decides what to recompile.</p>
+      </div>
+      <div>
+        <p class="code-label">rerun plan, logged before anything runs</p>
+<pre class="code">{<span class="k">"event"</span>: <span class="s">"rerun_plan"</span>, <span class="k">"round"</span>: <span class="m">2</span>,
+ <span class="k">"changed"</span>: <span class="s">"03@c07e→e3f1"</span>,
+ <span class="k">"reuse"</span>:  [<span class="s">"01@9b2c"</span>, <span class="s">"02@41d0"</span>],
+ <span class="k">"regate"</span>: [<span class="s">"G3"</span>],
+ <span class="k">"rerun"</span>:  [<span class="s">"api-validator"</span>, <span class="s">"reviewer"</span>],
+ <span class="k">"reason"</span>: <span class="s">"Reads: 4←03, 5←01..04"</span>}</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="deck-section" id="hooks">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Activity 4 · Validation hooks</p>
+    <h2 class="section-title">Catch problems on the edit, not at the gate</h2>
+    <p class="lede">A gate finds a missing marker after the whole stage is done. A hook can find it the moment the file is saved, while the agent is still working. Pick a few engineering checks that are cheap and deterministic, and run them from hooks. The gate still makes the final decision.</p>
+
+    <div class="trio" style="margin-top:28px">
+      <article class="role-card" style="--accent:var(--plum)">
+        <p class="role-step">Per action · inside the agent</p>
+        <h3>Hook</h3>
+        <p class="desc">Format and lint each edited test, check AC markers, keep writes inside <code>tests/</code>, block risky commands.</p>
+        <p class="checks">Fast feedback</p>
+        <div class="outs"><span>allow</span><span>deny</span><span>ask</span><span>log</span></div>
+      </article>
+      <article class="role-card" style="--accent:var(--copper)">
+        <p class="role-step">Per stage · between agents</p>
+        <h3>Gate</h3>
+        <p class="desc">Collect-only, schema, classification of failures, reviewer verdict. Judges the whole artifact once it's finished.</p>
+        <p class="checks">The verdict</p>
+        <div class="outs"><span>PASS</span><span>FAIL</span><span>NEEDS_HUMAN</span></div>
+      </article>
+      <article class="role-card" style="--accent:var(--teal)">
+        <p class="role-step">Per PR · Module 19</p>
+        <h3>CI</h3>
+        <p class="desc">The full suite on a clean runner and branch protection. It doesn't depend on anyone's local setup.</p>
+        <p class="checks">Independent re-check</p>
+        <div class="outs"><span>required check</span></div>
+      </article>
+    </div>
+
+    <div class="diagram-wrap">
+      <table class="compare">
+        <thead><tr><th>Engineering check</th><th>Hook event</th><th>Script</th><th>What happens</th></tr></thead>
+        <tbody>
+          <tr><th>ruff format + lint on the edited test</th><td><code>afterFileEdit</code></td><td><code>after-edit-validate.sh</code></td><td>Formats the file and logs any violations. G3 turns remaining violations into a FAIL.</td></tr>
+          <tr><th>Every <code>test_</code> has an AC marker</th><td><code>afterFileEdit</code></td><td>same script → <code>check_markers.py</code></td><td>Logs a missing marker right away instead of at the gate</td></tr>
+          <tr><th>Writes stay in <code>tests/</code></th><td><code>afterFileEdit</code></td><td>same script</td><td>Edits to <code>gates.yaml</code>, <code>pytest.ini</code> or hooks are logged as OUT_OF_SCOPE and fail G3</td></tr>
+          <tr><th>Only pytest/ruff, no push or network</th><td><code>beforeShellExecution</code></td><td><code>shell-policy.sh</code></td><td>allow / deny / ask, as in Module 17</td></tr>
+          <tr><th>Commit only after approval</th><td><code>beforeShellExecution</code></td><td><code>commit-guard.sh</code></td><td>Denies <code>git commit</code> unless the log has an APPROVE for the current hash</td></tr>
+          <tr><th>Stage finished → evaluate its gate</th><td><code>stop</code></td><td><code>run-stage-gate.sh</code></td><td>Calls <code>gate.py</code>. The agent can't skip it.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="split">
+      <div>
+        <p class="code-label">.cursor/hooks.json</p>
+<pre class="code">{
+  <span class="k">"version"</span>: 1,
+  <span class="k">"hooks"</span>: {
+    <span class="m">"beforeReadFile"</span>:
+      [{ <span class="k">"command"</span>: <span class="s">".cursor/hooks/deny-secrets.sh"</span> }],
+    <span class="m">"beforeShellExecution"</span>: [
+      { <span class="k">"command"</span>: <span class="s">".cursor/hooks/shell-policy.sh"</span> },
+      { <span class="k">"command"</span>: <span class="s">".cursor/hooks/commit-guard.sh"</span> }],
+    <span class="m">"afterFileEdit"</span>:
+      [{ <span class="k">"command"</span>: <span class="s">".cursor/hooks/after-edit-validate.sh"</span> }],
+    <span class="m">"stop"</span>:
+      [{ <span class="k">"command"</span>: <span class="s">".cursor/hooks/run-stage-gate.sh"</span> }]
+  }
+}</pre>
+      </div>
+      <div>
+        <p class="code-label">after-edit-validate.sh (outline)</p>
+<pre class="code"><span class="c">#!/usr/bin/env bash</span>
+<span class="c"># afterFileEdit observes: validate + log</span>
+file=$(python3 scripts/hook_field.py file_path) \
+  || exit 0              <span class="c"># bad payload: log only</span>
+<span class="k">case</span> <span class="s">"$file"</span> <span class="k">in</span>
+  */tests/*.py)
+    ruff format -q <span class="s">"$file"</span>
+    ruff check -q <span class="s">"$file"</span> || log <span class="m">lint</span>
+    python3 scripts/check_markers.py <span class="s">"$file"</span> \
+      || log <span class="m">missing_ac_marker</span> ;;
+  *gates.yaml|*pytest.ini|*.cursor/*)
+    log <span class="e">OUT_OF_SCOPE</span> ;;   <span class="c"># G3 will FAIL</span>
+<span class="k">esac</span></pre>
+      </div>
+    </div>
+    <div class="callout" style="--accent:var(--copper)"><span class="tag">Check the docs</span><p>Hook event names, payload fields and what a hook's output can do have changed between Cursor releases. Some versions let a <code>stop</code> hook return a follow-up message that sends the agent back to work, which is one way to deliver findings. Confirm what your version supports in the current Cursor Hooks documentation.</p></div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="deck-section" id="approval">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Activity 5 · Human approval checkpoint</p>
+    <h2 class="section-title">One person signs off, and the approval is tied to what they saw</h2>
+    <p class="lede">After G5 returns APPROVE or ESCALATE, the pipeline stops and builds a <strong>decision packet</strong>. A named approver decides. The approval is logged with the artifact hash, so if anything changes afterwards the approval no longer counts.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 205" role="img" aria-label="Approval flow. packet.py builds a decision packet, which goes to the QA lead. APPROVE logs a HITL_commit entry bound to the artifact hash, and git commit is then allowed. REQUEST CHANGES sends findings to the owning stage, and the approval resets. REJECT closes the run with the reason logged. A beforeShellExecution hook allows git commit only when an APPROVE entry exists for the current artifact hash." style="min-width:760px">
+          <rect class="box-teal" x="20" y="64" width="170" height="60" rx="12"></rect>
+          <text class="txt-teal" x="105" y="89" text-anchor="middle" font-size="11">decision packet</text>
+          <text class="lbl" x="105" y="106" text-anchor="middle" font-size="9">built by packet.py</text>
+          <path class="arrow" d="M190,94 L246,94" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="250" y="64" width="150" height="60" rx="12"></rect>
+          <text class="txt-teal" x="325" y="89" text-anchor="middle" font-size="11">🧑 QA lead</text>
+          <text class="lbl" x="325" y="106" text-anchor="middle" font-size="9">named approver</text>
+
+          <g class="arrow-thin" stroke="var(--ink-soft)" stroke-width="1.3" fill="none">
+            <path d="M400,94 C430,94 428,35 456,35" marker-end="url(#arrow)"></path>
+            <path d="M400,94 L456,94" marker-end="url(#arrow)"></path>
+            <path d="M400,94 C430,94 428,153 456,153" marker-end="url(#arrow)"></path>
+          </g>
+          <g font-size="10">
+            <rect class="box-teal" x="460" y="20" width="160" height="30" rx="8"></rect><text class="txt-teal" x="540" y="39" text-anchor="middle">APPROVE</text>
+            <rect class="box-copper" x="460" y="79" width="160" height="30" rx="8"></rect><text class="txt-copper" x="540" y="98" text-anchor="middle">REQUEST CHANGES</text>
+            <rect class="box-brick" x="460" y="138" width="160" height="30" rx="8"></rect><text class="txt-brick" x="540" y="157" text-anchor="middle">REJECT</text>
+          </g>
+          <g font-size="9.5">
+            <text class="lbl-strong" x="634" y="32">log HITL_commit + hash</text><text class="lbl" x="634" y="45">→ git commit allowed</text>
+            <text class="lbl-strong" x="634" y="91">findings → owning stage</text><text class="lbl" x="634" y="104">approval resets on new hash</text>
+            <text class="lbl-strong" x="634" y="150">run closed</text><text class="lbl" x="634" y="163">reason logged, nothing committed</text>
+          </g>
+          <rect class="box-plum" x="20" y="182" width="830" height="20" rx="6" stroke-dasharray="4 3"></rect>
+          <text class="txt-plum" x="435" y="196" text-anchor="middle" font-size="9">commit-guard.sh (beforeShellExecution): git commit → deny unless an APPROVE exists for the current artifact hash</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="split">
+      <div class="doc-card">
+        <h3>decision_packet.md · req-2481-run-02</h3>
+        <p class="story">Decision needed: APPROVE / REJECT / REQUEST CHANGES</p>
+        <ul>
+          <li><code>trail</code> G1 ✔ G2 ✔ G3 ✔ (round 1) G4 ✔ flagged · G5 REQUEST_CHANGES → round 2 → G5 ESCALATE</li>
+          <li><code>coverage</code> AC-1 … AC-4 all covered · 6 tests</li>
+          <li class="flag"><code>open defect</code> DEF-5520 · spec says 403, API returns 404 · test kept failing on purpose<span class="flag-note">PRODUCT_DEFECT · not retried</span></li>
+          <li><code>diff scope</code> tests/test_cancel_order.py only · no protected files</li>
+          <li><code>hooks</code> 0 denies · 1 ask (none pending)</li>
+          <li><code>cost</code> tokens and wall-clock from run_log.jsonl, within budget</li>
+          <li><code>evidence</code> results.xml · traceability.md · gate_log.jsonl</li>
+        </ul>
+      </div>
+      <div>
+        <p class="code-label">the approval entry in gate_log.jsonl</p>
+<pre class="code">{<span class="k">"gate"</span>: <span class="s">"HITL_commit"</span>,
+ <span class="k">"run_id"</span>: <span class="s">"req-2481-run-02"</span>,
+ <span class="k">"decision"</span>: <span class="s">"APPROVE"</span>,
+ <span class="k">"decided_by"</span>: <span class="s">"human:qa-lead"</span>,
+ <span class="k">"artifact_hash"</span>: <span class="s">"e3f1…"</span>,
+ <span class="k">"reason"</span>: <span class="s">"tests match spec; DEF-5520
+   raised with the API team"</span>,
+ <span class="k">"evidence"</span>: [<span class="s">"decision_packet.md"</span>,
+              <span class="s">"results.xml"</span>]}</pre>
+        <div class="callout" style="--accent:var(--brick)"><span class="tag">Don't show</span><p>The full diff and raw agent transcripts. Approvers skim long packets, and skimmed approvals are how bad changes get through. Link to them as evidence instead.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="deck-section" id="run">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Walkthrough</p>
+    <h2 class="section-title">Watch run 02 correct itself</h2>
+    <p class="lede">Step through an automated run of REQ-2481 using the failures you already know from Lab 3: a missing AC marker, the DEF-5520 product defect, and the reviewer's note about the shipped-order test. Each step shows the stage states, the shared round counter and the gate-log lines as they are written.</p>
+
+    <div class="runner" id="runner">
+      <div class="run-head">
+        <h3>req-2481-run-02 · gates.yaml v1.1.0</h3>
+        <div class="round-meter">correction rounds <span id="rmUsed">0</span> / 2 <span class="pips" aria-hidden="true"><i></i><i></i></span></div>
+      </div>
+      <ol class="run-track" role="list">
+        <li data-stage="1" data-s="idle"><b>1 · Req Validator</b><span>waiting</span></li>
+        <li data-stage="2" data-s="idle"><b>2 · Sequence</b><span>waiting</span></li>
+        <li data-stage="3" data-s="idle"><b>3 · Test Gen</b><span>waiting</span></li>
+        <li data-stage="4" data-s="idle"><b>4 · API Validator</b><span>waiting</span></li>
+        <li data-stage="5" data-s="idle"><b>5 · Reviewer</b><span>waiting</span></li>
+        <li data-stage="6" data-s="idle"><b>🧑 Sign-off</b><span>waiting</span></li>
+      </ol>
+      <div class="run-step" aria-live="polite">
+        <p class="k" id="rsIdx">Step 0 of 11</p>
+        <h4 id="rsTitle">Ready</h4>
+        <p class="body" id="rsBody">Press <strong>Next step</strong> to start the run.</p>
+      </div>
+      <div class="run-ctrl">
+        <button type="button" id="rsPrev">← Back</button>
+        <button type="button" id="rsNext" class="primary">Next step →</button>
+        <button type="button" id="rsReset">Reset</button>
+      </div>
+      <p class="code-label">runs/req-2481-run-02/gate_log.jsonl</p>
+      <pre class="code run-log" id="rsLog"><span class="c">// empty — nothing has run yet</span></pre>
+    </div>
+
+    <div class="callout" style="--accent:var(--plum)"><span class="tag">Notice</span><p>The reviewer's request used the <strong>second and last</strong> round. If the re-gated G3 had failed after that, the run would have escalated to a human, not started a third round.</p></div>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="deck-section" id="deliverable">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Deliverable</p>
+    <h2 class="section-title">A bounded pipeline with a trail anyone can follow</h2>
+    <p class="lede">The deliverable is more than a green run. Someone who wasn't in the room should be able to open the run folder and answer: what was checked, what failed, who fixed it, what was rerun, and who approved the result, and why.</p>
+
+    <div class="split">
+      <div>
+        <p class="code-label">suggested layout</p>
+<pre class="code">requirement-to-test/
+├─ PIPELINE.md          <span class="c"># Reads column → reruns</span>
+├─ gates.yaml           <span class="c"># v1.1.0 · criteria + bounds</span>
+├─ .cursor/hooks.json   <span class="c"># + hooks/*.sh</span>
+├─ scripts/
+│  ├─ gate.py           <span class="c"># gate → logged verdict</span>
+│  ├─ next_step.py      <span class="c"># guards · routing · reruns</span>
+│  └─ packet.py         <span class="c"># decision packet</span>
+└─ runs/req-2481-run-02/
+   ├─ 01_… 05_…          <span class="c"># artifacts + envelopes</span>
+   ├─ findings/          <span class="c"># G3-r1.json, G5-r2.json</span>
+   ├─ <span class="m">gate_log.jsonl</span>     <span class="c"># gate trail</span>
+   ├─ <span class="m">results.xml</span>        <span class="c"># validation evidence</span>
+   ├─ <span class="m">traceability.md</span>    <span class="c"># AC ↔ test ↔ result</span>
+   └─ <span class="m">decision_packet.md</span> <span class="c"># + approval trail</span></pre>
+      </div>
+      <div class="mini-card">
+        <h3>Definition of done</h3>
+        <ul class="checklist">
+          <li>Every gate decision in <code>gate_log.jsonl</code> with version, round, hash, checks, route and <code>decided_by</code></li>
+          <li>At least one real correction round, with its findings file</li>
+          <li>A rerun plan showing which stages were reused and which were rerun</li>
+          <li>Hook decisions in <code>hook_log.jsonl</code>, including one deny</li>
+          <li>The fail-safe drill: a broken config gives NEEDS_HUMAN, never PASS</li>
+          <li><code>results.xml</code> and <code>traceability.md</code> as validation evidence</li>
+          <li>An approval entry bound to the final hash, then the commit</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub-title" style="margin-top:44px">Peer review: try to break the other team's pipeline</h3>
+    <ol class="walk">
+      <li><div><strong>Remove an AC marker</strong><span>G3 should FAIL, use round 1 and write a findings file that names the test.</span></div></li>
+      <li><div><strong>Break <code>gates.yaml</code></strong><span>Expect NEEDS_HUMAN with the error logged. A PASS here is an automatic fail of the review.</span></div></li>
+      <li><div><strong>Make the generator return the same file twice</strong><span>The no-progress guard should escalate before the round limit.</span></div></li>
+      <li><div><strong>Run <code>git commit</code> without an approval</strong><span>commit-guard should deny it and log the denial.</span></div></li>
+      <li><div><strong>Check a reuse decision</strong><span>Compare the hashes of 01 and 02 across rounds. They should match.</span></div></li>
+      <li><div><strong>Ask the log a question</strong><span>"Why did G4 pass with a failing test?" The answer should be in the log, not in someone's memory.</span></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="deck-section" id="pitfalls">
+  <div class="section-inner">
+    <p class="eyebrow">09 — Pitfalls seen in this lab</p>
+    <h2 class="section-title">Six ways a self-correcting pipeline goes wrong</h2>
+    <div class="pit-grid">
+      <article class="pit"><h3>The gate trusts the envelope</h3><p class="see">G3 PASS, but <code>pytest --collect-only</code> fails.</p><p class="fix">Every check reads the artifact. The envelope's status is only a claim.</p></article>
+      <article class="pit"><h3>A product defect gets "fixed"</h3><p class="see">The generator changes the 403 assertion to 404 so the test passes.</p><p class="fix">PRODUCT_DEFECT is flagged and passed through. It never goes back to the generator.</p></article>
+      <article class="pit"><h3>A counter per gate</h3><p class="see">Two rounds at G3, then two more at G5: four rounds in total.</p><p class="fix">Keep one counter in the run state, shared by G3, G4 and G5.</p></article>
+      <article class="pit"><h3>Rerun everything</h3><p class="see">A reviewed sequence comes back with different scenario names.</p><p class="fix">Use the Reads column and input hashes. Reuse any stage whose inputs didn't change.</p></article>
+      <article class="pit"><h3>A crash counts as PASS</h3><p class="see">The log has an <code>error</code> and <code>"decision": "PASS"</code> on the same line.</p><p class="fix">Wrap every gate. Any exception gives NEEDS_HUMAN.</p></article>
+      <article class="pit"><h3>The approval floats</h3><p class="see">Tests change after sign-off and still get committed.</p><p class="fix">Store the hash with the approval. commit-guard checks that it matches.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">10 — Before Module 19</p>
+    <h2 class="section-title">Carry these five ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Agents do the work; <strong>scripts make the decisions</strong>. Gate verdicts and next steps come from code reading artifacts, so they're repeatable.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>A FAIL returns to its owner as structured findings with a <code>do_not_change</code> list, and the owner patches instead of regenerating.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>One shared round counter plus progress guards. Rounds left is a limit, not a target.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Reruns follow the Reads column and input hashes. The changed stage is re-gated, later stages rerun, earlier ones are reused.</p></div>
+      <div class="recap-chip" style="grid-column:1/-1"><span class="recap-num">05</span><p>A named human approves a short decision packet, the approval is tied to the artifact hash, and a hook enforces it before commit.</p></div>
+    </div>
+
+    <div class="qa">
+      <details><summary>Why does the gate re-check the artifact instead of reading the agent's status?</summary><p>The status is the agent describing its own work. A gate exists to check that claim independently: collect the tests, parse the markers, read <code>results.xml</code>.</p></details>
+      <details><summary>G4 sees one failing test classified PRODUCT_DEFECT. What happens?</summary><p>G4 passes with the failure flagged. The test stays as it is, and the defect goes to the reviewer and the decision packet. Sending it back to the generator would push it to weaken a correct test.</p></details>
+      <details><summary>The reviewer requests changes to the tests. Which stages rerun?</summary><p>The Test Generator patches the file and G3 re-gates it. The API Validator and the Reviewer rerun because they read 03. Stages 1 and 2 are reused because their input hashes didn't change.</p></details>
+      <details><summary>Round 2 of 2 has been used and G3 fails again. What does <code>next_step.py</code> do?</summary><p>It escalates to a human with the history of every round. It doesn't start a round 3.</p></details>
+      <details><summary>Where should a check like "every test has an AC marker" live: hook, gate, or both?</summary><p>Both. The hook gives the agent feedback while it's editing. The gate is still the decision point, because a hook can be missed or misconfigured and the verdict has to come from the finished artifact.</p></details>
+      <details><summary>Why bind the approval to an artifact hash?</summary><p>Otherwise an approval of one version can be used to commit a different one. With the hash, any later change voids the approval and needs a new decision.</p></details>
+    </div>
+
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Module 19: Git, CI/CD, Cloud Agents and Ticketing Integration.</strong> This pipeline moves out of your editor: ticket fields become its input, branches and PRs carry its output, and the gates become CI checks and deployment-readiness gates.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 18 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+
+    // Rerun map — stage N changed: N re-gated, later stages rerun, earlier reused
+    var rrBtns = document.querySelectorAll('.chip-btns button[data-from]');
+    function setRerun(from){
+      var reused = [], rerun = [];
+      for(var i = 1; i <= 5; i++){
+        var g = document.getElementById('rr' + i), t = document.getElementById('rrs' + i);
+        if(!g || !t) continue;
+        var cls, label;
+        if(i < from){ cls = 'skip'; label = 'reused · hash same'; reused.push('0' + i); }
+        else if(i === from){ cls = 'regate'; label = (from === 4 ? 'rerun (transient)' : 're-gated · changed'); rerun.push(i); }
+        else { cls = 'rerun'; label = 'rerun · input changed'; rerun.push(i); }
+        g.setAttribute('class', 'rr-stage ' + (cls === 'skip' ? 'skip' : 'hot'));
+        t.setAttribute('class', 'rr-st ' + cls);
+        t.textContent = label;
+      }
+      var sum = document.getElementById('rrSum');
+      if(sum) sum.textContent = 'Runs ' + rerun.length + ' of 5 stages' + (reused.length ? ' · reuses ' + reused.join(', ') : ' · nothing reused: the root input changed');
+    }
+    rrBtns.forEach(function(b){
+      b.addEventListener('click', function(){
+        rrBtns.forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+        setRerun(parseInt(b.getAttribute('data-from'), 10));
+      });
+    });
+    setRerun(3);
+
+    // Run walkthrough — req-2481-run-02
+    var L = {
+      start: '{"event":"run_start","gates_version":"1.1.0","max_rounds":2,"inputs":{"REQ-2481.md":"5a7e","openapi.yaml":"0c19"}}',
+      g1: '{"gate":"G1","round":0,"decision":<span class="s">"PASS"</span>,"checks":["envelope","ac_testable"],"decided_by":"automated"}',
+      g2: '{"gate":"G2","round":0,"decision":<span class="s">"PASS"</span>,"checks":["schema","ac_set_equal","no_orphans"],"decided_by":"automated"}',
+      g3f: '{"gate":"G3","round":0,"input":"03@a91f","decision":<span class="e">"FAIL"</span>,"failed":"L2.ac_marker_every_test","routed_to":"test-generator"}',
+      r1: '{"event":"retry","round":1,"stage":"test-generator","mode":"patch","findings":"findings/G3-r1.json","guards":"ok"}',
+      g3p: '{"gate":"G3","round":1,"input":"03@c07e","decision":<span class="s">"PASS"</span>,"findings":"1→0","decided_by":"automated"}',
+      g4: '{"gate":"G4","round":1,"decision":<span class="s">"PASS"</span>,"flags":[<span class="m">"PRODUCT_DEFECT:DEF-5520"</span>],"results":"5 passed, 1 failed"}',
+      g5f: '{"gate":"G5","round":1,"decision":<span class="e">"REQUEST_CHANGES"</span>,"finding":"AC-3 unchanged-state not asserted","routed_to":"test-generator"}',
+      r2: '{"event":"retry","round":2,"stage":"test-generator","mode":"patch","findings":"findings/G5-r2.json","guards":"ok"}',
+      plan: '{"event":"rerun_plan","round":2,"changed":"03@c07e→e3f1","reuse":["01","02"],"regate":["G3"],"rerun":["api-validator","reviewer"]}',
+      g3b: '{"gate":"G3","round":2,"input":"03@e3f1","decision":<span class="s">"PASS"</span>,"decided_by":"automated"}',
+      g4b: '{"gate":"G4","round":2,"decision":<span class="s">"PASS"</span>,"flags":[<span class="m">"PRODUCT_DEFECT:DEF-5520"</span>],"results":"5 passed, 1 failed"}',
+      g5e: '{"gate":"G5","round":2,"decision":<span class="m">"ESCALATE"</span>,"reason":"tests approved; product defect open","routed_to":"human"}',
+      hitl: '{"gate":"HITL_commit","decision":<span class="s">"APPROVE"</span>,"decided_by":"human:qa-lead","artifact_hash":"e3f1","reason":"tests match spec; DEF-5520 raised"}'
+    };
+    var steps = [
+      { t:'Ready', b:'Press <strong>Next step</strong> to start the run.', s:{}, r:0, log:[] },
+      { t:'Run starts', b:'<code>next_step.py</code> loads <code>gates.yaml</code> v1.1.0, hashes the inputs and checks the budget. The version and hashes go into the log first, so every later verdict can be traced to them.', s:{}, r:0, log:['start'] },
+      { t:'Stage 1 → G1 PASS', b:'The Requirement Validator runs. G1 checks the envelope and that AC-1 to AC-4 are testable. AC-4 was clarified by its owner in run 01, so there is nothing to ask.', s:{1:'pass'}, r:0, log:['g1'] },
+      { t:'Stage 2 → G2 PASS', b:'Five scenarios. The set of ACs in the sequence equals the set in the requirement, and no scenario is orphaned.', s:{1:'pass',2:'pass'}, r:0, log:['g2'] },
+      { t:'Stage 3 → G3 FAIL at L2', b:'L1 passes. At L2, <code>test_cancel_creates_refund</code> has no <code>@pytest.mark.ac</code> marker. The ladder stops at the first FAIL, and the route is the Test Generator.', s:{1:'pass',2:'pass',3:'fail'}, r:0, log:['g3f'] },
+      { t:'Guards pass → round 1', b:'Round 1 of 2 is available and there is no earlier G3 history to compare. <code>next_step.py</code> writes <code>findings/G3-r1.json</code> and re-invokes the generator in patch mode.', s:{1:'pass',2:'pass',3:'run'}, r:1, log:['r1'] },
+      { t:'G3 PASS on the new hash', b:'The file hash changes from a91f to c07e, and findings drop from 1 to 0. The assertion count is unchanged, so no invariant is broken.', s:{1:'pass',2:'pass',3:'pass'}, r:1, log:['g3p'] },
+      { t:'Stage 4 → G4 PASS, flagged', b:'Five tests pass and one fails. The failure is classified PRODUCT_DEFECT (DEF-5520: the spec says 403, the API returns 404). G4 lets it through with a flag. Nothing is sent back to the generator.', s:{1:'pass',2:'pass',3:'pass',4:'flag'}, r:1, log:['g4'] },
+      { t:'Stage 5 → G5 REQUEST_CHANGES', b:'The reviewer notes that <code>test_cancel_shipped_order_rejected</code> checks the 409 but not that the order is unchanged. Guards pass, round 2 of 2 is used, and <code>findings/G5-r2.json</code> goes to the generator.', s:{1:'pass',2:'pass',3:'run',4:'flag',5:'fail'}, r:2, log:['g5f','r2'] },
+      { t:'Patch → rerun plan', b:'The generator adds the follow-up GET and assertion (hash c07e → e3f1). From the Reads column: 01 and 02 are reused, G3 re-gates the changed file, and stages 4 and 5 rerun because they read 03.', s:{1:'skip',2:'skip',3:'rerun',4:'rerun',5:'rerun'}, r:2, log:['plan'] },
+      { t:'Reruns → G5 ESCALATE', b:'G3 PASS, and G4 PASS with DEF-5520 still flagged. The reviewer approves the tests but escalates the open product defect. That is an accepted verdict, so the run moves to the human checkpoint.', s:{1:'skip',2:'skip',3:'pass',4:'flag',5:'esc',6:'run'}, r:2, log:['g3b','g4b','g5e'] },
+      { t:'Human sign-off → commit', b:'<code>packet.py</code> builds the decision packet. The QA lead approves with a reason, and the entry records hash e3f1. <code>commit-guard.sh</code> now allows <code>git commit</code> for exactly this version.', s:{1:'skip',2:'skip',3:'pass',4:'flag',5:'esc',6:'approved'}, r:2, log:['hitl'] }
+    ];
+    var LBL = { idle:'waiting', run:'running', pass:'PASS', fail:'FAIL', flag:'PASS · flagged', skip:'reused', rerun:'rerun queued', esc:'ESCALATE', approved:'APPROVED' };
+    var cur = 0;
+    var track = document.querySelectorAll('.run-track li');
+    var pips = document.querySelectorAll('.pips i');
+    var elIdx = document.getElementById('rsIdx'), elT = document.getElementById('rsTitle'), elB = document.getElementById('rsBody'), elLog = document.getElementById('rsLog'), elUsed = document.getElementById('rmUsed');
+    var bPrev = document.getElementById('rsPrev'), bNext = document.getElementById('rsNext'), bReset = document.getElementById('rsReset');
+    function render(){
+      var st = steps[cur];
+      track.forEach(function(li){
+        var s = st.s[li.getAttribute('data-stage')] || 'idle';
+        li.setAttribute('data-s', s);
+        li.querySelector('span').textContent = LBL[s];
+      });
+      pips.forEach(function(p, i){ p.classList.toggle('on', i < st.r); });
+      if(elUsed) elUsed.textContent = st.r;
+      elIdx.textContent = 'Step ' + cur + ' of ' + (steps.length - 1);
+      elT.textContent = st.t;
+      elB.innerHTML = st.b;
+      var lines = [];
+      for(var i = 0; i <= cur; i++){ steps[i].log.forEach(function(k){ lines.push(L[k]); }); }
+      elLog.innerHTML = lines.length ? lines.join('\n') : '<span class="c">// empty — nothing has run yet</span>';
+      elLog.scrollTop = elLog.scrollHeight;
+      bPrev.disabled = cur === 0;
+      bNext.disabled = cur === steps.length - 1;
+    }
+    if(bNext && elLog){
+      bNext.addEventListener('click', function(){ if(cur < steps.length - 1){ cur++; render(); } });
+      bPrev.addEventListener('click', function(){ if(cur > 0){ cur--; render(); } });
+      bReset.addEventListener('click', function(){ cur = 0; render(); });
+      render();
+    }
+  }catch(e){}
+})();
+</script>

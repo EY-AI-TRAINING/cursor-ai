@@ -1,0 +1,6 @@
+# CODEOWNERS — draft
+
+*                    @dev-priya
+/gates.yaml          @dev-priya
+/tests/              @org/qa-platform
+/.cursor/            @dev-priya

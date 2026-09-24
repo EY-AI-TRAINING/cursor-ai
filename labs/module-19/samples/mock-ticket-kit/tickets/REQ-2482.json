@@ -1,0 +1,27 @@
+{
+  "key": "REQ-2482",
+  "rev": 3,
+  "self": "https://sandbox.atlassian.net/rest/api/3/issue/REQ-2482",
+  "fields": {
+    "summary": "Refund lookup for unknown orders",
+    "status": {"name": "Ready for Dev"},
+    "priority": {"name": "Medium"},
+    "components": [{"name": "payments-api"}],
+    "labels": ["refunds"],
+    "updated": "2026-09-24T08:30:00Z",
+    "description": "Support cannot look up refunds for orders that do not exist in our system. Acceptance criteria: a refund lookup for an unknown order returns 200 with an empty result set, not 404. A lookup for a known order with no refunds returns an empty list. Refund lookups are read-only and must never create records. Contract: specs/openapi.yaml (GET /refunds?order_id=).",
+    "issuelinks": [],
+    "attachment": [
+      {"filename": "openapi.yaml", "content": "specs/openapi.yaml"}
+    ],
+    "comment": {
+      "comments": [
+        {
+          "author": {"displayName": "Priya Raman"},
+          "created": "2026-09-24T08:29:00Z",
+          "body": "ACs are in the description as prose; please split them carefully and confirm the wording with me."
+        }
+      ]
+    }
+  }
+}

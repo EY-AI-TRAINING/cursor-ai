@@ -1,0 +1,16 @@
+{
+  "gate": "G3_tests_collect_and_conform",
+  "round": 1,
+  "route_to": "reviewer",
+  "artifact_to_modify": "tests/ (regenerate the whole file)",
+  "findings": [
+    {
+      "id": "F-1",
+      "test": "test_cancel_creates_refund",
+      "criterion": "every test has markers",
+      "observed": "missing marker",
+      "expected": "test should have the marker",
+      "class": "TEST_DEFECT"
+    }
+  ]
+}

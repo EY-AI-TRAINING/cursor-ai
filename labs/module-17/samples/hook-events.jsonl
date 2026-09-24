@@ -1,0 +1,7 @@
+{"event":"beforeReadFile","file_path":"tests/test_req_2481_order_cancellation.py"}
+{"event":"beforeReadFile","file_path":"creds/aws-credentials.csv"}
+{"event":"beforeShellExecution","command":"pytest --collect-only -q tests/"}
+{"event":"beforeShellExecution","command":"git push origin main"}
+{"event":"beforeShellExecution","command":"pip install requests"}
+{"event":"beforeShellExecution","command":"rm -rf runs/"}
+{"event":"afterFileEdit","file_path":"tests/test_req_2481_order_cancellation.py"}
