@@ -1,0 +1,17 @@
+# capstone.yaml — DRAFT (find the planted problems before copying anything)
+ticket: REQ-2502
+run_id: req-2481-run-02
+branch: feature/REQ-2502-cancel-reason
+tests_glob: tests/test_req_2481_*.py
+sandbox_url: http://127.0.0.1:8765
+team:
+  ticket_owner: priya.r
+  pipeline_engineer: arjun.k
+  quality_lead: arjun.k
+  reviewer_risk_owner: daniel.o
+  report_owner: meera.s
+scope:
+  in: [tests for REQ-2502, spec note, pipeline, CI, report]
+optional:
+  delegated_task: false
+timebox_minutes: 210

@@ -1,0 +1,6 @@
+{"ts": "2026-09-26T08:03:12Z", "event": "beforeMCPExecution", "target": "get_ticket", "decision": "allow", "reason": "read-only tool"}
+{"ts": "2026-09-26T08:04:30Z", "event": "beforeMCPExecution", "target": "search_tickets", "decision": "allow", "reason": "read-only tool"}
+{"ts": "2026-09-26T08:12:44Z", "event": "beforeMCPExecution", "target": "transition_issue", "decision": "deny", "reason": "ticket transitions are not part of this run; policy denies unrecognised tools"}
+{"ts": "2026-09-26T10:41:03Z", "event": "beforeMCPExecution", "target": "add_comment", "decision": "ask", "reason": "DEF-5561 creation comment; approved by human:meera.s"}
+{"ts": "2026-09-26T10:47:19Z", "event": "beforeShellExecution", "target": "git push --force origin main", "decision": "deny", "reason": "force-push to main is denied by shell policy"}
+{"ts": "2026-09-26T10:58:02Z", "event": "afterFileEdit", "target": "gates.yaml", "decision": "revert", "reason": "control-plane file edited by an agent; reverted and flagged for review"}

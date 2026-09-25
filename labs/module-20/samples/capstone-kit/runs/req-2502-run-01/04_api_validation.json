@@ -1,0 +1,37 @@
+{
+  "req_id": "REQ-2502",
+  "run_id": "req-2502-run-01",
+  "round": 1,
+  "executed_at": "2026-09-26T10:56:40Z",
+  "target": "orders-api sandbox (SANDBOX_URL, fixture process)",
+  "suite": {
+    "command": "python -m pytest tests/test_req_2502_cancel_reason.py tests/test_req_2502_audit.py",
+    "passed": 11,
+    "xfailed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "results": [
+    {"seq": "SEQ-1", "ac_ids": ["AC-1"], "status": "PASS", "tests": ["test_valid_reason_is_recorded[CUSTOMER_REQUEST]", "test_valid_reason_is_recorded[DUPLICATE]", "test_valid_reason_is_recorded[FRAUD_SUSPECTED]"]},
+    {"seq": "SEQ-2", "ac_ids": ["AC-1"], "status": "PASS", "tests": ["test_cancel_without_reason_succeeds"]},
+    {"seq": "SEQ-3", "ac_ids": ["AC-2"], "status": "PASS", "tests": ["test_unknown_reason_rejected"]},
+    {"seq": "SEQ-4", "ac_ids": ["AC-3"], "status": "PASS", "tests": ["test_other_reason_note_boundaries_accepted[x]", "test_other_reason_note_boundaries_accepted[xx...280]", "test_other_reason_note_missing_or_empty_rejected"]},
+    {"seq": "SEQ-5", "ac_ids": ["AC-3"], "status": "XFAIL", "classification": "PRODUCT_DEFECT", "defect": "DEF-5561", "tests": ["test_reason_note_over_280_rejected"]},
+    {"seq": "SEQ-6", "ac_ids": ["AC-4"], "status": "PASS", "tests": ["test_audit_entry_recorded_newest_first", "test_audit_visible_to_support"]},
+    {"seq": "SEQ-7", "ac_ids": ["AC-4"], "status": "PASS", "tests": ["test_audit_hidden_from_other_customer"]}
+  ],
+  "round_history": [
+    {"round": 0, "passed": 10, "failed": 2, "xfailed": 0, "findings": "findings/round-1.json"}
+  ],
+  "defects": [
+    {
+      "id": "DEF-5561",
+      "severity": "Sev-3",
+      "status": "Open",
+      "classification": "PRODUCT_DEFECT",
+      "test": "tests/test_req_2502_cancel_reason.py::test_reason_note_over_280_rejected",
+      "policy": "allowed with strict xfail carrying the DEF-ID at sign-off"
+    }
+  ],
+  "classifications": "F-1 TEST_DEFECT (audit ordering assertion) fixed in round 1; F-2 PRODUCT_DEFECT raised as DEF-5561 and kept as strict xfail. No environment retries were needed."
+}

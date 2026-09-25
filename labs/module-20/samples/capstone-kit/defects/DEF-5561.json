@@ -1,0 +1,16 @@
+{
+  "key": "DEF-5561",
+  "summary": "POST /orders/{id}/cancel accepts reason_note of 281 characters",
+  "severity": "Sev-3",
+  "status": "Open",
+  "component": "orders-api",
+  "raised_by": "human:meera.s",
+  "raised_at": "2026-09-26T10:41:00Z",
+  "related": {
+    "ticket": "REQ-2502",
+    "ac": "AC-3",
+    "test": "tests/test_req_2502_cancel_reason.py::test_reason_note_over_280_rejected",
+    "contract": "specs/openapi.yaml#/components/schemas/CancelRequest.reason_note"
+  },
+  "notes": "The API rejects 282+ characters but accepts exactly 281. Readiness policy allows Sev-3 with an open ticket and a strict xfail; Sev-2 flips the verdict to NOT READY."
+}

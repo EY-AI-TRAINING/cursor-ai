@@ -1,0 +1,1519 @@
+<title>Ticket to Report Capstone</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ fill:var(--ink-soft); }
+  .lbl-strong{ fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+
+  /* Module 15 additions */
+  .hero-figure{ margin:0 0 44px; padding:18px 22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .hero-figure svg{ display:block; width:100%; height:auto; min-width:560px; }
+  .flow-dot{ fill:var(--plum); }
+  .flow-dot.copper{ fill:var(--copper); } .flow-dot.teal{ fill:var(--teal); }
+  .dash-flow{ stroke-dasharray:5 6; animation:dashmove 1.4s linear infinite; }
+  @keyframes dashmove{ to{ stroke-dashoffset:-22; } }
+  @media (prefers-reduced-motion:reduce){ .dash-flow{ animation:none; } }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+  @media (max-width:680px){ .split{ grid-template-columns:1fr; } }
+  .mini-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .mini-card h3{ font-size:16px; margin:0 0 8px; }
+  .mini-card p, .mini-card li{ font-size:13.5px; color:var(--ink-soft); }
+  .mini-card p{ margin:0; }
+  .mini-card ul{ margin:0; padding-left:18px; }
+  .mini-card li{ margin:3px 0; }
+  .mini-card.good{ border-top:3px solid var(--teal); }
+  .mini-card.warn{ border-top:3px solid var(--copper); }
+  .mini-card.bad{ border-top:3px solid var(--brick); }
+  .mini-card.plum{ border-top:3px solid var(--plum); }
+
+  .role-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:32px; }
+  @media (max-width:900px){ .role-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .role-grid{ grid-template-columns:1fr; } }
+  .role-card{ position:relative; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 18px 18px; overflow:hidden; }
+  .role-card::before{ content:""; position:absolute; left:0; top:0; right:0; height:4px; background:var(--accent); }
+  .role-icon{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); margin-bottom:12px; }
+  .role-icon svg{ width:22px; height:22px; }
+  .role-step{ font-family:var(--font-mono); font-size:11px; color:var(--accent); letter-spacing:.06em; text-transform:uppercase; margin:0 0 4px; }
+  .role-card h3{ font-size:19px; margin:0 0 6px; }
+  .role-card .q{ font-size:13.5px; font-style:italic; color:var(--ink); margin:0 0 12px; }
+  .role-card dl{ margin:0; font-size:12.5px; }
+  .role-card dt{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:8px; }
+  .role-card dd{ margin:2px 0 0; color:var(--ink); }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+  .chip{ font-family:var(--font-mono); font-size:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-radius:999px; padding:6px 14px; }
+  .chip b{ color:var(--plum); font-weight:600; }
+
+  .compare{ width:100%; border-collapse:collapse; margin-top:28px; font-size:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .compare-wrap{ overflow-x:auto; }
+  .compare th, .compare td{ text-align:left; padding:12px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .compare thead th{ font-family:var(--font-mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); background:var(--plum-tint); }
+  .compare tbody th{ font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--ink-soft); width:22%; }
+  .compare tr:last-child th, .compare tr:last-child td{ border-bottom:none; }
+
+  .toggle{ display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; padding:3px; margin-top:24px; background:var(--paper-raised); }
+  .toggle button{ font-family:var(--font-mono); font-size:12px; border:0; background:transparent; color:var(--ink-soft); padding:7px 16px; border-radius:999px; cursor:pointer; }
+  .toggle button[aria-pressed="true"]{ background:var(--plum); color:var(--paper); }
+
+  .walk{ list-style:none; margin:28px 0 0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:12px; counter-reset:walk; }
+  @media (max-width:680px){ .walk{ grid-template-columns:1fr; } }
+  .walk li{ counter-increment:walk; display:flex; gap:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; font-size:14px; }
+  .walk li::before{ content:counter(walk); flex:none; width:26px; height:26px; border-radius:50%; background:var(--plum); color:var(--paper); font-family:var(--font-mono); font-size:12px; display:grid; place-items:center; }
+  .walk strong{ display:block; margin-bottom:2px; }
+  .walk span{ color:var(--ink-soft); font-size:13.5px; }
+
+  /* Module 16 additions */
+  .timebar{ display:flex; gap:3px; margin:0 0 44px; max-width:860px; font-family:var(--font-mono); font-size:10.5px; }
+  .timebar .seg{ border-radius:6px; padding:8px 8px 7px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .timebar .seg b{ display:block; font-size:12px; font-weight:600; }
+  .timebar .a{ background:color-mix(in srgb, var(--teal) 16%, transparent); color:var(--teal); }
+  .timebar .brk{ background:var(--line); color:var(--ink-soft); }
+  .timebar .b{ background:color-mix(in srgb, var(--plum) 14%, transparent); color:var(--plum); }
+  .timebar-legend{ display:flex; gap:18px; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin:0 0 8px; }
+  @media (max-width:680px){ .timebar{ flex-wrap:wrap; } .timebar .seg{ flex:1 1 30% !important; } }
+
+  .split > *{ min-width:0; }
+  .split > .callout, .split > .mini-card{ align-self:start; }
+  pre.code{ margin:0; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-family:var(--font-mono); font-size:12.5px; line-height:1.6; color:var(--ink); }
+  pre.code .c{ color:var(--ink-soft); } pre.code .k{ color:var(--plum); font-weight:600; } pre.code .s{ color:var(--teal); } pre.code .m{ color:var(--copper); font-weight:600; } pre.code .e{ color:var(--brick); font-weight:600; }
+  .code-label{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:0 0 8px; }
+  .stack{ margin-top:24px; }
+
+  .doc-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:14px; }
+  .doc-card h3{ font-size:16px; margin:0 0 6px; }
+  .doc-card .story{ color:var(--ink-soft); font-style:italic; margin:0 0 10px; }
+  .doc-card ul{ list-style:none; margin:0; padding:0; }
+  .doc-card li{ padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .doc-card li code{ margin-right:6px; }
+  .doc-card li.flag{ background:color-mix(in srgb, var(--copper) 12%, transparent); border-radius:6px; padding:7px 8px; border-top-color:transparent; }
+  .flag-note{ font-family:var(--font-mono); font-size:11px; color:var(--copper); display:block; margin-top:4px; }
+
+  .callout{ margin-top:24px; display:flex; gap:14px; align-items:flex-start; padding:16px 20px; border-radius:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-left:4px solid var(--accent, var(--plum)); }
+  .callout p{ margin:0; font-size:14.5px; }
+  .callout .tag{ flex:none; font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent, var(--plum)); padding-top:2px; }
+
+  .checklist{ list-style:none; margin:0; padding:0; }
+  .checklist li{ position:relative; padding:6px 0 6px 24px; font-size:13.5px; color:var(--ink); }
+  .checklist li::before{ content:""; position:absolute; left:0; top:9px; width:14px; height:14px; border:1.5px solid var(--teal); border-radius:4px; background:color-mix(in srgb, var(--teal) 14%, transparent); }
+
+  .checkpoint{ margin-top:32px; display:flex; flex-wrap:wrap; gap:14px 22px; align-items:center; padding:18px 22px; border-radius:14px; border:1.5px dashed var(--teal); background:color-mix(in srgb, var(--teal) 7%, var(--paper-raised)); }
+  .checkpoint .tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); border:1px solid var(--teal); border-radius:999px; padding:5px 12px; }
+  .checkpoint p{ margin:0; font-size:14.5px; flex:1 1 320px; }
+
+  .pit-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:28px; }
+  @media (max-width:900px){ .pit-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .pit-grid{ grid-template-columns:1fr; } }
+  .pit{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .pit h3{ font-size:15px; margin:0 0 8px; }
+  .pit .see{ font-size:13px; color:var(--brick); margin:0 0 6px; }
+  .pit .fix{ font-size:13px; color:var(--teal); margin:0; }
+  .pit .see::before{ content:"You'll see: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+  .pit .fix::before{ content:"Fix: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+
+  .qa{ margin-top:28px; display:flex; flex-direction:column; gap:10px; }
+  .qa details{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:14px 18px; }
+  .qa summary{ cursor:pointer; font-size:14.5px; font-weight:600; list-style:none; display:flex; gap:12px; }
+  .qa summary::-webkit-details-marker{ display:none; }
+  .qa summary::before{ content:"+"; font-family:var(--font-mono); color:var(--plum); flex:none; width:12px; }
+  .qa details[open] summary::before{ content:"−"; }
+  .qa details p{ margin:10px 0 0 24px; font-size:14px; color:var(--ink-soft); }
+
+  /* Module 17 additions */
+  .trio{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:0 0 44px; }
+  @media (max-width:760px){ .trio{ grid-template-columns:1fr; } }
+  .trio .role-card .checks{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin:12px 0 6px; }
+  .trio .role-card .outs{ display:flex; flex-wrap:wrap; gap:6px; }
+  .trio .role-card .outs span{ font-family:var(--font-mono); font-size:11px; border:1px solid var(--accent); color:var(--accent); border-radius:999px; padding:2px 9px; }
+  .trio .role-card p.desc{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .sim{ margin-top:28px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .sim h3{ font-size:17px; margin:0 0 4px; }
+  .sim .hint{ font-size:13.5px; color:var(--ink-soft); margin:0 0 14px; }
+  .sim-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .sim-btns button{ font-family:var(--font-mono); font-size:12px; background:var(--paper); color:var(--ink); border:1px solid var(--line-strong); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  .sim-btns button:hover{ border-color:var(--plum); color:var(--plum); }
+  .sim-btns button[aria-pressed="true"]{ background:var(--plum); border-color:var(--plum); color:var(--paper); }
+  .sim-out{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  @media (max-width:680px){ .sim-out{ grid-template-columns:1fr; } }
+  .sim-cell{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-height:74px; }
+  .sim-cell .k{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:0 0 6px; }
+  .sim-cell .v{ font-family:var(--font-mono); font-size:13px; margin:0; word-break:break-word; }
+  .badge{ display:inline-block; font-family:var(--font-mono); font-size:12px; font-weight:600; border-radius:999px; padding:3px 12px; }
+  .badge.allow{ color:var(--teal); background:color-mix(in srgb, var(--teal) 16%, transparent); }
+  .badge.deny{ color:var(--brick); background:color-mix(in srgb, var(--brick) 16%, transparent); }
+  .badge.ask{ color:var(--copper); background:color-mix(in srgb, var(--copper) 18%, transparent); }
+  .sim-log{ margin-top:12px; }
+  .sim-log pre.code{ font-size:11.5px; }
+
+  .grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:24px; }
+  @media (max-width:900px){ .grid4{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .grid4{ grid-template-columns:1fr; } }
+  .grid4 .role-card h3{ font-size:16px; }
+  .grid4 .role-card p{ font-size:13px; color:var(--ink-soft); margin:0; }
+
+  .compare td.row-bad{ color:var(--brick); font-weight:600; }
+  .compare td.row-ok{ color:var(--copper); font-weight:600; }
+
+  /* Module 18 additions */
+  .sub-title{ font-family:var(--font-display); font-size:22px; font-weight:600; margin:44px 0 0; }
+  .chip-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-top:28px; }
+  .chip-btns button, .run-ctrl button{ font-family:var(--font-mono); font-size:12px; background:var(--paper-raised); color:var(--ink); border:1px solid var(--line-strong); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  .chip-btns button:hover, .run-ctrl button:hover{ border-color:var(--plum); color:var(--plum); }
+  .chip-btns button[aria-pressed="true"], .run-ctrl button.primary{ background:var(--plum); border-color:var(--plum); color:var(--paper); }
+  .run-ctrl button:disabled{ opacity:.4; cursor:default; }
+
+  .rr-stage{ transition:opacity .25s; }
+  .rr-stage.skip{ opacity:.32; }
+  .rr-stage.hot rect{ stroke-width:3; }
+  .rr-st{ font-family:var(--font-mono); }
+  .rr-st.skip{ fill:var(--ink-soft); } .rr-st.regate{ fill:var(--copper); } .rr-st.rerun{ fill:var(--plum); }
+
+  .runner{ margin-top:28px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .run-head{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:16px; }
+  .run-head h3{ font-size:17px; margin:0; }
+  .round-meter{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
+  .round-meter #rmUsed{ color:var(--copper); font-weight:600; }
+  .pips i{ display:inline-block; width:14px; height:14px; border-radius:4px; border:1.5px solid var(--copper); margin-left:4px; vertical-align:middle; transition:background .25s; }
+  .pips i.on{ background:var(--copper); }
+  .run-track{ list-style:none; margin:0 0 14px; padding:0; display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+  @media (max-width:760px){ .run-track{ grid-template-columns:repeat(3,1fr); } }
+  .run-track li{ --c:var(--line-strong); border:1.5px solid var(--c); border-radius:10px; padding:10px 10px 9px; transition:all .25s; background:color-mix(in srgb, var(--c) 8%, transparent); }
+  .run-track li b{ display:block; font-size:12.5px; font-weight:600; margin-bottom:3px; }
+  .run-track li span{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--c); font-weight:600; }
+  .run-track li[data-s="idle"] span{ color:var(--ink-soft); font-weight:400; }
+  .run-track li[data-s="run"]{ --c:var(--plum); }
+  .run-track li[data-s="pass"], .run-track li[data-s="approved"]{ --c:var(--teal); }
+  .run-track li[data-s="fail"]{ --c:var(--brick); }
+  .run-track li[data-s="flag"], .run-track li[data-s="esc"]{ --c:var(--copper); }
+  .run-track li[data-s="rerun"]{ --c:var(--plum); border-style:dashed; }
+  .run-track li[data-s="skip"]{ opacity:.5; border-style:dashed; }
+  .run-step{ border:1px solid var(--line); border-radius:10px; padding:14px 16px; min-height:124px; }
+  .run-step .k{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:0 0 6px; }
+  .run-step h4{ margin:0 0 6px; font-size:15.5px; font-family:var(--font-body); }
+  .run-step p.body{ margin:0; font-size:14px; color:var(--ink-soft); }
+  .run-ctrl{ display:flex; gap:8px; margin:14px 0 14px; flex-wrap:wrap; }
+  pre.run-log{ font-size:11.5px; min-height:120px; max-height:320px; overflow:auto; }
+
+  /* Module 19 additions */
+  .nouns{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:28px; }
+  @media (max-width:760px){ .nouns{ grid-template-columns:1fr 1fr; } }
+  .nouns div{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .nouns div.sec{ border-style:dashed; border-color:var(--brick); }
+  .nouns b{ display:block; font-family:var(--font-mono); font-size:13px; color:var(--plum); margin-bottom:4px; }
+  .nouns div.sec b{ color:var(--brick); }
+  .nouns span{ font-size:13px; color:var(--ink-soft); }
+  .compare.mini{ font-size:13px; }
+  .compare.mini th, .compare.mini td{ padding:8px 10px; }
+  .mini-card .compare.mini{ border:0; margin:0; }
+  .sim + .split, .sim + .callout{ margin-top:24px; }
+
+  .rd-grid{ display:grid; grid-template-columns:1.1fr 1fr; gap:16px; }
+  @media (max-width:760px){ .rd-grid{ grid-template-columns:1fr; } }
+  .rd-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .rd-list li{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line); border-radius:9px; padding:9px 12px; font-size:13.5px; }
+  .rd-list li .badge{ flex:none; min-width:58px; text-align:center; font-size:11px; }
+  .rd-list li small{ display:block; color:var(--ink-soft); font-size:12px; margin-top:2px; }
+  .rd-list li.block{ border-color:var(--brick); background:color-mix(in srgb, var(--brick) 6%, transparent); }
+  .rd-verdict{ font-family:var(--font-display); font-size:30px; font-weight:600; border-radius:12px; padding:14px 18px; text-align:center; }
+  .rd-verdict.ready{ color:var(--teal); background:color-mix(in srgb, var(--teal) 13%, transparent); }
+  .rd-verdict.not{ color:var(--brick); background:color-mix(in srgb, var(--brick) 13%, transparent); }
+  .rd-verdict small{ display:block; font-family:var(--font-mono); font-size:11px; font-weight:400; color:var(--ink-soft); margin-top:4px; }
+  #rdReport{ font-size:11.5px; white-space:pre-wrap; }
+
+  .five{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:20px; }
+  @media (max-width:980px){ .five{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .five{ grid-template-columns:1fr; } }
+  .five .role-card h3{ font-size:16px; }
+  .five .role-card p{ font-size:13px; color:var(--ink-soft); margin:0; }
+  .five .role-card p.role-step{ color:var(--accent); }
+
+  .rubric{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .rubric li{ display:grid; grid-template-columns:minmax(0,1.3fr) 1fr 40px; gap:10px; align-items:center; font-size:13px; }
+  .rubric i{ display:block; height:10px; border-radius:5px; background:linear-gradient(90deg, var(--plum) calc(var(--w) * 5%), var(--line) 0); }
+  .rubric b{ font-family:var(--font-mono); font-size:12px; text-align:right; color:var(--plum); }
+
+  .ca-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+  @media (max-width:680px){ .ca-grid{ grid-template-columns:1fr; } }
+  .ca-grid div{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:11px 14px; font-size:13.5px; display:flex; gap:12px; }
+  .ca-grid div.opt{ border-style:dashed; color:var(--ink-soft); }
+  .ca-grid b{ flex:none; font-family:var(--font-mono); font-size:12px; color:var(--teal); width:44px; padding-top:1px; }
+  .sim .chip-btns{ margin:0 0 16px; }
+  .compare.roles tbody th{ width:44%; }
+
+  /* Module 20 additions */
+  .run-track.cap-track{ grid-template-columns:repeat(9,1fr); gap:6px; }
+  @media (max-width:980px){ .run-track.cap-track{ grid-template-columns:repeat(5,1fr); } }
+  @media (max-width:560px){ .run-track.cap-track{ grid-template-columns:repeat(3,1fr); } }
+  .run-track.cap-track li{ padding:8px 8px 7px; }
+  .run-track.cap-track li b{ font-size:11.5px; }
+  .run-track.cap-track li span{ font-size:9.5px; }
+  .run-track li[data-s="wait"]{ --c:var(--copper); border-style:dashed; }
+
+  .tc-chain{ list-style:none; margin:0; padding:0; }
+  .tc-chain li{ display:grid; grid-template-columns:96px minmax(0,1.15fr) minmax(0,1fr); gap:14px; align-items:baseline; padding:8px 12px 8px 18px; border-left:2px solid var(--plum); margin-left:8px; position:relative; font-size:13.5px; }
+  .tc-chain li::before{ content:''; position:absolute; left:-7px; top:13px; width:8px; height:8px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--plum); }
+  .tc-chain li b{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--plum); font-weight:600; }
+  .tc-chain li code{ font-size:11.5px; color:var(--ink-soft); background:none; padding:0; word-break:break-word; }
+  .tc-chain li.warn{ border-left-color:var(--copper); }
+  .tc-chain li.warn::before{ border-color:var(--copper); }
+  .tc-chain li.warn b{ color:var(--copper); }
+  .tc-chain li.ok{ border-left-color:var(--teal); }
+  .tc-chain li.ok::before{ border-color:var(--teal); background:var(--teal); }
+  .tc-chain li.ok b{ color:var(--teal); }
+  @media (max-width:680px){ .tc-chain li{ grid-template-columns:1fr; gap:2px; } }
+
+  .ck-list{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  @media (max-width:680px){ .ck-list{ grid-template-columns:1fr; } }
+  .ck-list button{ width:100%; height:100%; text-align:left; display:flex; gap:12px; align-items:flex-start; background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; font-size:13.5px; color:var(--ink); cursor:pointer; transition:all .2s; }
+  .ck-list button::before{ content:''; flex:none; width:18px; height:18px; border-radius:5px; border:1.5px solid var(--line-strong); margin-top:1px; box-sizing:border-box; font-size:12px; line-height:15px; text-align:center; color:var(--paper); }
+  .ck-list button[aria-pressed="true"]{ border-color:var(--teal); background:color-mix(in srgb, var(--teal) 8%, var(--paper-raised)); }
+  .ck-list button[aria-pressed="true"]::before{ content:'✓'; background:var(--teal); border-color:var(--teal); }
+  .ck-list b{ font-family:var(--font-mono); font-size:12px; color:var(--teal); flex:none; width:38px; padding-top:1px; }
+  .ck-list small{ display:block; color:var(--ink-soft); font-family:var(--font-mono); font-size:11px; margin-top:3px; }
+  .ck-list li.opt button{ border-style:dashed; }
+  .ck-bar{ height:10px; border-radius:5px; background:var(--line); overflow:hidden; margin:14px 0 6px; }
+  .ck-bar i{ display:block; height:100%; width:0; background:var(--teal); transition:width .3s; }
+
+  .rb-rows{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .rb-rows li{ display:grid; grid-template-columns:minmax(0,1.5fr) 40px minmax(110px,1fr) 108px; gap:12px; align-items:center; font-size:13.5px; }
+  .rb-rows .w{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); text-align:right; }
+  .rb-rows input[type=range]{ width:100%; accent-color:var(--plum); margin:0; }
+  .rb-rows output{ white-space:nowrap; font-family:var(--font-mono); font-size:11.5px; color:var(--plum); text-align:right; }
+  @media (max-width:680px){ .rb-rows li{ grid-template-columns:1fr 40px; } .rb-rows input[type=range]{ grid-column:1; } }
+  #rbGain{ font-size:13.5px; color:var(--ink-soft); margin:12px 0 0; }
+
+  .stage-strip{ display:flex; flex-wrap:wrap; gap:6px; margin:18px 0 0; }
+  .stage-strip span{ font-family:var(--font-mono); font-size:11px; border:1px solid var(--line-strong); border-radius:999px; padding:3px 10px; color:var(--ink-soft); }
+  .stage-strip span.on{ border-color:var(--accent,var(--plum)); color:var(--accent,var(--plum)); font-weight:600; }
+  .fb-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:16px; }
+  @media (max-width:760px){ .fb-grid{ grid-template-columns:1fr; } }
+  .grid4.grid3{ grid-template-columns:repeat(3,1fr); }
+  @media (max-width:760px){ .grid4.grid3{ grid-template-columns:1fr; } }
+  .rd-grid.rb-grid{ grid-template-columns:1.9fr 1fr; }
+  @media (max-width:760px){ .rd-grid.rb-grid{ grid-template-columns:1fr; } }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#mission" data-target="mission"><span class="dot"></span><span class="rail-label">01 · The mission</span></a>
+  <a href="#architecture" data-target="architecture"><span class="dot"></span><span class="rail-label">02 · Architecture</span></a>
+  <a href="#dayplan" data-target="dayplan"><span class="dot"></span><span class="rail-label">03 · Roles &amp; day plan</span></a>
+  <a href="#runbook" data-target="runbook"><span class="dot"></span><span class="rail-label">04 · Run walkthrough</span></a>
+  <a href="#plan" data-target="plan"><span class="dot"></span><span class="rail-label">05 · Ticket → approved plan</span></a>
+  <a href="#spec" data-target="spec"><span class="dot"></span><span class="rail-label">06 · Spec, tests, defects</span></a>
+  <a href="#gates" data-target="gates"><span class="dot"></span><span class="rail-label">07 · Review, gates, readiness</span></a>
+  <a href="#delegate" data-target="delegate"><span class="dot"></span><span class="rail-label">08 · Delegated task</span></a>
+  <a href="#report" data-target="report"><span class="dot"></span><span class="rail-label">09 · Final report</span></a>
+  <a href="#cost" data-target="cost"><span class="dot"></span><span class="rail-label">10 · Observability &amp; cost</span></a>
+  <a href="#submit" data-target="submit"><span class="dot"></span><span class="rail-label">11 · Package checklist</span></a>
+  <a href="#demo" data-target="demo"><span class="dot"></span><span class="rail-label">12 · Demo &amp; peer review</span></a>
+  <a href="#pitfalls" data-target="pitfalls"><span class="dot"></span><span class="rail-label">13 · Pitfalls</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">14 · Recap &amp; self-check</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#mission" data-target="mission">01</a>
+  <a href="#architecture" data-target="architecture">02</a>
+  <a href="#dayplan" data-target="dayplan">03</a>
+  <a href="#runbook" data-target="runbook">04</a>
+  <a href="#plan" data-target="plan">05</a>
+  <a href="#spec" data-target="spec">06</a>
+  <a href="#gates" data-target="gates">07</a>
+  <a href="#delegate" data-target="delegate">08</a>
+  <a href="#report" data-target="report">09</a>
+  <a href="#cost" data-target="cost">10</a>
+  <a href="#submit" data-target="submit">11</a>
+  <a href="#demo" data-target="demo">12</a>
+  <a href="#pitfalls" data-target="pitfalls">13</a>
+  <a href="#recap" data-target="recap">14</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-teal" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-brick" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-brick" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-copper" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-copper" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-plum" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-plum" d="M0,0 L10,5 L0,10 Z"></path></marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 7 · Capstone — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Ticket to Report: the End-to-End Engineering Copilot</h1>
+    <p class="lede hero-lede">Module 20 — Use Case Lab 5, the capstone. Every piece already exists: the bundle and CI from Module 19, the gates and self-correction from Modules 17–18, the multi-agent pipeline from Module 16, spec-driven development from Module 9. Today your team takes a <strong>ticket it has never seen</strong> through all of them in one run, and hands a stakeholder a <strong>traceable engineering report</strong> they can sign off without asking a single question.</p>
+
+    <figure class="hero-figure">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 172" role="img" aria-label="Animated: ticket REQ-2517 travels through nine stages — bundle, plan with human approval, spec note, sequence, tests, execute, review, gates with human sign-off, and readiness. As it passes each stage, that stage&#x27;s segment of the final engineering report lights up, showing the report is compiled from each stage&#x27;s evidence." style="min-width:720px">
+          <path id="capPath" d="M56,20 L808,20" fill="none" stroke="none"></path>
+          <rect class="box-teal" x="14" y="40" width="84" height="46" rx="9"></rect><text class="txt-teal" x="56" y="60" text-anchor="middle" font-size="10">Bundle</text><text class="lbl" x="56" y="76" text-anchor="middle" font-size="8">ticket → JSON</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M98,63 L106,63" marker-end="url(#arrow)"></path>
+          <path d="M56,86 L56,112" stroke="var(--line-strong)" stroke-dasharray="2 3" fill="none"></path>
+          <rect class="box-plum" x="108" y="40" width="84" height="46" rx="9"></rect><text class="txt-plum" x="150" y="60" text-anchor="middle" font-size="10">Plan</text><text class="lbl" x="150" y="76" text-anchor="middle" font-size="8">explore + 🧑</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M192,63 L200,63" marker-end="url(#arrow)"></path>
+          <path d="M150,86 L150,112" stroke="var(--line-strong)" stroke-dasharray="2 3" fill="none"></path>
+          <rect class="box-plum" x="202" y="40" width="84" height="46" rx="9"></rect><text class="txt-plum" x="244" y="60" text-anchor="middle" font-size="10">Spec note</text><text class="lbl" x="244" y="76" text-anchor="middle" font-size="8">ACs 1:1</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M286,63 L294,63" marker-end="url(#arrow)"></path>
+          <path d="M244,86 L244,112" stroke="var(--line-strong)" stroke-dasharray="2 3" fill="none"></path>
+          <rect class="box-plum" x="296" y="40" width="84" height="46" rx="9"></rect><text class="txt-plum" x="338" y="60" text-anchor="middle" font-size="10">Sequence</text><text class="lbl" x="338" y="76" text-anchor="middle" font-size="8">scenarios</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M380,63 L388,63" marker-end="url(#arrow)"></path>
+          <path d="M338,86 L338,112" stroke="var(--line-strong)" stroke-dasharray="2 3" fill="none"></path>
+          <rect class="box-plum" x="390" y="40" width="84" height="46" rx="9"></rect><text class="txt-plum" x="432" y="60" text-anchor="middle" font-size="10">Tests</text><text class="lbl" x="432" y="76" text-anchor="middle" font-size="8">PyTest + markers</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M474,63 L482,63" marker-end="url(#arrow)"></path>
+          <path d="M432,86 L432,112" stroke="var(--line-strong)" stroke-dasharray="2 3" fill="none"></path>
+          <rect class="box-brick" x="484" y="40" width="84" height="46" rx="9"></rect><text class="txt-brick" x="526" y="60" text-anchor="middle" font-size="10">Execute</text><text class="lbl" x="526" y="76" text-anchor="middle" font-size="8">vs sandbox</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M568,63 L576,63" marker-end="url(#arrow)"></path>
+          <path d="M526,86 L526,112" stroke="var(--line-strong)" stroke-dasharray="2 3" fill="none"></path>
+          <rect class="box-copper" x="578" y="40" width="84" height="46" rx="9"></rect><text class="txt-copper" x="620" y="60" text-anchor="middle" font-size="10">Review</text><text class="lbl" x="620" y="76" text-anchor="middle" font-size="8">separate context</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M662,63 L670,63" marker-end="url(#arrow)"></path>
+          <path d="M620,86 L620,112" stroke="var(--line-strong)" stroke-dasharray="2 3" fill="none"></path>
+          <rect class="box-copper" x="672" y="40" width="84" height="46" rx="9"></rect><text class="txt-copper" x="714" y="60" text-anchor="middle" font-size="10">Gates</text><text class="lbl" x="714" y="76" text-anchor="middle" font-size="8">G1–G5 + 🧑</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M756,63 L764,63" marker-end="url(#arrow)"></path>
+          <path d="M714,86 L714,112" stroke="var(--line-strong)" stroke-dasharray="2 3" fill="none"></path>
+          <rect class="box-teal" x="766" y="40" width="84" height="46" rx="9"></rect><text class="txt-teal" x="808" y="60" text-anchor="middle" font-size="10">Readiness</text><text class="lbl" x="808" y="76" text-anchor="middle" font-size="8">versioned policy</text>
+          <path d="M808,86 L808,112" stroke="var(--line-strong)" stroke-dasharray="2 3" fill="none"></path>
+          <rect class="box" x="14" y="112" width="832" height="30" rx="8"></rect>
+          <rect class="fill-teal" x="17" y="116" width="78" height="22" rx="5" opacity="0.12"><animate attributeName="opacity" values="0.12;0.12;0.85;0.85;0.12" keyTimes="0;0.005;0.045;0.96;1" dur="9s" repeatCount="indefinite"></animate></rect>
+          <rect class="fill-plum" x="111" y="116" width="78" height="22" rx="5" opacity="0.12"><animate attributeName="opacity" values="0.12;0.12;0.85;0.85;0.12" keyTimes="0;0.118;0.158;0.96;1" dur="9s" repeatCount="indefinite"></animate></rect>
+          <rect class="fill-plum" x="205" y="116" width="78" height="22" rx="5" opacity="0.12"><animate attributeName="opacity" values="0.12;0.12;0.85;0.85;0.12" keyTimes="0;0.230;0.270;0.96;1" dur="9s" repeatCount="indefinite"></animate></rect>
+          <rect class="fill-plum" x="299" y="116" width="78" height="22" rx="5" opacity="0.12"><animate attributeName="opacity" values="0.12;0.12;0.85;0.85;0.12" keyTimes="0;0.343;0.383;0.96;1" dur="9s" repeatCount="indefinite"></animate></rect>
+          <rect class="fill-plum" x="393" y="116" width="78" height="22" rx="5" opacity="0.12"><animate attributeName="opacity" values="0.12;0.12;0.85;0.85;0.12" keyTimes="0;0.455;0.495;0.96;1" dur="9s" repeatCount="indefinite"></animate></rect>
+          <rect class="fill-brick" x="487" y="116" width="78" height="22" rx="5" opacity="0.12"><animate attributeName="opacity" values="0.12;0.12;0.85;0.85;0.12" keyTimes="0;0.568;0.608;0.96;1" dur="9s" repeatCount="indefinite"></animate></rect>
+          <rect class="fill-copper" x="581" y="116" width="78" height="22" rx="5" opacity="0.12"><animate attributeName="opacity" values="0.12;0.12;0.85;0.85;0.12" keyTimes="0;0.680;0.720;0.96;1" dur="9s" repeatCount="indefinite"></animate></rect>
+          <rect class="fill-copper" x="675" y="116" width="78" height="22" rx="5" opacity="0.12"><animate attributeName="opacity" values="0.12;0.12;0.85;0.85;0.12" keyTimes="0;0.792;0.833;0.96;1" dur="9s" repeatCount="indefinite"></animate></rect>
+          <rect class="fill-teal" x="769" y="116" width="78" height="22" rx="5" opacity="0.12"><animate attributeName="opacity" values="0.12;0.12;0.85;0.85;0.12" keyTimes="0;0.905;0.945;0.96;1" dur="9s" repeatCount="indefinite"></animate></rect>
+          <text class="lbl-strong" x="430" y="160" text-anchor="middle" font-size="9.5">📄 final_engineering_report.md — every stage adds its evidence; the report is compiled, never retyped</text>
+          <g><rect class="box-teal" x="-34" y="-10" width="68" height="20" rx="10"></rect><text class="txt-teal" x="0" y="4" text-anchor="middle" font-size="9.5">REQ-2517</text><animateMotion dur="9s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.9;1"><mpath href="#capPath"></mpath></animateMotion></g>
+        </svg>
+      </div>
+    </figure>
+
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">9</span><span class="stat-label">pipeline stages</span></li>
+      <li class="stat-tile"><span class="stat-num">2</span><span class="stat-label">human checkpoints (plan, sign-off)</span></li>
+      <li class="stat-tile"><span class="stat-num">10</span><span class="stat-label">acceptance criteria (CA-1…CA-10)</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">report package for sign-off</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#architecture"><span class="agenda-index">02</span><span>The capstone architecture: humans, agents, evidence, control plane</span></a></li>
+      <li><a href="#runbook"><span class="agenda-index">04</span><span>Walkthrough: one run of an unseen ticket, stage by stage</span></a></li>
+      <li><a href="#plan"><span class="agenda-index">05</span><span>Pull a sandbox ticket, explore the repo, get the plan approved</span></a></li>
+      <li><a href="#spec"><span class="agenda-index">06</span><span>Spec note, test sequence, PyTest, execution and defect classification</span></a></li>
+      <li><a href="#gates"><span class="agenda-index">07</span><span>Independent review, security/quality gates, deployment readiness</span></a></li>
+      <li><a href="#delegate"><span class="agenda-index">08</span><span>Optional: one delegated/background task</span></a></li>
+      <li><a href="#report"><span class="agenda-index">09</span><span>The traceable final engineering report</span></a></li>
+      <li><a href="#cost"><span class="agenda-index">10</span><span>Observability and cost summary</span></a></li>
+      <li><a href="#submit"><span class="agenda-index">11</span><span>Package checklist, demo and peer review</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 01 -->
+<section class="deck-section" id="mission">
+  <div class="section-inner">
+    <p class="eyebrow">01 — The mission</p>
+    <h2 class="section-title">The components are built. Today proves they compose.</h2>
+    <p class="lede"><strong>Lab objective:</strong> transform a Jira or Azure DevOps ticket into a requirement bundle, an approved plan and spec, a test sequence, executable tests, validation evidence, an independent review, a deployment-readiness check, and a traceable final engineering report. <strong>Deliverable:</strong> a complete report package, ready for stakeholder sign-off, including an observability and cost summary.</p>
+
+    <div class="grid4">
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">Reused as is</p><h3>The control plane</h3><p>Rules, hooks, <code>gates.yaml</code>, <code>readiness.yaml</code>, <code>mcp.json</code> and the CI workflow from Modules 17–19.</p></article>
+      <article class="role-card" style="--accent:var(--teal)"><p class="role-step">New today</p><h3>An unseen ticket</h3><p>The facilitator hands out a sandbox ticket on the day. Its ACs may be prose, ambiguous or incomplete.</p></article>
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">New today</p><h3>Plan approval</h3><p>A recorded human approval of the implementation plan <em>before</em> any code or tests are generated.</p></article>
+      <article class="role-card" style="--accent:var(--brick)"><p class="role-step">New today</p><h3>The report</h3><p>One document that ties every artifact together for a stakeholder, with cost and a decision request.</p></article>
+    </div>
+
+    <h3 class="sub-title">Activities, in order</h3>
+    <ol class="walk">
+      <li><div><strong>Pull a sandbox ticket</strong><span>Via MCP (or the mock server), and extract a schema-valid requirement bundle.</span></div></li>
+      <li><div><strong>Explore and plan</strong><span>Read the repository, draft an implementation plan, and obtain a recorded human approval.</span></div></li>
+      <li><div><strong>Spec note</strong><span>A short spec that fixes the acceptance criteria, one to one with the bundle's AC-IDs (Module 9 SDD).</span></div></li>
+      <li><div><strong>Test sequence</strong><span>Generate the engineering test sequence from the requirement bundle (Module 16).</span></div></li>
+      <li><div><strong>PyTest + execution</strong><span>Generate the suite, run it against the sandbox target, classify every failure.</span></div></li>
+      <li><div><strong>Validation → review</strong><span>Produce a validation report and route it to an independent reviewer agent in a separate context.</span></div></li>
+      <li><div><strong>Gates</strong><span>Run the security/quality and deployment-readiness gates from Modules 17–19.</span></div></li>
+      <li><div><strong>Delegate (optional)</strong><span>Demonstrate background execution of one isolated task, with its delegation checklist.</span></div></li>
+      <li><div><strong>Report</strong><span>Compile the checklist and the final report: ticket → plan → spec → sequence → tests → results → review → readiness.</span></div></li>
+    </ol>
+
+    <div class="callout" style="--accent:var(--plum)"><span class="tag">Example used in this deck</span><p>The slides follow an <strong>illustrative</strong> ticket, <code>REQ-2517 · change delivery address before dispatch</code>, on the same <code>orders-api</code> sandbox as REQ-2481. Your facilitator's ticket will differ. The IDs, hashes and numbers here are examples, not expected answers.</p></div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="deck-section" id="architecture">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Capstone architecture</p>
+    <h2 class="section-title">Four layers: people decide, agents do, evidence accumulates, policy governs</h2>
+    <p class="lede">Nine agent stages do the work. People appear only where the decision is about <strong>intent or risk</strong>: agreeing the ACs, approving the plan, signing off the tests, deciding readiness, and signing off the report. Every stage writes to one run folder, and the report is <strong>compiled</strong> from that folder rather than written from memory. The control plane underneath is owned by people through CODEOWNERS; agents read it and never edit it.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 382" role="img" aria-label="Capstone architecture in four layers. Humans: the ticket owner confirms ACs, a recorded plan approval (CA-2), a hash-bound test sign-off (CA-7), and the risk owner&#x27;s readiness call. Agents: nine stages from bundle to readiness. Evidence: every stage writes to the run folder, from which the final engineering report is compiled and handed to a stakeholder for sign-off. Control plane: rules, hooks, gates.yaml, readiness.yaml, mcp.json and the CI workflow, owned by people through CODEOWNERS and never edited by agents." style="min-width:760px">
+          <rect class="box" x="6" y="8" width="848" height="70" rx="12" stroke-dasharray="4 3"></rect>
+          <text class="lbl-strong" x="24" y="43" text-anchor="middle" font-size="8.5" letter-spacing="1.5" transform="rotate(-90 24 43)">HUMANS</text>
+          <rect class="box" x="6" y="90" width="848" height="74" rx="12" stroke-dasharray="4 3"></rect>
+          <text class="lbl-strong" x="24" y="127" text-anchor="middle" font-size="8.5" letter-spacing="1.5" transform="rotate(-90 24 127)">AGENTS</text>
+          <rect class="box" x="6" y="176" width="848" height="100" rx="12" stroke-dasharray="4 3"></rect>
+          <text class="lbl-strong" x="24" y="226" text-anchor="middle" font-size="8.5" letter-spacing="1.5" transform="rotate(-90 24 226)">EVIDENCE</text>
+          <rect class="box" x="6" y="288" width="848" height="86" rx="12" stroke-dasharray="4 3"></rect>
+          <text class="lbl-strong" x="24" y="331" text-anchor="middle" font-size="8.5" letter-spacing="1.5" transform="rotate(-90 24 331)">CONTROL</text>
+          <rect class="box-teal" x="40" y="104" width="82" height="46" rx="9"></rect><text class="txt-teal" x="81" y="124" text-anchor="middle" font-size="9.5">1 · Bundle</text><text class="lbl" x="81" y="139" text-anchor="middle" font-size="8">ticket → JSON</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M122,127 L128,127" marker-end="url(#arrow)"></path>
+          <path d="M81.0,150 L81.0,186" stroke="var(--copper)" stroke-dasharray="2 3" fill="none" opacity="0.7"></path>
+          <rect class="box-teal" x="40" y="20" width="82" height="44" rx="9"></rect><text class="txt-teal" x="81" y="39" text-anchor="middle" font-size="9">confirm ACs</text><text class="lbl" x="81" y="54" text-anchor="middle" font-size="7.5">ticket owner</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M81.0,64 L81.0,101" marker-end="url(#arrow-teal)"></path>
+          <rect class="box-plum" x="130" y="104" width="82" height="46" rx="9"></rect><text class="txt-plum" x="171" y="124" text-anchor="middle" font-size="9.5">2 · Plan</text><text class="lbl" x="171" y="139" text-anchor="middle" font-size="8">explore + 🧑</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M212,127 L218,127" marker-end="url(#arrow)"></path>
+          <path d="M171.0,150 L171.0,186" stroke="var(--copper)" stroke-dasharray="2 3" fill="none" opacity="0.7"></path>
+          <rect class="box-teal" x="130" y="20" width="82" height="44" rx="9"></rect><text class="txt-teal" x="171" y="39" text-anchor="middle" font-size="9">approve plan</text><text class="lbl" x="171" y="54" text-anchor="middle" font-size="7.5">CA-2 · recorded</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M171.0,64 L171.0,101" marker-end="url(#arrow-teal)"></path>
+          <rect class="box-plum" x="220" y="104" width="82" height="46" rx="9"></rect><text class="txt-plum" x="261" y="124" text-anchor="middle" font-size="9.5">3 · Spec note</text><text class="lbl" x="261" y="139" text-anchor="middle" font-size="8">ACs 1:1</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M302,127 L308,127" marker-end="url(#arrow)"></path>
+          <path d="M261.0,150 L261.0,186" stroke="var(--copper)" stroke-dasharray="2 3" fill="none" opacity="0.7"></path>
+          <rect class="box-plum" x="310" y="104" width="82" height="46" rx="9"></rect><text class="txt-plum" x="351" y="124" text-anchor="middle" font-size="9.5">4 · Sequence</text><text class="lbl" x="351" y="139" text-anchor="middle" font-size="8">scenarios</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M392,127 L398,127" marker-end="url(#arrow)"></path>
+          <path d="M351.0,150 L351.0,186" stroke="var(--copper)" stroke-dasharray="2 3" fill="none" opacity="0.7"></path>
+          <rect class="box-plum" x="400" y="104" width="82" height="46" rx="9"></rect><text class="txt-plum" x="441" y="124" text-anchor="middle" font-size="9.5">5 · Tests</text><text class="lbl" x="441" y="139" text-anchor="middle" font-size="8">PyTest + markers</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M482,127 L488,127" marker-end="url(#arrow)"></path>
+          <path d="M441.0,150 L441.0,186" stroke="var(--copper)" stroke-dasharray="2 3" fill="none" opacity="0.7"></path>
+          <rect class="box-brick" x="490" y="104" width="82" height="46" rx="9"></rect><text class="txt-brick" x="531" y="124" text-anchor="middle" font-size="9.5">6 · Execute</text><text class="lbl" x="531" y="139" text-anchor="middle" font-size="8">vs sandbox</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M572,127 L578,127" marker-end="url(#arrow)"></path>
+          <path d="M531.0,150 L531.0,186" stroke="var(--copper)" stroke-dasharray="2 3" fill="none" opacity="0.7"></path>
+          <rect class="box-copper" x="580" y="104" width="82" height="46" rx="9"></rect><text class="txt-copper" x="621" y="124" text-anchor="middle" font-size="9.5">7 · Review</text><text class="lbl" x="621" y="139" text-anchor="middle" font-size="8">separate context</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M662,127 L668,127" marker-end="url(#arrow)"></path>
+          <path d="M621.0,150 L621.0,186" stroke="var(--copper)" stroke-dasharray="2 3" fill="none" opacity="0.7"></path>
+          <rect class="box-copper" x="670" y="104" width="82" height="46" rx="9"></rect><text class="txt-copper" x="711" y="124" text-anchor="middle" font-size="9.5">8 · Gates</text><text class="lbl" x="711" y="139" text-anchor="middle" font-size="8">G1–G5 + 🧑</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M752,127 L758,127" marker-end="url(#arrow)"></path>
+          <path d="M711.0,150 L711.0,186" stroke="var(--copper)" stroke-dasharray="2 3" fill="none" opacity="0.7"></path>
+          <rect class="box-teal" x="670" y="20" width="82" height="44" rx="9"></rect><text class="txt-teal" x="711" y="39" text-anchor="middle" font-size="9">sign off</text><text class="lbl" x="711" y="54" text-anchor="middle" font-size="7.5">CA-7 · hash</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M711.0,64 L711.0,101" marker-end="url(#arrow-teal)"></path>
+          <rect class="box-teal" x="760" y="104" width="82" height="46" rx="9"></rect><text class="txt-teal" x="801" y="124" text-anchor="middle" font-size="9.5">9 · Readiness</text><text class="lbl" x="801" y="139" text-anchor="middle" font-size="8">versioned policy</text>
+          <path d="M801.0,150 L801.0,186" stroke="var(--copper)" stroke-dasharray="2 3" fill="none" opacity="0.7"></path>
+          <rect class="box-teal" x="760" y="20" width="82" height="44" rx="9"></rect><text class="txt-teal" x="801" y="39" text-anchor="middle" font-size="9">readiness</text><text class="lbl" x="801" y="54" text-anchor="middle" font-size="7.5">risk owner</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M801.0,64 L801.0,101" marker-end="url(#arrow-teal)"></path>
+          <text class="lbl" x="441" y="46" text-anchor="middle" font-size="8.5">People act only where the decision is intent or risk; the rest is gated.</text>
+          <rect class="box-copper" x="40" y="188" width="802" height="34" rx="8" stroke-dasharray="4 3"></rect>
+          <text class="txt-copper" x="441" y="209" text-anchor="middle" font-size="9">📁 runs/req-2517-run-01/ — bundle · plan + approval · spec · sequence · tests · junit.xml · validation · review · gate_log · hook_log · run_log</text>
+          <path class="arrow-thin" stroke="var(--plum)" d="M300,222 L300,232" marker-end="url(#arrow-plum)"></path>
+          <rect class="box-plum" x="160" y="234" width="300" height="34" rx="8"></rect><text class="txt-plum" x="310" y="249" text-anchor="middle" font-size="10">📄 final_engineering_report.md</text><text class="lbl" x="310" y="262" text-anchor="middle" font-size="7.5">compiled from the run folder, Git trailers and CI</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M460,251 L556,251" marker-end="url(#arrow-teal)"></path>
+          <text class="lbl" x="508" y="246" text-anchor="middle" font-size="8">decision</text>
+          <rect class="box-teal" x="560" y="234" width="282" height="34" rx="8"></rect><text class="txt-teal" x="701" y="249" text-anchor="middle" font-size="10">🧑 stakeholder sign-off</text><text class="lbl" x="701" y="262" text-anchor="middle" font-size="7.5">without having to ask a question</text>
+          <text class="lbl-strong" x="48" y="304" text-anchor="start" font-size="9">Owned by people through CODEOWNERS · agents read it and never edit it · governs every stage above</text>
+          <rect class="box" x="40" y="314" width="124" height="44" rx="8"></rect><text class="lbl-strong" x="102" y="333" text-anchor="middle" font-size="9.5" font-family="var(--font-mono)">.cursor/rules/</text><text class="lbl" x="102" y="348" text-anchor="middle" font-size="8">how agents behave</text>
+          <rect class="box" x="176" y="314" width="124" height="44" rx="8"></rect><text class="lbl-strong" x="238" y="333" text-anchor="middle" font-size="9.5" font-family="var(--font-mono)">.cursor/hooks/</text><text class="lbl" x="238" y="348" text-anchor="middle" font-size="8">allow · ask · deny</text>
+          <rect class="box" x="311" y="314" width="124" height="44" rx="8"></rect><text class="lbl-strong" x="373" y="333" text-anchor="middle" font-size="9.5" font-family="var(--font-mono)">gates.yaml</text><text class="lbl" x="373" y="348" text-anchor="middle" font-size="8">G1–G5 checks</text>
+          <rect class="box" x="447" y="314" width="124" height="44" rx="8"></rect><text class="lbl-strong" x="509" y="333" text-anchor="middle" font-size="9.5" font-family="var(--font-mono)">readiness.yaml</text><text class="lbl" x="509" y="348" text-anchor="middle" font-size="8">ready / not ready</text>
+          <rect class="box" x="582" y="314" width="124" height="44" rx="8"></rect><text class="lbl-strong" x="644" y="333" text-anchor="middle" font-size="9.5" font-family="var(--font-mono)">.cursor/mcp.json</text><text class="lbl" x="644" y="348" text-anchor="middle" font-size="8">read-only tickets</text>
+          <rect class="box" x="718" y="314" width="124" height="44" rx="8"></rect><text class="lbl-strong" x="780" y="333" text-anchor="middle" font-size="9.5" font-family="var(--font-mono)">agent-pipeline.yml</text><text class="lbl" x="780" y="348" text-anchor="middle" font-size="8">CI replay</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="split">
+      <div>
+        <div class="callout" style="--accent:var(--teal)"><span class="tag">Two checkpoints, not ten</span><p>CA-2 (plan approval) and CA-7 (hash-bound sign-off) are the two approvals the capstone requires. AC confirmation and the readiness call are decisions people already own. Adding an approval at every stage produces <strong>approval fatigue</strong>, and the rubric marks it down.</p></div>
+      </div>
+      <div>
+        <div class="callout" style="--accent:var(--copper)"><span class="tag">One key</span><p>The ticket ID and AC-IDs travel through every layer: bundle, plan header, spec, scenario IDs, test markers, commit trailers, PR title, readiness report and final report. If <code>grep REQ-2517</code> misses a layer, traceability is broken there.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="deck-section" id="dayplan">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Roles and a suggested day plan</p>
+    <h2 class="section-title">Everyone leads something; nobody signs off their own work</h2>
+    <p class="lede">Teams of 3–4, five roles, one person may hold two. The only hard rule: <strong>the quality lead who signs off the tests is not the person who generated them</strong>. Otherwise the sign-off is a formality, not a control. The time boxes below are a suggestion; your facilitator sets the real schedule.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="Suggested capstone day plan as a Gantt chart. Phases: pull (30 min), plan with approval (45), spec (30), sequence and tests (75), execute (45), review and gates (60), readiness (30), report (45), demo prep (30). The ticket owner leads pulling the ticket and the spec ACs and approves the plan; the pipeline engineer leads the plan, execution, correction rounds and CI; the quality lead leads the sequence and suite, classifies defects and signs off; the reviewer leads independent review and makes the readiness call; the report owner collects evidence all day and leads the report and demo." style="min-width:760px">
+          <rect x="161" y="16" width="51" height="36" rx="6" fill="var(--line)" opacity="0.3"></rect>
+          <text class="lbl-strong" x="187" y="31" text-anchor="middle" font-size="8.5">Pull</text><text class="lbl" x="187" y="45" text-anchor="middle" font-size="8">30m</text>
+          <path d="M160,56 L160,268" stroke="var(--line)" stroke-dasharray="2 4"></path>
+          <rect x="214" y="16" width="78" height="36" rx="6" fill="var(--line)" opacity="0.55"></rect>
+          <text class="lbl-strong" x="253" y="31" text-anchor="middle" font-size="8.5">Plan 🧑</text><text class="lbl" x="253" y="45" text-anchor="middle" font-size="8">45m</text>
+          <path d="M213,56 L213,268" stroke="var(--line)" stroke-dasharray="2 4"></path>
+          <rect x="294" y="16" width="51" height="36" rx="6" fill="var(--line)" opacity="0.3"></rect>
+          <text class="lbl-strong" x="319" y="31" text-anchor="middle" font-size="8.5">Spec</text><text class="lbl" x="319" y="45" text-anchor="middle" font-size="8">30m</text>
+          <path d="M293,56 L293,268" stroke="var(--line)" stroke-dasharray="2 4"></path>
+          <rect x="347" y="16" width="131" height="36" rx="6" fill="var(--line)" opacity="0.55"></rect>
+          <text class="lbl-strong" x="412" y="31" text-anchor="middle" font-size="8.5">Sequence + tests</text><text class="lbl" x="412" y="45" text-anchor="middle" font-size="8">75m</text>
+          <path d="M346,56 L346,268" stroke="var(--line)" stroke-dasharray="2 4"></path>
+          <rect x="479" y="16" width="78" height="36" rx="6" fill="var(--line)" opacity="0.3"></rect>
+          <text class="lbl-strong" x="518" y="31" text-anchor="middle" font-size="8.5">Execute</text><text class="lbl" x="518" y="45" text-anchor="middle" font-size="8">45m</text>
+          <path d="M478,56 L478,268" stroke="var(--line)" stroke-dasharray="2 4"></path>
+          <rect x="559" y="16" width="104" height="36" rx="6" fill="var(--line)" opacity="0.55"></rect>
+          <text class="lbl-strong" x="611" y="31" text-anchor="middle" font-size="8.5">Review + gates</text><text class="lbl" x="611" y="45" text-anchor="middle" font-size="8">60m</text>
+          <path d="M558,56 L558,268" stroke="var(--line)" stroke-dasharray="2 4"></path>
+          <rect x="665" y="16" width="51" height="36" rx="6" fill="var(--line)" opacity="0.3"></rect>
+          <text class="lbl-strong" x="691" y="31" text-anchor="middle" font-size="8.5">Ready</text><text class="lbl" x="691" y="45" text-anchor="middle" font-size="8">30m</text>
+          <path d="M664,56 L664,268" stroke="var(--line)" stroke-dasharray="2 4"></path>
+          <rect x="718" y="16" width="78" height="36" rx="6" fill="var(--line)" opacity="0.55"></rect>
+          <text class="lbl-strong" x="757" y="31" text-anchor="middle" font-size="8.5">Report</text><text class="lbl" x="757" y="45" text-anchor="middle" font-size="8">45m</text>
+          <path d="M717,56 L717,268" stroke="var(--line)" stroke-dasharray="2 4"></path>
+          <rect x="798" y="16" width="51" height="36" rx="6" fill="var(--line)" opacity="0.3"></rect>
+          <text class="lbl-strong" x="823" y="31" text-anchor="middle" font-size="8.5">Demo</text><text class="lbl" x="823" y="45" text-anchor="middle" font-size="8">30m</text>
+          <path d="M797,56 L797,268" stroke="var(--line)" stroke-dasharray="2 4"></path>
+          <text class="lbl-strong" x="12" y="90" text-anchor="start" font-size="9.5">Ticket owner</text>
+          <rect class="box-teal" x="163" y="76" width="47" height="22" rx="5"></rect>
+          <text class="txt-teal" x="187" y="91" text-anchor="middle" font-size="8">pull</text>
+          <rect class="box" x="216" y="79" width="74" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <rect class="box-teal" x="296" y="76" width="47" height="22" rx="5"></rect>
+          <text class="txt-teal" x="319" y="91" text-anchor="middle" font-size="8">ACs</text>
+          <rect class="box" x="720" y="79" width="74" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <rect class="box" x="800" y="79" width="47" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <text class="lbl-strong" x="12" y="130" text-anchor="start" font-size="9.5">Pipeline engineer</text>
+          <rect class="box" x="163" y="119" width="47" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <rect class="box-plum" x="216" y="116" width="74" height="22" rx="5"></rect>
+          <text class="txt-plum" x="253" y="131" text-anchor="middle" font-size="8">plan.md</text>
+          <rect class="box" x="349" y="119" width="127" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <rect class="box-plum" x="481" y="116" width="74" height="22" rx="5"></rect>
+          <text class="txt-plum" x="518" y="131" text-anchor="middle" font-size="8">run</text>
+          <rect class="box-plum" x="561" y="116" width="100" height="22" rx="5"></rect>
+          <text class="txt-plum" x="611" y="131" text-anchor="middle" font-size="8">rounds ≤ 2</text>
+          <rect class="box-plum" x="667" y="116" width="47" height="22" rx="5"></rect>
+          <text class="txt-plum" x="691" y="131" text-anchor="middle" font-size="8">CI</text>
+          <text class="lbl-strong" x="12" y="170" text-anchor="start" font-size="9.5">Quality lead</text>
+          <rect class="box" x="296" y="159" width="47" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <rect class="box-copper" x="349" y="156" width="127" height="22" rx="5"></rect>
+          <text class="txt-copper" x="412" y="171" text-anchor="middle" font-size="8">sequence + suite</text>
+          <rect class="box-copper" x="481" y="156" width="74" height="22" rx="5"></rect>
+          <text class="txt-copper" x="518" y="171" text-anchor="middle" font-size="8">classify</text>
+          <rect class="box" x="561" y="159" width="100" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <rect class="box" x="720" y="159" width="74" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <text class="lbl-strong" x="12" y="210" text-anchor="start" font-size="9.5">Reviewer / risk</text>
+          <rect class="box" x="216" y="199" width="74" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <rect class="box-brick" x="561" y="196" width="100" height="22" rx="5"></rect>
+          <text class="txt-brick" x="611" y="211" text-anchor="middle" font-size="8">independent review</text>
+          <rect class="box" x="667" y="199" width="47" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <rect class="box" x="800" y="199" width="47" height="16" rx="5" stroke-dasharray="4 3"></rect>
+          <text class="lbl-strong" x="12" y="250" text-anchor="start" font-size="9.5">Report owner</text>
+          <path d="M160,246 L717,246" stroke="var(--teal)" stroke-dasharray="1 4" stroke-width="2" stroke-linecap="round"></path>
+          <text class="txt-teal" x="439" y="241" text-anchor="middle" font-size="8">collects run_log + evidence all day</text>
+          <rect class="box-teal" x="720" y="236" width="74" height="22" rx="5"></rect>
+          <text class="txt-teal" x="757" y="251" text-anchor="middle" font-size="8">report + cost</text>
+          <rect class="box-teal" x="800" y="236" width="47" height="22" rx="5"></rect>
+          <text class="txt-teal" x="823" y="251" text-anchor="middle" font-size="8">demo</text>
+          <path class="fill-teal" d="M293,79 L301,87 L293,95 L285,87 Z" stroke="var(--paper)" stroke-width="1.5"></path>
+          <text class="txt-teal" x="293" y="106" text-anchor="middle" font-size="7.5">plan approval</text>
+          <path class="fill-teal" d="M647,159 L655,167 L647,175 L639,167 Z" stroke="var(--paper)" stroke-width="1.5"></path>
+          <text class="txt-teal" x="647" y="186" text-anchor="middle" font-size="7.5">sign-off</text>
+          <path class="fill-teal" d="M717,199 L725,207 L717,215 L709,207 Z" stroke="var(--paper)" stroke-width="1.5"></path>
+          <text class="txt-teal" x="717" y="226" text-anchor="middle" font-size="7.5">readiness call</text>
+          <rect class="box-plum" x="160" y="279" width="26" height="12" rx="3"></rect><text class="lbl" x="192" y="289" text-anchor="start" font-size="8.5">leads</text>
+          <rect class="box" x="240" y="281" width="26" height="10" rx="3" stroke-dasharray="4 3"></rect><text class="lbl" x="272" y="289" text-anchor="start" font-size="8.5">supports</text>
+          <path class="fill-teal" d="M346,280 L352,286 L346,292 L340,286 Z"></path><text class="lbl" x="358" y="289" text-anchor="start" font-size="8.5">human checkpoint or decision</text>
+          <text class="lbl" x="850" y="289" text-anchor="end" font-size="8.5">suggested time boxes · ~6.5 h</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="diagram-wrap" style="margin-top:22px">
+      <table class="compare mini roles">
+        <thead><tr><th>Role</th><th>Owns</th><th>Signs off on</th></tr></thead>
+        <tbody>
+          <tr><th>Ticket owner / product proxy</th><td>The ticket, clarifications, AC agreement</td><td>Requirement bundle, spec ACs, plan approval (intent)</td></tr>
+          <tr><th>Pipeline engineer (orchestrator)</th><td>Agents, gates, hooks, reruns, CI workflow</td><td>Control-plane changes, as code owner</td></tr>
+          <tr><th>Quality lead</th><td>Test sequence, test quality, validation report, defect classification</td><td>HITL sign-off on tests (hash-bound)</td></tr>
+          <tr><th>Reviewer / risk owner</th><td>Independent review, security and readiness checks, delegation checklist</td><td>Readiness decision</td></tr>
+          <tr><th>Report owner <em>(often combined)</em></th><td>Final report, observability/cost summary, demo</td><td>Report completeness</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="deck-section" id="runbook">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Walkthrough</p>
+    <h2 class="section-title">One run of REQ-2517, start to finish</h2>
+    <p class="lede">Step through a complete capstone run. Watch the stage states, the shared correction-round counter (still capped at two) and the run folder filling up. Two things go wrong on purpose, as they will for you: a gate catches missing coverage, and the reviewer catches a gap the gates can't see. One failure turns out to be a real product defect.</p>
+
+    <div class="runner" id="runner">
+      <div class="run-head">
+        <h3>req-2517-run-01 · gates.yaml v1.1.0 · readiness.yaml v1.0.0</h3>
+        <div class="round-meter">correction rounds <span id="rmUsed">0</span> / 2 <span class="pips" aria-hidden="true"><i></i><i></i></span></div>
+      </div>
+      <ol class="run-track cap-track" role="list">
+        <li data-stage="1" data-s="idle"><b>Bundle</b><span>waiting</span></li>
+        <li data-stage="2" data-s="idle"><b>Plan 🧑</b><span>waiting</span></li>
+        <li data-stage="3" data-s="idle"><b>Spec</b><span>waiting</span></li>
+        <li data-stage="4" data-s="idle"><b>Sequence</b><span>waiting</span></li>
+        <li data-stage="5" data-s="idle"><b>Tests</b><span>waiting</span></li>
+        <li data-stage="6" data-s="idle"><b>Execute</b><span>waiting</span></li>
+        <li data-stage="7" data-s="idle"><b>Review</b><span>waiting</span></li>
+        <li data-stage="8" data-s="idle"><b>Sign-off 🧑</b><span>waiting</span></li>
+        <li data-stage="9" data-s="idle"><b>Readiness</b><span>waiting</span></li>
+      </ol>
+      <div class="run-step" aria-live="polite">
+        <p class="k" id="rsIdx">Step 0 of 13</p>
+        <h4 id="rsTitle">Ready</h4>
+        <p class="body" id="rsBody">Press <strong>Next step</strong> to start the run.</p>
+      </div>
+      <div class="run-ctrl">
+        <button type="button" id="rsPrev">← Back</button>
+        <button type="button" id="rsNext" class="primary">Next step →</button>
+        <button type="button" id="rsReset">Reset</button>
+      </div>
+      <p class="code-label">runs/req-2517-run-01/ — files written and log lines, in order</p>
+      <pre class="code run-log" id="rsLog"><span class="c">// empty — nothing has run yet</span></pre>
+    </div>
+
+    <div class="callout" style="--accent:var(--plum)"><span class="tag">Notice</span><p>Nothing in this run is new machinery. What's new is that the pieces meet an <strong>unknown requirement</strong> and still produce evidence a stranger can follow. That's what the capstone is graded on.</p></div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="deck-section" id="plan">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Ticket → bundle → approved plan · CA-1, CA-2</p>
+    <h2 class="section-title">The cheapest checkpoint in the whole run is the plan</h2>
+    <p class="lede">Pull the ticket read-only through MCP, exactly as in Module 19: the hook allows <code>get_ticket</code>, the bundle is schema-valid, ticket text stays data, and a ticket that isn't <em>Ready for Dev</em> stops the run. Then the agent explores the repository and drafts a plan. A wrong plan caught here costs <strong>minutes</strong>; the same mistake caught at review costs the whole run.</p>
+
+    <div class="split">
+      <div>
+        <p class="code-label">plans/REQ-2517/plan.md (excerpt)</p>
+<pre class="code"><span class="k"># Plan — REQ-2517 · change delivery address</span>
+Ticket: REQ-2517 · rev 3 · bundle 00@91d2
+
+<span class="k">## What I found in the repo</span>
+- PATCH /orders/{id}/address in openapi.yaml v2.4
+- order states: PLACED → PICKING → DISPATCHED
+  → DELIVERED (src/orders/state.py)
+- tests/api/ has fixtures for owner + other user
+
+<span class="k">## Approach</span>
+1. Spec note: AC-1…AC-4, one to one with bundle
+2. Sequence: happy paths + each rejection state
+3. Tests: tests/api/test_req_2517_address.py
+4. Run vs SANDBOX_URL; classify every failure
+
+<span class="k">## Out of scope</span>
+- Changing the endpoint itself (tests only)
+- Address validation rules beyond postcode
+
+<span class="k">## Risks / questions</span>
+- AC-3 error body shape: contract says
+  errors[].field — confirm the owner agrees</pre>
+      </div>
+      <div>
+        <p class="code-label">plans/REQ-2517/approval.json</p>
+<pre class="code">{
+  <span class="k">"checkpoint"</span>: <span class="s">"plan_approval"</span>,
+  <span class="k">"ticket"</span>: <span class="s">"REQ-2517"</span>,
+  <span class="k">"plan_hash"</span>: <span class="s">"4b9c"</span>,
+  <span class="k">"decision"</span>: <span class="s">"APPROVE"</span>,
+  <span class="k">"approver"</span>: <span class="s">"human:ticket-owner"</span>,
+  <span class="k">"note"</span>: <span class="s">"AC-3: yes, field must be 'postcode'"</span>,
+  <span class="k">"decided_at"</span>: <span class="s">"2026-10-01T10:14:22Z"</span>
+}</pre>
+        <div class="callout" style="--accent:var(--teal)"><span class="tag">Recorded, bound, before</span><p>The approval names the plan's hash, so editing the plan afterwards invalidates it. A hook or <code>next_step.py</code> refuses to start spec or test generation until <code>approval.json</code> exists and matches <code>plan.md</code>. That's what makes CA-2 checkable instead of claimed.</p></div>
+        <div class="callout" style="--accent:var(--brick)"><span class="tag">Stop conditions</span><p>Ticket not <em>Ready for Dev</em> (like REQ-2490), required fields missing, or ACs that can't be tested: stop, write the reason, and ask the ticket owner. Don't guess the requirement.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="deck-section" id="spec">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Spec note, sequence, tests, execution · CA-3, CA-4, CA-5</p>
+    <h2 class="section-title">Every test points at an AC. Every failure gets a class.</h2>
+    <p class="lede">The spec note is short on purpose: it fixes the ACs, with IDs that match the bundle one to one, plus the examples that make each one testable. The sequence and the suite are generated <strong>from the spec</strong>, and every test carries <code>req</code> and <code>ac</code> markers so coverage is computed, not asserted.</p>
+
+    <div class="split">
+      <div>
+        <p class="code-label">specs/REQ-2517-spec-note.md (excerpt)</p>
+<pre class="code"><span class="k"># Spec note — REQ-2517</span>
+Ticket: REQ-2517 · rev 3 · plan 4b9c (approved)
+
+| AC   | Given / when / then                     |
+|------|-----------------------------------------|
+| AC-1 | order PLACED or PICKING → PATCH address |
+|      | → 200, response has the new address     |
+| AC-2 | order DISPATCHED or DELIVERED → 409,    |
+|      | stored address unchanged                |
+| AC-3 | invalid postcode → 422,                 |
+|      | errors[].field == "postcode"            |
+| AC-4 | caller is not the order owner → 403,    |
+|      | stored address unchanged                |
+
+Out of scope: the endpoint's implementation.</pre>
+      </div>
+      <div>
+        <p class="code-label">tests/api/test_req_2517_address.py (excerpt)</p>
+<pre class="code"><span class="m">@pytest.mark.req</span>(<span class="s">"REQ-2517"</span>)
+<span class="m">@pytest.mark.ac</span>(<span class="s">"AC-2"</span>)
+<span class="m">@pytest.mark.parametrize</span>(<span class="s">"state"</span>,
+    [<span class="s">"DISPATCHED"</span>, <span class="s">"DELIVERED"</span>])
+<span class="k">def</span> test_change_rejected_after_dispatch(
+        api, order_in, state):
+    order = order_in(state)
+    r = api.patch(<span class="s">f"/orders/{order.id}/address"</span>,
+                  json=NEW_ADDRESS)
+    <span class="k">assert</span> r.status_code == 409
+    <span class="c"># AC-2 also says: address unchanged</span>
+    <span class="k">assert</span> api.get_order(order.id).address \
+        == order.address
+
+<span class="m">@pytest.mark.req</span>(<span class="s">"REQ-2517"</span>)
+<span class="m">@pytest.mark.ac</span>(<span class="s">"AC-3"</span>)
+<span class="m">@pytest.mark.xfail</span>(strict=<span class="k">True</span>,
+    reason=<span class="s">"DEF-5561: 422 body lacks errors[].field"</span>)
+<span class="k">def</span> test_invalid_postcode_422(api, placed_order): ...</pre>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Classify every failure before anything reacts to it</h3>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 164" role="img" aria-label="Defect classification flow. A failing test is first checked against the spec: if the test does not match the spec, it is a test defect and goes back to the generator as a correction round. If it matches and the failure reproduces outside the test, for example with curl, it is a product defect: raise a DEF ticket, mark the test xfail strict, and a human owns the severity. If it does not reproduce, treat it as environment: retry once, record it and escalate." style="min-width:720px">
+          <g transform="translate(0,-48)">
+          <rect class="box-brick" x="10" y="78" width="120" height="44" rx="9"></rect><text class="txt-brick" x="70" y="97" text-anchor="middle" font-size="10">❌ test fails</text><text class="lbl" x="70" y="112" text-anchor="middle" font-size="8">in junit.xml</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M130,100 L166,100" marker-end="url(#arrow)"></path>
+          <path class="box-plum" d="M170,100 L256,60 L342,100 L256,140 Z"></path><text class="txt-plum" x="256" y="97" text-anchor="middle" font-size="9">Does the test</text><text class="txt-plum" x="256" y="111" text-anchor="middle" font-size="9">match the spec?</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M342,100 L398,100" marker-end="url(#arrow)"></path><text class="lbl" x="370" y="94" text-anchor="middle" font-size="8.5">yes</text>
+          <path class="box-plum" d="M402,100 L488,60 L574,100 L488,140 Z"></path><text class="txt-plum" x="488" y="97" text-anchor="middle" font-size="9">Reproduces outside</text><text class="txt-plum" x="488" y="111" text-anchor="middle" font-size="9">the test (curl)?</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M574,100 L610,100" marker-end="url(#arrow)"></path><text class="lbl" x="592" y="94" text-anchor="middle" font-size="8.5">yes</text>
+          <rect class="box-brick" x="614" y="72" width="236" height="56" rx="9"></rect><text class="txt-brick" x="732" y="92" text-anchor="middle" font-size="10.5">Product defect</text><text class="lbl" x="732" y="107" text-anchor="middle" font-size="8.5">raise DEF · xfail(strict=True)</text><text class="lbl" x="732" y="120" text-anchor="middle" font-size="8.5">severity owned by a human</text>
+          <path class="arrow-thin" stroke="var(--copper)" d="M256,140 L256,160" marker-end="url(#arrow-copper)"></path><text class="lbl" x="264" y="154" text-anchor="start" font-size="8.5">no</text>
+          <rect class="box-copper" x="166" y="162" width="180" height="40" rx="9"></rect><text class="txt-copper" x="256" y="179" text-anchor="middle" font-size="10">Test defect</text><text class="lbl" x="256" y="193" text-anchor="middle" font-size="8">back to the generator · a round</text>
+          <path class="arrow-thin" stroke="var(--plum)" d="M488,140 L488,160" marker-end="url(#arrow-plum)"></path><text class="lbl" x="496" y="154" text-anchor="start" font-size="8.5">no</text>
+          <rect class="box-plum" x="398" y="162" width="180" height="40" rx="9"></rect><text class="txt-plum" x="488" y="179" text-anchor="middle" font-size="10">Environment</text><text class="lbl" x="488" y="193" text-anchor="middle" font-size="8">retry once · record · escalate</text>
+          </g>
+        </svg>
+      </div>
+    </figure>
+    <div class="grid4 grid3">
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">Test defect</p><h3>The test is wrong</h3><p>Wrong expectation, missing marker, brittle fixture. Goes back to the generator as a correction round.</p></article>
+      <article class="role-card" style="--accent:var(--brick)"><p class="role-step">Product defect</p><h3>The product is wrong</h3><p>The test matches the spec and the failure reproduces. Raise a DEF, mark <code>xfail(strict=True)</code>, and never "fix" the test to pass.</p></article>
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">Environment</p><h3>The sandbox is wrong</h3><p>Timeouts, 5xx from a dependency, expired token. Retry once, record it, and escalate. It doesn't use up a correction round.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="deck-section" id="gates">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Validation, independent review, gates, readiness · CA-6, CA-7, CA-8</p>
+    <h2 class="section-title">The reviewer never sees how the tests were made</h2>
+    <p class="lede">The validation report goes to a reviewer agent running in a <strong>separate context</strong>: it reads files, not the generator's chat, reasoning or drafts. Gates catch what can be checked mechanically. The reviewer catches what can't, such as a test that passes without checking what the AC says. Then CI replays the gates on a clean runner and the readiness policy decides.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 190" role="img" aria-label="Review context separation. The generator context holds the bundle and approved plan, the spec note, its own reasoning and chat, earlier drafts and gate findings. Only files cross to the reviewer: the spec note, test sequence, tests at hash e7a2, junit results and validation report, and the review checklist. The generator&#x27;s reasoning never crosses." style="min-width:720px">
+          <rect class="box-plum" x="10" y="14" width="300" height="166" rx="12" stroke-dasharray="4 3"></rect><text class="txt-plum" x="160" y="34" text-anchor="middle" font-size="10.5">🤖 Generator context</text>
+          <rect class="box" x="30" y="46" width="260" height="20" rx="5"></rect><text class="lbl" x="160" y="60" text-anchor="middle" font-size="8.5">bundle + approved plan</text>
+          <rect class="box" x="30" y="71" width="260" height="20" rx="5"></rect><text class="lbl" x="160" y="85" text-anchor="middle" font-size="8.5">spec note</text>
+          <rect class="box" x="30" y="96" width="260" height="20" rx="5"></rect><text class="lbl" x="160" y="110" text-anchor="middle" font-size="8.5">its own reasoning and chat</text>
+          <rect class="box" x="30" y="121" width="260" height="20" rx="5"></rect><text class="lbl" x="160" y="135" text-anchor="middle" font-size="8.5">earlier drafts, retries</text>
+          <rect class="box" x="30" y="146" width="260" height="20" rx="5"></rect><text class="lbl" x="160" y="160" text-anchor="middle" font-size="8.5">findings from gates</text>
+          <rect class="box-copper" x="550" y="14" width="300" height="166" rx="12" stroke-dasharray="4 3"></rect><text class="txt-copper" x="700" y="34" text-anchor="middle" font-size="10.5">🔎 Reviewer context (fresh)</text>
+          <rect class="box" x="570" y="46" width="260" height="20" rx="5"></rect><text class="lbl" x="700" y="60" text-anchor="middle" font-size="8.5">spec note (the contract)</text>
+          <rect class="box" x="570" y="71" width="260" height="20" rx="5"></rect><text class="lbl" x="700" y="85" text-anchor="middle" font-size="8.5">02_test_sequence.json</text>
+          <rect class="box" x="570" y="96" width="260" height="20" rx="5"></rect><text class="lbl" x="700" y="110" text-anchor="middle" font-size="8.5">tests at hash e7a2</text>
+          <rect class="box" x="570" y="121" width="260" height="20" rx="5"></rect><text class="lbl" x="700" y="135" text-anchor="middle" font-size="8.5">junit.xml + validation report</text>
+          <rect class="box" x="570" y="146" width="260" height="20" rx="5"></rect><text class="lbl" x="700" y="160" text-anchor="middle" font-size="8.5">review checklist (rules)</text>
+          <rect class="box-copper" x="336" y="70" width="188" height="54" rx="9"></rect><text class="txt-copper" x="430" y="92" text-anchor="middle" font-size="10">files only</text><text class="lbl" x="430" y="108" text-anchor="middle" font-size="8.5">no chat, no reasoning</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M310,97 L332,97" marker-end="url(#arrow)"></path><path class="arrow-thin" stroke="var(--ink-soft)" d="M524,97 L546,97" marker-end="url(#arrow)"></path>
+          <path d="M340,150 L520,150" stroke="var(--brick)" stroke-width="1.5"></path><path d="M420,138 L440,162 M440,138 L420,162" stroke="var(--brick)" stroke-width="2"></path>
+          <text class="txt-brick" x="430" y="176" text-anchor="middle" font-size="8.5">reasoning never crosses</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="diagram-wrap" style="margin-top:22px">
+      <table class="compare mini">
+        <thead><tr><th>Check</th><th>What it decides</th><th>From</th><th>Evidence in the package</th></tr></thead>
+        <tbody>
+          <tr><th>G1 · requirement</th><td>Bundle and spec ACs match one to one; each AC is testable</td><td>M17–18</td><td><code>gate_log.jsonl</code></td></tr>
+          <tr><th>G2 · sequence</th><td>Scenario ACs = spec ACs; no orphan scenarios</td><td>M17–18</td><td><code>gate_log.jsonl</code></td></tr>
+          <tr><th>G3 · tests</th><td>Markers present, AC coverage complete, lint, no secrets</td><td>M17–18</td><td><code>gate_log.jsonl</code>, findings</td></tr>
+          <tr><th>G4 · execution</th><td>Results parsed; every failure classified</td><td>M16–18</td><td><code>junit.xml</code>, validation report</td></tr>
+          <tr><th>G5 · review</th><td>Independent verdict: approve, request changes, escalate</td><td>M15–16</td><td><code>05_review.md</code></td></tr>
+          <tr><th>🧑 HITL sign-off</th><td>Quality lead approves the exact test hash</td><td>M17</td><td><code>gate_log.jsonl</code> (<code>HITL_signoff</code>)</td></tr>
+          <tr><th>Security / quality</th><td>Hooks active, secret scan, dependency review, lint</td><td>M17, M19</td><td><code>hook_log.jsonl</code>, CI checks</td></tr>
+          <tr><th>CI + readiness</th><td>Clean-runner replay; versioned policy verdict</td><td>M19</td><td><code>readiness_report.md</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="split">
+      <div>
+        <p class="code-label">runs/req-2517-run-01/readiness_report.md</p>
+<pre class="code"><span class="k"># Readiness — REQ-2517 · PR #63 → staging</span>
+Policy: readiness.yaml v1.0.0
+Verdict: <span class="s">READY</span>
+Blocking: none
+Known defects:
+  DEF-5561 · Sev-3 · AC-3 · strict xfail · open
+Gates: G1–G5 PASS on CI replay (2 rounds used)
+Sign-off: qa-lead · hash e7a2 = HEAD evidence
+Security: no secrets · no high findings
+Evidence: CI artifact evidence-req-2517-run-01</pre>
+      </div>
+      <div>
+        <div class="callout" style="--accent:var(--copper)"><span class="tag">CA-7 needs a real round</span><p>The package must show at least one self-correction round in the gate log. If your run happens to pass first time, <strong>seed</strong> a realistic fault (remove one <code>@ac</code> marker), record that you seeded it, and show the round. Don't fake a log line.</p></div>
+        <div class="callout" style="--accent:var(--teal)"><span class="tag">READY ≠ deployed</span><p>The readiness verdict makes the change eligible. A person still approves the environment deployment, and the report still needs stakeholder sign-off.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="deck-section" id="delegate">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Optional: delegated / background execution · CA-10</p>
+    <h2 class="section-title">Delegate one isolated task, and prove it was safe to</h2>
+    <p class="lede">CA-10 is optional and scored under security and governance. Pick a task whose output is a <strong>commit on a branch you review</strong>, with nothing to decide on the way. Keep anything that is a judgement, an approval, or a change to the control plane local and human.</p>
+
+    <div class="split">
+      <div>
+        <div class="callout" style="--accent:var(--teal)"><span class="tag">Good candidates</span><p>Re-run the full suite against the sandbox from a clean VM and attach <code>junit.xml</code> to the PR · apply one reviewer comment on the PR branch · regenerate the traceability table from Git trailers.</p></div>
+      </div>
+      <div>
+        <div class="callout" style="--accent:var(--brick)"><span class="tag">Keep local</span><p>Plan approval, test sign-off, the readiness decision, defect classification disputes, and any edit to <code>.cursor/</code>, <code>.github/</code>, <code>gates.yaml</code> or <code>readiness.yaml</code>.</p></div>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Delegation checklist: fill in all five, name the gaps honestly</h3>
+    <div class="five">
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">Environment</p><h3>Pinned and isolated</h3><p>Environment config in the repo, pinned hashed deps, fixed install step.</p></article>
+      <article class="role-card" style="--accent:var(--brick)"><p class="role-step">Secrets</p><h3>Sandbox only</h3><p>Short-lived <code>SANDBOX_TOKEN</code>, never production, never echoed into files.</p></article>
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">Network</p><h3>Allow-listed</h3><p>Sandbox API, package mirror, GitHub. Nothing else.</p></article>
+      <article class="role-card" style="--accent:var(--teal)"><p class="role-step">Permissions</p><h3>Branch, not main</h3><p>Repo-scoped app; push to <code>agent/*</code> only; can't edit workflows.</p></article>
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">Human review</p><h3>PR, never merge</h3><p>Required code-owner review; the delegated commit is reviewed like any other.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="deck-section" id="report">
+  <div class="section-inner">
+    <p class="eyebrow">09 — The final engineering report · CA-9</p>
+    <h2 class="section-title">Any AC, ticket to readiness, in under a minute</h2>
+    <p class="lede">That's the rubric's bar for "excellent" traceability. The report is written for a stakeholder who wasn't in the room: it opens with the decision you are asking for, and every claim links to an artifact. Most of it is <strong>generated</strong> from the run folder, Git trailers and CI; people write the summary, the risks and the recommendation.</p>
+
+    <div class="sim">
+      <h3>Trace an acceptance criterion through the package</h3>
+      <p class="hint">Pick an AC. Each hop shows what the package says and where the evidence lives.</p>
+      <div class="chip-btns ac-btns" role="group" aria-label="Acceptance criteria">
+        <button type="button" data-ac="0" aria-pressed="true">AC-1 · change allowed</button>
+        <button type="button" data-ac="1" aria-pressed="false">AC-2 · rejected after dispatch</button>
+        <button type="button" data-ac="2" aria-pressed="false">AC-3 · invalid postcode</button>
+        <button type="button" data-ac="3" aria-pressed="false">AC-4 · not the owner</button>
+      </div>
+      <ol class="tc-chain" id="tcChain" aria-live="polite"></ol>
+    </div>
+
+    <div class="split">
+      <div>
+        <p class="code-label">reports/REQ-2517/final_engineering_report.md (outline)</p>
+<pre class="code"><span class="k"># REQ-2517 — Final engineering report</span>
+<span class="c">&lt;!-- generated: tables · written: 1, 9, 10 --&gt;</span>
+1. Summary and <span class="m">decision requested</span>
+2. Scope: ticket, revision, ACs, out of scope
+3. Traceability matrix (AC × every hop)
+4. Plan and approval record
+5. Spec note and test sequence
+6. Results, defects and their classes
+7. Independent review verdict
+8. Gates, correction rounds, sign-off
+9. Readiness verdict and known risks
+10. Observability and cost; one improvement
+11. Sign-offs and open items</pre>
+      </div>
+      <div>
+        <div class="callout" style="--accent:var(--plum)"><span class="tag">Generated, not retyped</span><p>The traceability matrix, result counts, gate trail and cost table come from <code>junit.xml</code>, <code>gate_log.jsonl</code>, <code>run_log.jsonl</code> and <code>git log --format='%(trailers)'</code>. A number typed by hand will eventually disagree with the evidence, and a reviewer will find it.</p></div>
+        <div class="callout" style="--accent:var(--teal)"><span class="tag">The stakeholder test</span><p>Hand the report to someone outside the team. If they have to ask a question before they can decide, the answer belongs in section 1.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="deck-section" id="cost">
+  <div class="section-inner">
+    <p class="eyebrow">10 — Observability and cost</p>
+    <h2 class="section-title">Tokens, time, rounds and escalations, per stage</h2>
+    <p class="lede">Every stage appends one line to <code>run_log.jsonl</code>. The report's cost section is a table built from that file, plus <strong>one improvement idea</strong> that the numbers justify. Illustrative numbers for run 01 below; model pricing varies, so report tokens and time, and convert to money with your organisation's rates.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 300" role="img" aria-label="Illustrative cost per stage for run 01, in thousands of tokens: bundle 18, plan 64, spec 22, sequence 26, tests 71 over three generations and two rounds, execute 9, review 38, gates and CI 0 (deterministic scripts), readiness 0, report 30. Total about 278 thousand tokens, 44 minutes of agent and CI time, and 21 minutes of human wait across two approvals." style="min-width:720px">
+          <text class="lbl" x="160" y="14" text-anchor="start" font-size="8.5">tokens (k)</text><text class="lbl" x="850" y="14" text-anchor="end" font-size="8.5">agent / CI time · notes</text>
+          <text class="lbl-strong" x="150" y="37" text-anchor="end" font-size="9.5">1 · Bundle</text>
+          <rect class="fill-teal" x="160" y="26" width="119" height="15" rx="4" opacity="0.8"></rect>
+          <text class="txt-teal" x="285" y="37" text-anchor="start" font-size="9">18k</text>
+          <text class="lbl" x="850" y="37" text-anchor="end" font-size="8.5">2m</text>
+          <text class="lbl-strong" x="150" y="61" text-anchor="end" font-size="9.5">2 · Plan</text>
+          <rect class="fill-plum" x="160" y="50" width="422" height="15" rx="4" opacity="0.8"></rect>
+          <text class="txt-plum" x="588" y="61" text-anchor="start" font-size="9">64k</text>
+          <text class="lbl" x="850" y="61" text-anchor="end" font-size="8.5">9m  ·  +12m 🧑 wait</text>
+          <text class="lbl-strong" x="150" y="85" text-anchor="end" font-size="9.5">3 · Spec note</text>
+          <rect class="fill-plum" x="160" y="74" width="145" height="15" rx="4" opacity="0.8"></rect>
+          <text class="txt-plum" x="311" y="85" text-anchor="start" font-size="9">22k</text>
+          <text class="lbl" x="850" y="85" text-anchor="end" font-size="8.5">4m</text>
+          <text class="lbl-strong" x="150" y="109" text-anchor="end" font-size="9.5">4 · Sequence</text>
+          <rect class="fill-plum" x="160" y="98" width="172" height="15" rx="4" opacity="0.8"></rect>
+          <text class="txt-plum" x="338" y="109" text-anchor="start" font-size="9">26k</text>
+          <text class="lbl" x="850" y="109" text-anchor="end" font-size="8.5">3m</text>
+          <text class="lbl-strong" x="150" y="133" text-anchor="end" font-size="9.5">5 · Tests</text>
+          <rect class="fill-plum" x="160" y="122" width="469" height="15" rx="4" opacity="0.8"></rect>
+          <text class="txt-plum" x="635" y="133" text-anchor="start" font-size="9">71k</text>
+          <text class="lbl" x="850" y="133" text-anchor="end" font-size="8.5">8m  ·  3 generations · 2 rounds</text>
+          <text class="lbl-strong" x="150" y="157" text-anchor="end" font-size="9.5">6 · Execute</text>
+          <rect class="fill-brick" x="160" y="146" width="59" height="15" rx="4" opacity="0.8"></rect>
+          <text class="txt-brick" x="225" y="157" text-anchor="start" font-size="9">9k</text>
+          <text class="lbl" x="850" y="157" text-anchor="end" font-size="8.5">2m  ·  ×2 runs</text>
+          <text class="lbl-strong" x="150" y="181" text-anchor="end" font-size="9.5">7 · Review</text>
+          <rect class="fill-copper" x="160" y="170" width="251" height="15" rx="4" opacity="0.8"></rect>
+          <text class="txt-copper" x="417" y="181" text-anchor="start" font-size="9">38k</text>
+          <text class="lbl" x="850" y="181" text-anchor="end" font-size="8.5">5m  ·  ×2 reviews</text>
+          <text class="lbl-strong" x="150" y="205" text-anchor="end" font-size="9.5">8 · Gates + CI</text>
+          <text class="lbl" x="160" y="205" text-anchor="start" font-size="8.5">deterministic scripts · 0 tokens</text>
+          <text class="lbl" x="850" y="205" text-anchor="end" font-size="8.5">6m  ·  +9m 🧑 sign-off</text>
+          <text class="lbl-strong" x="150" y="229" text-anchor="end" font-size="9.5">9 · Readiness</text>
+          <text class="lbl" x="160" y="229" text-anchor="start" font-size="8.5">deterministic scripts · 0 tokens</text>
+          <text class="lbl" x="850" y="229" text-anchor="end" font-size="8.5">1m</text>
+          <text class="lbl-strong" x="150" y="253" text-anchor="end" font-size="9.5">Report</text>
+          <rect class="fill-teal" x="160" y="242" width="198" height="15" rx="4" opacity="0.8"></rect>
+          <text class="txt-teal" x="364" y="253" text-anchor="start" font-size="9">30k</text>
+          <text class="lbl" x="850" y="253" text-anchor="end" font-size="8.5">4m</text>
+          <path d="M10,272 L850,272" stroke="var(--line-strong)"></path>
+          <text class="lbl-strong" x="150" y="290" text-anchor="end" font-size="10">Total</text><text class="lbl-strong" x="160" y="290" text-anchor="start" font-size="9.5">≈ 278k tokens · 44 min agent + CI · 21 min human wait · 2 rounds · 1 escalation (plan)</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="split">
+      <div>
+        <p class="code-label">runs/req-2517-run-01/run_log.jsonl (one line per stage)</p>
+<pre class="code">{<span class="k">"stage"</span>:<span class="s">"test-generator"</span>,<span class="k">"round"</span>:0,
+ <span class="k">"tokens_in"</span>:31200,<span class="k">"tokens_out"</span>:6100,
+ <span class="k">"wall_s"</span>:212,<span class="k">"model"</span>:<span class="s">"&lt;per org policy&gt;"</span>,
+ <span class="k">"output"</span>:<span class="s">"03@a1c4"</span>,<span class="k">"gate"</span>:<span class="s">"G3"</span>,
+ <span class="k">"decision"</span>:<span class="e">"FAIL"</span>,<span class="k">"escalated"</span>:<span class="k">false</span>}</pre>
+      </div>
+      <div>
+        <div class="callout" style="--accent:var(--copper)"><span class="tag">One improvement</span><p>The test generator used about a quarter of all tokens over three generations. Round 1 was a missing AC. Adding "every bundle AC has ≥1 test" to the generator's own rule would likely have saved that round, roughly 20k tokens and 4 minutes per run.</p></div>
+        <div class="callout" style="--accent:var(--teal)"><span class="tag">Count human time too</span><p>The two approvals waited 12 and 9 minutes. For the stakeholder, wait time is part of the cost of this workflow.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="deck-section" id="submit">
+  <div class="section-inner">
+    <p class="eyebrow">11 — Compile the checklist and the package</p>
+    <h2 class="section-title">Ten criteria, each with a file you can point at</h2>
+    <p class="lede">Before you call it done, walk the acceptance criteria and point at the evidence for each. If you can't point at a file, the criterion isn't met. Click each item as your team confirms it.</p>
+
+    <div class="sim">
+      <h3>Capstone acceptance checklist</h3>
+      <p class="hint">CA-1…CA-9 are required. CA-10 is optional.</p>
+      <ul class="ck-list" id="ckList">
+        <li><button type="button" aria-pressed="false" data-req="1"><b>CA-1</b><span>Ticket pulled via MCP (or mock) and a schema-valid bundle<small>runs/&lt;id&gt;/00_requirement_bundle.json · hook_log.jsonl</small></span></button></li>
+        <li><button type="button" aria-pressed="false" data-req="1"><b>CA-2</b><span>Implementation plan with a recorded human approval before code<small>plans/REQ-2517/plan.md + approval.json</small></span></button></li>
+        <li><button type="button" aria-pressed="false" data-req="1"><b>CA-3</b><span>Spec note whose ACs match bundle AC-IDs one to one<small>specs/REQ-2517-spec-note.md · G1 in gate_log</small></span></button></li>
+        <li><button type="button" aria-pressed="false" data-req="1"><b>CA-4</b><span>Test sequence + PyTest suite, every test marked req and ac<small>02_test_sequence.json · tests/api/…</small></span></button></li>
+        <li><button type="button" aria-pressed="false" data-req="1"><b>CA-5</b><span>Execution vs the sandbox, results, defect classification<small>junit.xml · 04_validation_report.md</small></span></button></li>
+        <li><button type="button" aria-pressed="false" data-req="1"><b>CA-6</b><span>Independent reviewer verdict from a separate context<small>05_review.md</small></span></button></li>
+        <li><button type="button" aria-pressed="false" data-req="1"><b>CA-7</b><span>Gate logs with ≥1 self-correction round and a hash-bound sign-off<small>gate_log.jsonl · findings/</small></span></button></li>
+        <li><button type="button" aria-pressed="false" data-req="1"><b>CA-8</b><span>CI passes and a readiness report from versioned policy<small>PR #63 checks · readiness_report.md</small></span></button></li>
+        <li><button type="button" aria-pressed="false" data-req="1"><b>CA-9</b><span>Final report linking every hop, with an observability/cost summary<small>reports/REQ-2517/final_engineering_report.md</small></span></button></li>
+        <li class="opt"><button type="button" aria-pressed="false" data-req="0"><b>CA-10</b><span>Optional: one delegated task with its delegation checklist<small>PR commit from agent/* · notes/delegation-checklist.md</small></span></button></li>
+      </ul>
+      <div class="ck-bar" aria-hidden="true"><i id="ckFill"></i></div>
+      <p class="hint" id="ckStatus" aria-live="polite">0 of 9 required criteria confirmed.</p>
+    </div>
+
+    <div class="split">
+      <div>
+        <p class="code-label">the package, as a PR</p>
+<pre class="code">capstone/
+├── tickets/                  <span class="c"># mock fixtures, if used</span>
+├── plans/REQ-2517/plan.md    <span class="c"># + approval.json</span>
+├── specs/REQ-2517-spec-note.md
+├── tests/api/test_req_2517_address.py
+├── runs/req-2517-run-01/     <span class="c"># bundle, 01–05, logs, packet</span>
+├── reports/REQ-2517/
+│   └── final_engineering_report.md
+└── .github/workflows/agent-pipeline.yml</pre>
+      </div>
+      <div>
+        <div class="callout" style="--accent:var(--plum)"><span class="tag">Submit as a PR</span><p>Branch <code>feat/REQ-2517-address-change</code>, commits with <code>Ticket:</code> and <code>Run-Id:</code> trailers, the PR template filled from the decision packet, CI green. The PR <em>is</em> the submission. Reviewers will open it on Day 8.</p></div>
+        <div class="callout" style="--accent:var(--copper)"><span class="tag">No live repo?</span><p>Use the local CI simulation from Lab 19.5 and write the simplification into <code>PIPELINE.md</code>. An honest, documented gap scores better than a claimed pass.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="deck-section" id="demo">
+  <div class="section-inner">
+    <p class="eyebrow">12 — Demo and peer review</p>
+    <h2 class="section-title">A five-minute story, then honest scores</h2>
+    <p class="lede">The demo tells one story: this ticket, this evidence, this decision. Show artifacts, not slides about artifacts. Then teams review each other against the rubric that Day 8 uses. Score yourselves first; the biggest weighted gap is where your last hour should go.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 100" role="img" aria-label="A five-minute demo timeline: 0:00 the ticket and bundle; 0:30 plan and approval; 1:15 spec to tests; 2:00 the correction round in the gate log; 3:00 the product defect and the review; 3:45 readiness and the report, tracing one AC live; 4:30 cost and one improvement idea; ending at 5:00 on the decision you want." style="min-width:720px">
+          <rect class="box-teal" x="12" y="30" width="80" height="40" rx="8"></rect><text class="txt-teal" x="52" y="48" text-anchor="middle" font-size="9.5">Ticket</text><text class="lbl" x="52" y="62" text-anchor="middle" font-size="8">bundle.json</text>
+          <text class="lbl" x="12" y="22" text-anchor="start" font-size="8.5">0:00</text>
+          <rect class="box-plum" x="96" y="30" width="122" height="40" rx="8"></rect><text class="txt-plum" x="157" y="48" text-anchor="middle" font-size="9.5">Plan + approval</text><text class="lbl" x="157" y="62" text-anchor="middle" font-size="8">approval.json</text>
+          <text class="lbl" x="96" y="22" text-anchor="start" font-size="8.5">0:30</text>
+          <rect class="box-plum" x="222" y="30" width="122" height="40" rx="8"></rect><text class="txt-plum" x="283" y="48" text-anchor="middle" font-size="9.5">Spec → tests</text><text class="lbl" x="283" y="62" text-anchor="middle" font-size="8">markers, coverage</text>
+          <text class="lbl" x="222" y="22" text-anchor="start" font-size="8.5">1:15</text>
+          <rect class="box-copper" x="348" y="30" width="164" height="40" rx="8"></rect><text class="txt-copper" x="430" y="48" text-anchor="middle" font-size="9.5">The correction</text><text class="lbl" x="430" y="62" text-anchor="middle" font-size="8">gate_log rounds</text>
+          <text class="lbl" x="348" y="22" text-anchor="start" font-size="8.5">2:00</text>
+          <rect class="box-brick" x="516" y="30" width="122" height="40" rx="8"></rect><text class="txt-brick" x="577" y="48" text-anchor="middle" font-size="9.5">Defect + review</text><text class="lbl" x="577" y="62" text-anchor="middle" font-size="8">DEF-5561, 05_review</text>
+          <text class="lbl" x="516" y="22" text-anchor="start" font-size="8.5">3:00</text>
+          <rect class="box-teal" x="642" y="30" width="122" height="40" rx="8"></rect><text class="txt-teal" x="703" y="48" text-anchor="middle" font-size="9.5">Readiness + report</text><text class="lbl" x="703" y="62" text-anchor="middle" font-size="8">trace one AC live</text>
+          <text class="lbl" x="642" y="22" text-anchor="start" font-size="8.5">3:45</text>
+          <rect class="box-copper" x="768" y="30" width="80" height="40" rx="8"></rect><text class="txt-copper" x="808" y="48" text-anchor="middle" font-size="9.5">Cost + idea</text><text class="lbl" x="808" y="62" text-anchor="middle" font-size="8">run_log</text>
+          <text class="lbl" x="768" y="22" text-anchor="start" font-size="8.5">4:30</text>
+          <text class="lbl" x="850" y="22" text-anchor="end" font-size="8.5">5:00</text>
+          <text class="lbl-strong" x="430" y="92" text-anchor="middle" font-size="9.5">One story · real artifacts on screen · end on the decision you want from the stakeholder</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="sim">
+      <h3>Rubric self-score</h3>
+      <p class="hint">0 missing · 1 weak · 2 partial · 3 solid · 4 excellent. Weights from the course rubric.</p>
+      <div class="rd-grid rb-grid">
+        <ul class="rb-rows" id="rbRows">
+          <li><span>End-to-end traceability</span><span class="w">20%</span><input type="range" min="0" max="4" step="1" value="2" data-w="20" aria-label="End-to-end traceability score"><output></output></li>
+          <li><span>Test quality and correctness</span><span class="w">20%</span><input type="range" min="0" max="4" step="1" value="2" data-w="20" aria-label="Test quality and correctness score"><output></output></li>
+          <li><span>Gates and self-correction</span><span class="w">15%</span><input type="range" min="0" max="4" step="1" value="2" data-w="15" aria-label="Gates and self-correction score"><output></output></li>
+          <li><span>Security and governance</span><span class="w">15%</span><input type="range" min="0" max="4" step="1" value="2" data-w="15" aria-label="Security and governance score"><output></output></li>
+          <li><span>Human-in-the-loop design</span><span class="w">10%</span><input type="range" min="0" max="4" step="1" value="2" data-w="10" aria-label="Human-in-the-loop design score"><output></output></li>
+          <li><span>Report quality</span><span class="w">10%</span><input type="range" min="0" max="4" step="1" value="2" data-w="10" aria-label="Report quality score"><output></output></li>
+          <li><span>Observability and cost</span><span class="w">5%</span><input type="range" min="0" max="4" step="1" value="2" data-w="5" aria-label="Observability and cost score"><output></output></li>
+          <li><span>Demo and peer review</span><span class="w">5%</span><input type="range" min="0" max="4" step="1" value="2" data-w="5" aria-label="Demo and peer review score"><output></output></li>
+        </ul>
+        <div class="rd-side">
+          <div class="rd-verdict not" id="rbScore" aria-live="polite">50<small>weighted score / 100</small></div>
+          <p id="rbGain"></p>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Peer feedback: specific, evidenced, one of each</h3>
+    <div class="fb-grid">
+      <article class="role-card" style="--accent:var(--teal)"><p class="role-step">One strength</p><h3>Name the artifact</h3><p>"The AC-2 trace took 20 seconds: marker → junit → review line."</p></article>
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">One gap</p><h3>Name the criterion</h3><p>"Report section 6 counts 5 tests; junit.xml has 6. Traceability, not test quality."</p></article>
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">One question</p><h3>Something you'd ask as the stakeholder</h3><p>"Who decided DEF-5561 is Sev-3, and where is that recorded?"</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="deck-section" id="pitfalls">
+  <div class="section-inner">
+    <p class="eyebrow">13 — Pitfalls under deadline</p>
+    <h2 class="section-title">What goes wrong on capstone day, and the fix</h2>
+    <div class="pit-grid">
+      <article class="pit"><h3>Approved after the fact</h3><p class="see">Tests were generated, then the plan was written and "approved" to match.</p><p class="fix">Enforce the order: generation refuses to start without an <code>approval.json</code> whose hash matches <code>plan.md</code>.</p></article>
+      <article class="pit"><h3>AC drift</h3><p class="see">The spec renumbers or merges ACs, and the bundle's AC-3 is now the spec's AC-2.</p><p class="fix">G1 checks set equality by ID. Clarifications change the bundle through the owner, never silently in the spec.</p></article>
+      <article class="pit"><h3>Status-code-only tests</h3><p class="see">Every test asserts <code>409</code> and nothing else, so "address unchanged" is never checked.</p><p class="fix">The reviewer checks each assertion against the AC text. Gates can't catch this; separate-context review can.</p></article>
+      <article class="pit"><h3>Everything is a product defect</h3><p class="see">Failing tests get marked xfail to turn CI green.</p><p class="fix">A product defect needs a spec-matching test, a reproduction, and a DEF ID. The quality lead signs the classification.</p></article>
+      <article class="pit"><h3>Hand-typed report</h3><p class="see">The report says 6 passed; <code>junit.xml</code> says 5 passed, 1 xfailed.</p><p class="fix">Generate the tables from the evidence files, and write only the summary, risks and recommendation by hand.</p></article>
+      <article class="pit"><h3>Roles decided at 3 pm</h3><p class="see">The author signs off their own tests because nobody else is free.</p><p class="fix">Bring the Lab 19.8 charter. Roles, sign-off owners and the top three risks are settled before the ticket arrives.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 14 -->
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">14 — Before Day 8</p>
+    <h2 class="section-title">Carry these five ideas forward</h2>
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>The capstone adds little new machinery. It proves the pieces <strong>compose on an unseen ticket</strong>, under deadline, with real roles.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Two human checkpoints: <strong>plan approval before generation</strong>, and a <strong>hash-bound sign-off</strong> on the tests. Both are recorded and checkable.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Every failure is classified as test, product or environment <strong>before</strong> anything reacts. Product defects become strict xfails with a DEF ID, never a rewritten test.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>Review in a separate context catches what gates can't. CI replays the gates, and <strong>readiness is a versioned policy</strong>, not a feeling.</p></div>
+      <div class="recap-chip" style="grid-column:1/-1"><span class="recap-num">05</span><p>The report is <strong>compiled from evidence</strong>: any AC can be traced from ticket to readiness in under a minute, with cost per stage and one improvement the numbers justify.</p></div>
+    </div>
+
+    <div class="qa">
+      <details><summary>Why does the plan approval have to come before any code or tests are generated?</summary><p>It's the cheapest point to catch a wrong direction: a bad plan caught there costs minutes, while the same error caught at review costs the whole run. Binding it to the plan's hash, and making generation refuse to start without it, turns "we approved it" into something a reviewer can check.</p></details>
+      <details><summary>A test fails. What do you establish before anyone changes anything?</summary><p>Its class. Does the test match the spec? If not, it's a test defect and goes back to the generator as a round. If it does and the failure reproduces outside the test, it's a product defect: raise a DEF, mark it strict xfail, and let a human own severity. If it doesn't reproduce, treat it as environment: retry once, record, escalate.</p></details>
+      <details><summary>Your run passed every gate first time. How do you meet CA-7?</summary><p>Seed a realistic fault (for example, remove one <code>@ac</code> marker), record in the report that it was seeded, and show the gate catching it and the bounded round fixing it. Never edit a log to show a round that didn't happen.</p></details>
+      <details><summary>Why does the reviewer agent run in a separate context from the generator?</summary><p>If it shares the generator's reasoning, it inherits the generator's blind spots and tends to agree with it. Reading only the spec, sequence, tests and results, it judges the tests the way a stranger would, which is what independent review means.</p></details>
+      <details><summary>Readiness says READY. Is the change deployed?</summary><p>No. READY makes it eligible. A person approves the environment deployment, and the stakeholder signs off the report. Agent PRs never auto-merge.</p></details>
+      <details><summary>What makes a cost summary useful rather than decorative?</summary><p>Per-stage tokens, time, rounds and escalations from <code>run_log.jsonl</code>, human wait time included, and one concrete improvement that the numbers justify, with its expected saving.</p></details>
+    </div>
+
+    <div class="bridge">
+      <span class="bridge-tag">Next</span>
+      <p><strong>Day 8 · Module 21: Best Practices, Enterprise Rollout &amp; ROI.</strong> Teams present their capstones and review each other's packages against the rubric. The evidence you produced today, including cost, rounds and gaps, feeds the rollout and ROI discussion.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 20 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+
+    // Capstone run walkthrough — req-2517-run-01
+    var L = {
+      mcp: '{"hook":"beforeMCPExecution","tool":"get_ticket","args":{"key":"REQ-2517"},"decision":<span class="s">"allow"</span>}',
+      bundle: '+ 00_requirement_bundle.json  <span class="c">// REQ-2517 rev 3 · AC-1…AC-4 · warnings: []</span>',
+      plan: '+ plans/REQ-2517/plan.md  <span class="c">// hash 4b9c · 1 open question (AC-3 body)</span>',
+      wait: '{"checkpoint":"plan_approval","status":<span class="m">"PENDING"</span>,"routed_to":"human:ticket-owner"}',
+      appr: '+ plans/REQ-2517/approval.json  <span class="c">// APPROVE · plan_hash 4b9c · human:ticket-owner</span>',
+      spec: '+ specs/REQ-2517-spec-note.md  <span class="c">// AC-1…AC-4</span>\n{"gate":"G1","round":0,"decision":<span class="s">"PASS"</span>,"checks":["ac_set_equal","ac_testable"]}',
+      seq: '+ 02_test_sequence.json  <span class="c">// S1–S5</span>\n{"gate":"G2","round":0,"decision":<span class="s">"PASS"</span>,"checks":["schema","ac_set_equal","no_orphans"]}',
+      g3f: '+ 03_tests/ @a1c4\n{"gate":"G3","round":0,"decision":<span class="e">"FAIL"</span>,"failed":"ac_coverage_complete","missing":["AC-4"],"routed_to":"test-generator"}',
+      r1: '{"event":"retry","round":1,"stage":"test-generator","mode":"patch","findings":"findings/G3-r1.json"}\n{"gate":"G3","round":1,"input":"03@b77d","decision":<span class="s">"PASS"</span>}',
+      g4: '+ junit.xml  <span class="c">// 4 passed, 1 failed (AC-3)</span>\n{"gate":"G4","round":1,"decision":<span class="s">"PASS"</span>,"class":<span class="m">"PRODUCT_DEFECT:DEF-5561"</span>}\n+ 04_validation_report.md',
+      g5f: '+ 05_review.md\n{"gate":"G5","round":1,"decision":<span class="e">"REQUEST_CHANGES"</span>,"finding":"AC-2: DELIVERED not covered","routed_to":"test-generator"}',
+      r2: '{"event":"retry","round":2,"stage":"test-generator","mode":"patch","reuse":["00","01","02"],"regate":["G3"],"rerun":["execute","review"]}\n{"gate":"G3","round":2,"input":"03@e7a2","decision":<span class="s">"PASS"</span>}\n+ junit.xml  <span class="c">// 5 passed, 1 xfailed</span>\n{"gate":"G5","round":2,"decision":<span class="s">"APPROVE"</span>,"notes":1}',
+      sign: '{"gate":"HITL_signoff","decision":<span class="s">"APPROVE"</span>,"decided_by":"human:qa-lead","artifact_hash":"e7a2"}',
+      ci: 'PR #63 feat/REQ-2517-address-change · checks: gates ✔ readiness ✔\n+ readiness_report.md  <span class="c">// READY · DEF-5561 Sev-3 within policy</span>',
+      rep: '+ reports/REQ-2517/final_engineering_report.md  <span class="c">// + cost table from run_log.jsonl</span>\n{"hook":"beforeMCPExecution","tool":"add_comment","decision":<span class="m">"ask"</span>,"answered":"human:report-owner → allow"}'
+    };
+    var steps = [
+      { t:'Ready', b:'Press <strong>Next step</strong> to start the run.', s:{}, r:0, log:[] },
+      { t:'Pull the ticket → bundle', b:'The agent calls <code>get_ticket</code> through MCP; the policy hook allows the read. REQ-2517 is <em>Ready for Dev</em>, revision 3. AC-3 was prose, so the split into a testable AC went to the ticket owner, who confirmed it. The bundle validates against the schema.', s:{1:'pass'}, r:0, log:['mcp','bundle'] },
+      { t:'Explore the repo, draft the plan', b:'The agent reads <code>openapi.yaml</code>, the order state machine and the existing API fixtures, then writes <code>plan.md</code>: approach, files, out of scope, and one open question about the AC-3 error body. Generation is blocked until the plan is approved.', s:{1:'pass',2:'wait'}, r:0, log:['plan','wait'] },
+      { t:'🧑 Plan approved (CA-2)', b:'The ticket owner approves plan hash <code>4b9c</code> and answers the question: the field must be <code>postcode</code>. The approval is recorded before anything is generated.', s:{1:'pass',2:'approved'}, r:0, log:['appr'] },
+      { t:'Spec note → G1 PASS', b:'The spec note fixes AC-1 to AC-4 with given/when/then examples. G1 confirms the AC-IDs match the bundle one to one and each is testable.', s:{1:'pass',2:'approved',3:'pass'}, r:0, log:['spec'] },
+      { t:'Test sequence → G2 PASS', b:'Five scenarios: S1–S2 are the AC-1 happy paths, then one each for AC-2, AC-3 and AC-4. Every scenario maps to an AC, with no orphans.', s:{1:'pass',2:'approved',3:'pass',4:'pass'}, r:0, log:['seq'] },
+      { t:'Tests → G3 FAIL', b:'The generator writes the suite, but no test carries <code>@pytest.mark.ac("AC-4")</code>: the ownership rule was missed. G3\'s <code>ac_coverage_complete</code> check fails and routes the finding back to the generator.', s:{1:'pass',2:'approved',3:'pass',4:'pass',5:'fail'}, r:0, log:['g3f'] },
+      { t:'Round 1 → G3 PASS', b:'The generator patches in an AC-4 test: another customer\'s token gets 403 and the stored address is unchanged. G3 passes on the new hash <code>b77d</code>. One of two rounds used.', s:{1:'pass',2:'approved',3:'pass',4:'pass',5:'pass'}, r:1, log:['r1'] },
+      { t:'Execute vs sandbox → a product defect', b:'4 passed, 1 failed: invalid postcode returns 422, but the body has no <code>errors[].field</code>. The test matches the spec and the failure reproduces with <code>curl</code>, so it is a <strong>product defect</strong>. The quality lead raises DEF-5561 and the test becomes <code>xfail(strict=True)</code>.', s:{1:'pass',2:'approved',3:'pass',4:'pass',5:'pass',6:'flag'}, r:1, log:['g4'] },
+      { t:'Independent review → REQUEST_CHANGES', b:'The reviewer runs in a separate context and reads only the spec, sequence, tests and results. It notices AC-2 says "DISPATCHED <em>or</em> DELIVERED", but only DISPATCHED is tested. No gate could see that.', s:{1:'pass',2:'approved',3:'pass',4:'pass',5:'rerun',6:'flag',7:'fail'}, r:1, log:['g5f'] },
+      { t:'Round 2 → re-gate, re-run, APPROVE', b:'Round 2, the last one. The generator parametrizes the AC-2 test over both states. Only what depends on the changed tests is re-run: G3, execution, review. 5 passed, 1 xfailed; the reviewer approves with one note.', s:{1:'pass',2:'approved',3:'pass',4:'pass',5:'pass',6:'flag',7:'pass'}, r:2, log:['r2'] },
+      { t:'🧑 Hash-bound sign-off (CA-7)', b:'The quality lead, who did not generate the tests, reviews the decision packet and approves test hash <code>e7a2</code>. Any later edit to the tests invalidates the sign-off.', s:{1:'pass',2:'approved',3:'pass',4:'pass',5:'pass',6:'flag',7:'pass',8:'approved'}, r:2, log:['sign'] },
+      { t:'CI replay + readiness → READY', b:'The branch is pushed with trailers and PR #63 is opened. Actions replays G1–G5 on a clean runner and evaluates <code>readiness.yaml</code>: DEF-5561 is Sev-3, strict xfail, open, within policy. Verdict: READY. A person still approves deployment.', s:{1:'pass',2:'approved',3:'pass',4:'pass',5:'pass',6:'flag',7:'pass',8:'approved',9:'pass'}, r:2, log:['ci'] },
+      { t:'Compile the report', b:'The report is generated from the run folder, Git trailers and CI, with the cost table from <code>run_log.jsonl</code>. The team writes the summary, risks and decision request. Posting the link to the ticket is an MCP write, so the hook asks and a person allows it.', s:{1:'pass',2:'approved',3:'pass',4:'pass',5:'pass',6:'flag',7:'pass',8:'approved',9:'pass'}, r:2, log:['rep'] }
+    ];
+    var LBL = { idle:'waiting', run:'running', pass:'PASS', fail:'FAIL', flag:'PASS · defect', rerun:'rerun queued', wait:'awaiting 🧑', approved:'APPROVED' };
+    var cur = 0;
+    var track = document.querySelectorAll('.run-track li');
+    var pips = document.querySelectorAll('.pips i');
+    var elIdx = document.getElementById('rsIdx'), elT = document.getElementById('rsTitle'), elB = document.getElementById('rsBody'), elLog = document.getElementById('rsLog'), elUsed = document.getElementById('rmUsed');
+    var bPrev = document.getElementById('rsPrev'), bNext = document.getElementById('rsNext'), bReset = document.getElementById('rsReset');
+    function render(){
+      var st = steps[cur];
+      track.forEach(function(li){
+        var s = st.s[li.getAttribute('data-stage')] || 'idle';
+        li.setAttribute('data-s', s);
+        li.querySelector('span').textContent = LBL[s];
+      });
+      pips.forEach(function(p, i){ p.classList.toggle('on', i < st.r); });
+      if(elUsed) elUsed.textContent = st.r;
+      elIdx.textContent = 'Step ' + cur + ' of ' + (steps.length - 1);
+      elT.textContent = st.t;
+      elB.innerHTML = st.b;
+      var lines = [];
+      for(var i = 0; i <= cur; i++){ steps[i].log.forEach(function(k){ lines.push(L[k]); }); }
+      elLog.innerHTML = lines.length ? lines.join('\n') : '<span class="c">// empty — nothing has run yet</span>';
+      elLog.scrollTop = elLog.scrollHeight;
+      bPrev.disabled = cur === 0;
+      bNext.disabled = cur === steps.length - 1;
+    }
+    if(bNext && elLog){
+      bNext.addEventListener('click', function(){ if(cur < steps.length - 1){ cur++; render(); } });
+      bPrev.addEventListener('click', function(){ if(cur > 0){ cur--; render(); } });
+      bReset.addEventListener('click', function(){ cur = 0; render(); });
+      render();
+    }
+
+    // AC trace explorer — ticket → readiness
+    var HOPS = ['Ticket', 'Plan', 'Spec', 'Sequence', 'Tests', 'Result', 'Review', 'Readiness'];
+    var ACS = [
+      [['Address can be changed while the order is not yet dispatched', 'REQ-2517 rev 3 · customfield AC-1'],
+       ['Approach step 2: happy paths per allowed state', 'plans/REQ-2517/plan.md §Approach · 4b9c ✔'],
+       ['PLACED or PICKING → 200, response has the new address', 'specs/REQ-2517-spec-note.md · AC-1'],
+       ['S1 PLACED, S2 PICKING', '02_test_sequence.json'],
+       ['test_change_address_allowed[PLACED|PICKING]', 'tests/api/test_req_2517_address.py'],
+       ['2 passed', 'junit.xml', 'ok'],
+       ['No findings', '05_review.md · G5 round 2'],
+       ['Covered · PASS', 'readiness_report.md', 'ok']],
+      [['Address can\'t change once the order has left the warehouse', 'REQ-2517 rev 3 · customfield AC-2'],
+       ['Approach step 2: each rejection state', 'plans/REQ-2517/plan.md §Approach'],
+       ['DISPATCHED or DELIVERED → 409, stored address unchanged', 'specs/REQ-2517-spec-note.md · AC-2'],
+       ['S3 DISPATCHED (+ S3b DELIVERED, round 2)', '02_test_sequence.json'],
+       ['test_change_rejected_after_dispatch[DISPATCHED|DELIVERED]', 'tests/api/… · hash e7a2'],
+       ['2 passed', 'junit.xml', 'ok'],
+       ['Round 1: REQUEST_CHANGES, DELIVERED not covered → fixed', '05_review.md · findings/G5-r2.json', 'warn'],
+       ['Covered · PASS', 'readiness_report.md', 'ok']],
+      [['Invalid postcode is rejected with a clear error', 'REQ-2517 rev 3 · prose, split confirmed by owner'],
+       ['Open question answered at approval: field = "postcode"', 'plans/REQ-2517/approval.json · note'],
+       ['Invalid postcode → 422, errors[].field == "postcode"', 'specs/REQ-2517-spec-note.md · AC-3'],
+       ['S4 invalid postcode', '02_test_sequence.json'],
+       ['test_invalid_postcode_422 · xfail(strict) DEF-5561', 'tests/api/test_req_2517_address.py'],
+       ['1 xfailed: 422 returned, errors[].field missing', 'junit.xml · 04_validation_report.md', 'warn'],
+       ['Agrees: product defect, not a test defect', '05_review.md'],
+       ['Known defect DEF-5561 · Sev-3 · within policy', 'readiness_report.md · readiness.yaml v1.0.0', 'warn']],
+      [['Only the order owner can change the address', 'REQ-2517 rev 3 · customfield AC-4'],
+       ['Risk: ownership check lives in middleware', 'plans/REQ-2517/plan.md §Risks'],
+       ['Caller is not the owner → 403, stored address unchanged', 'specs/REQ-2517-spec-note.md · AC-4'],
+       ['S5 another customer\'s token', '02_test_sequence.json'],
+       ['test_change_forbidden_for_non_owner, added in round 1', 'tests/api/… · G3 round 1', 'warn'],
+       ['1 passed', 'junit.xml', 'ok'],
+       ['No findings', '05_review.md · G5 round 2'],
+       ['Covered · PASS', 'readiness_report.md', 'ok']]
+    ];
+    var tcChain = document.getElementById('tcChain');
+    var acBtns = document.querySelectorAll('.ac-btns button');
+    function esc3(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function showAc(i){
+      tcChain.innerHTML = ACS[i].map(function(h, k){
+        return '<li' + (h[2] ? ' class="' + h[2] + '"' : '') + '><b>' + HOPS[k] + '</b><span>' + esc3(h[0]) + '</span><code>' + esc3(h[1]) + '</code></li>';
+      }).join('');
+    }
+    acBtns.forEach(function(b){
+      b.addEventListener('click', function(){
+        acBtns.forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+        showAc(parseInt(b.getAttribute('data-ac'), 10));
+      });
+    });
+    if(tcChain) showAc(0);
+
+    // Acceptance checklist
+    var ckBtns = document.querySelectorAll('#ckList button');
+    var ckFill = document.getElementById('ckFill'), ckStatus = document.getElementById('ckStatus');
+    function renderCk(){
+      var req = 0, done = 0, opt = false;
+      ckBtns.forEach(function(b){
+        var on = b.getAttribute('aria-pressed') === 'true';
+        if(b.getAttribute('data-req') === '1'){ req++; if(on) done++; } else if(on){ opt = true; }
+      });
+      ckFill.style.width = (done / req * 100) + '%';
+      ckStatus.textContent = done === req
+        ? 'All ' + req + ' required criteria confirmed' + (opt ? ', plus the optional CA-10.' : '.') + ' Open the PR.'
+        : done + ' of ' + req + ' required criteria confirmed.';
+    }
+    ckBtns.forEach(function(b){
+      b.addEventListener('click', function(){
+        b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
+        renderCk();
+      });
+    });
+    if(ckFill) renderCk();
+
+    // Rubric self-score
+    var LEVEL = ['missing', 'weak', 'partial', 'solid', 'excellent'];
+    var rbRows = document.querySelectorAll('#rbRows li');
+    var rbScore = document.getElementById('rbScore'), rbGain = document.getElementById('rbGain');
+    function renderRb(){
+      var total = 0, best = null, bestGap = 0;
+      rbRows.forEach(function(li){
+        var inp = li.querySelector('input'), out = li.querySelector('output');
+        var lv = parseInt(inp.value, 10), w = parseInt(inp.getAttribute('data-w'), 10);
+        var pts = w * lv / 4;
+        total += pts;
+        out.textContent = LEVEL[lv] + ' · ' + (pts % 1 ? pts.toFixed(1) : pts);
+        var gap = w * (4 - lv) / 4;
+        if(gap > bestGap){ bestGap = gap; best = li.querySelector('span').textContent; }
+      });
+      var t = Math.round(total * 10) / 10;
+      rbScore.className = 'rd-verdict ' + (t >= 75 ? 'ready' : 'not');
+      rbScore.innerHTML = t + '<small>weighted score / 100</small>';
+      rbGain.innerHTML = best
+        ? 'Biggest available gain: <strong>' + esc3(best) + '</strong>, up to ' + bestGap + ' points. Spend your last hour there.'
+        : 'Excellent across the board. Now ask a peer team to try to prove that wrong.';
+    }
+    rbRows.forEach(function(li){ li.querySelector('input').addEventListener('input', renderRb); });
+    if(rbScore) renderRb();
+  }catch(e){}
+})();
+</script>

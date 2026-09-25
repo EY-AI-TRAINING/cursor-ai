@@ -1,0 +1,18 @@
+# capstone.yaml — the one place the capstone's identity lives (Module 20 §0)
+ticket: REQ-2502
+run_id: req-2502-run-01
+branch: feat/REQ-2502-cancel-reason
+tests_glob: tests/test_req_2502_*.py
+sandbox_url_var: SANDBOX_URL            # the name of the env var, never the value
+team:
+  ticket_owner: priya.r
+  pipeline_engineer: arjun.k
+  quality_lead: meera.s                 # signs off tests; must not drive the generator
+  reviewer_risk_owner: daniel.o         # owns the readiness decision
+  report_owner: meera.s
+scope:
+  in:  [tests for REQ-2502 ACs, spec note, pipeline run, CI + readiness, final report]
+  out: [production code changes, real Jira writes, auto-merge, secrets in repo]
+optional:
+  delegated_task: true                  # CA-10
+timebox_minutes: 210

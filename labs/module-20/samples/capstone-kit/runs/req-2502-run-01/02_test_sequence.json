@@ -1,0 +1,18 @@
+{
+  "req_id": "REQ-2502",
+  "source": {
+    "bundle_sha": "see evidence_index.md",
+    "spec_note": "specs/REQ-2502-spec-note.md",
+    "plan_sha": "see plan_approval.json"
+  },
+  "scenarios": [
+    {"id": "SEQ-1", "ac_ids": ["AC-1"], "title": "Each valid reason round-trips via GET", "type": "positive"},
+    {"id": "SEQ-2", "ac_ids": ["AC-1"], "title": "Cancel without reason still succeeds, reason null", "type": "positive"},
+    {"id": "SEQ-3", "ac_ids": ["AC-2"], "title": "Unknown reason -> 422 INVALID_REASON, status unchanged", "type": "negative"},
+    {"id": "SEQ-4", "ac_ids": ["AC-3"], "title": "OTHER with note length 0/1/280", "type": "boundary"},
+    {"id": "SEQ-5", "ac_ids": ["AC-3"], "title": "OTHER with note length 281 -> 422", "type": "boundary"},
+    {"id": "SEQ-6", "ac_ids": ["AC-4"], "title": "Owner and support see the audit entry, newest first", "type": "positive"},
+    {"id": "SEQ-7", "ac_ids": ["AC-4"], "title": "Other customer -> 403 on audit", "type": "negative"}
+  ],
+  "open_issues": []
+}

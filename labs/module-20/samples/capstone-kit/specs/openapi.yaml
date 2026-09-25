@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: Orders API — capstone sandbox
+  version: 1.0.0
+  description: |
+    REQ-2502 contract. The sandbox implementing this document is
+    `tools/mock_sandbox_api.py`. One behaviour deviates deliberately
+    (DEF-5561): `reason_note` of exactly 281 characters is accepted.
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200": {description: Service is up}
+  /orders/{id}:
+    get:
+      summary: Read an order (owner or support)
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/User"
+      responses:
+        "200":
+          description: The order, including `cancellation` once cancelled
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Order"}
+        "404": {description: Unknown order, or the caller is not the owner}
+  /orders/{id}/cancel:
+    post:
+      summary: Cancel a PAID or PENDING order (owner only)
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/User"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CancelRequest"}
+      responses:
+        "200":
+          description: Cancelled; `cancellation.reason` echoes the request
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Order"}
+        "404": {description: Unknown order, or caller is not the owner}
+        "409":
+          description: "`ORDER_ALREADY_SHIPPED` or `ALREADY_CANCELLED`"
+        "422":
+          description: "`INVALID_REASON` (unknown enum) or `INVALID_REASON_NOTE` (note missing / out of range)"
+  /orders/{id}/audit:
+    get:
+      summary: Read the audit trail, newest first (owner or support)
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+        - $ref: "#/components/parameters/User"
+        - $ref: "#/components/parameters/Role"
+      responses:
+        "200":
+          description: Entries sorted by `seq` descending
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AuditTrail"}
+        "403": {description: Caller is neither the owner nor support}
+        "404": {description: Unknown order}
+components:
+  parameters:
+    OrderId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, example: O1}
+    User:
+      name: X-User
+      in: header
+      required: true
+      schema: {type: string, example: cust-a}
+    Role:
+      name: X-Role
+      in: header
+      required: false
+      schema: {type: string, enum: [customer, support]}
+  schemas:
+    CancelRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          nullable: true
+          enum: [CUSTOMER_REQUEST, DUPLICATE, FRAUD_SUSPECTED, OTHER]
+        reason_note:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 280
+          description: Required when reason is OTHER; 1-280 characters.
+    Cancellation:
+      type: object
+      required: [reason]
+      properties:
+        reason: {type: string, nullable: true}
+        reason_note: {type: string, nullable: true}
+    Order:
+      type: object
+      required: [id, owner, status]
+      properties:
+        id: {type: string}
+        owner: {type: string}
+        status: {type: string, enum: [PENDING, PAID, SHIPPED, CANCELLED]}
+        amount: {type: number}
+        cancellation: {$ref: "#/components/schemas/Cancellation"}
+    AuditEntry:
+      type: object
+      required: [seq, event, actor, at]
+      properties:
+        seq: {type: integer, description: Monotonic; newest entries have the highest seq}
+        event: {type: string, enum: [order_created, order_cancelled]}
+        actor: {type: string}
+        at: {type: string, format: date-time}
+        reason: {type: string, nullable: true}
+        reason_note: {type: string, nullable: true}
+    AuditTrail:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          description: Sorted newest first (seq descending) — CL-2.
+          items: {$ref: "#/components/schemas/AuditEntry"}
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: {type: string}
+            message: {type: string}

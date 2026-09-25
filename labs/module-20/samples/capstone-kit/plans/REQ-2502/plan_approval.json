@@ -1,0 +1,18 @@
+{
+  "checkpoint": "plan",
+  "ticket": "REQ-2502",
+  "run_id": "req-2502-run-01",
+  "decision": "APPROVE",
+  "decided_by": "human:tech-lead",
+  "approver": "tech.lead@example.com",
+  "ts": "2026-09-26T09:14:05Z",
+  "reason": "Strategy covers boundaries; conftest change limited to one fixture",
+  "conditions": [
+    "Do not modify REQ-2481 tests",
+    "Flag any 404-vs-403 behaviour as a possible DEF-5520 sibling"
+  ],
+  "approved_hashes": {
+    "plan": "b922c47295f3",
+    "bundle": "001dd2869422"
+  }
+}

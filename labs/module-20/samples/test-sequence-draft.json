@@ -1,0 +1,16 @@
+{
+  "req_id": "REQ-2502",
+  "source": {"bundle_sha": "unknown", "spec_note": "specs/REQ-2502-spec-note.md", "plan_sha": "unknown"},
+  "scenarios": [
+    {"id": "SEQ-1", "ac_ids": ["AC-1"], "title": "Valid reason round-trips", "type": "positive"},
+    {"id": "SEQ-2", "title": "Cancel without reason", "type": "positive"},
+    {"id": "SEQ-3", "ac_ids": ["AC-2"], "title": "Unknown reason behaves correctly", "type": "positive"},
+    {"id": "SEQ-3", "ac_ids": ["AC-3"], "title": "OTHER with a note succeeds", "type": "positive"},
+    {"id": "SEQ-4", "ac_ids": ["AC-3"], "title": "OTHER note boundaries 1 and 280", "type": "boundary"},
+    {"id": "SEQ-5", "ac_ids": ["AC-5"], "title": "Confirmation email is sent", "type": "positive"},
+    {"id": "SEQ-6", "ac_ids": ["AC-4"], "title": "Audit entry is visible", "type": "positive"}
+  ],
+  "open_issues": [
+    {"id": "CL-2", "detail": "audit ordering not confirmed; AC-4 still proposed"}
+  ]
+}

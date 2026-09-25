@@ -1,0 +1,23 @@
+{
+  "round": 1,
+  "gate": "G4_no_test_defects",
+  "source_round": 0,
+  "findings": [
+    {
+      "id": "F-1",
+      "test": "tests/test_req_2502_audit.py::test_audit_entry_recorded_newest_first",
+      "class": "TEST_DEFECT",
+      "detail": "asserted oldest-first; spec note CL-2 says newest first",
+      "action": "generator fixes the test; API and contract unchanged"
+    },
+    {
+      "id": "F-2",
+      "test": "tests/test_req_2502_cancel_reason.py::test_reason_note_over_280_rejected",
+      "class": "PRODUCT_DEFECT",
+      "detail": "reason_note of 281 characters -> 200 instead of 422",
+      "action": "raise DEF-5561 (human-approved MCP write); keep the test strict; add strict xfail with the DEF-ID at sign-off"
+    }
+  ],
+  "env_retries": 0,
+  "notes": "Classify before fixing. A failing test is not evidence that the test is wrong."
+}

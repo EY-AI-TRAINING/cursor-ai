@@ -1,0 +1,11 @@
+{"gate": "PLAN_approval", "decision": "APPROVE", "ts": "2026-09-26T09:14:05Z", "decided_by": "human:tech-lead", "approved_hashes": {"plan": "b922c47295f3", "bundle": "001dd2869422"}}
+{"gate": "G1_requirement_ready", "round": 0, "decision": "PASS", "gates_version": "1.1.0"}
+{"gate": "G2_sequence_coverage", "round": 0, "decision": "PASS"}
+{"gate": "G3_tests_collect_and_conform", "round": 0, "decision": "PASS"}
+{"gate": "G4_no_test_defects", "round": 0, "decision": "FAIL", "findings_ref": "findings/round-1.json"}
+{"event": "LOOP", "gate": "G4_no_test_defects", "decision": "RETRY", "counter": "generator", "round": "1/2", "findings_ref": "findings/round-1.json"}
+{"event": "RERUN_PLAN", "reused": ["requirement-validator", "sequence-builder"], "rerun": ["test-generator", "api-validator", "reviewer"]}
+{"gate": "G3_tests_collect_and_conform", "round": 1, "decision": "PASS"}
+{"gate": "G4_no_test_defects", "round": 1, "decision": "PASS", "allowed": [{"test": "test_reason_note_over_280_rejected", "class": "PRODUCT_DEFECT", "defect": "DEF-5561"}]}
+{"gate": "G5_review_verdict", "round": 1, "decision": "ESCALATE", "then": "HITL_signoff"}
+{"gate": "HITL_signoff", "decision": "APPROVE", "ts": "2026-09-26T11:26:00Z", "decided_by": "human:qa-lead", "reason": "DEF-5561 Sev-3 raised; strict xfail; tests hash bound", "approved_hashes": {"tests": "6c3a81f988fa"}}

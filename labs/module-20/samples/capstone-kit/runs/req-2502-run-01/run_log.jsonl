@@ -1,0 +1,8 @@
+{"stage": "requirement-validator", "ts": "2026-09-26T08:11:00Z", "tokens": 14000, "duration_s": 78, "status": "PASS", "artifact": "00_requirement_bundle.json"}
+{"stage": "sequence-builder", "ts": "2026-09-26T08:46:00Z", "tokens": 22000, "duration_s": 144, "status": "PASS", "artifact": "02_test_sequence.json"}
+{"stage": "test-generator", "ts": "2026-09-26T09:31:00Z", "tokens": 38000, "duration_s": 235, "status": "FAIL", "artifact": "tests/test_req_2502_*.py", "note": "round 0: F-1 and F-2 present"}
+{"stage": "test-generator", "ts": "2026-09-26T10:22:00Z", "tokens": 33000, "duration_s": 239, "status": "PASS", "artifact": "tests/test_req_2502_*.py", "note": "round 1: F-1 fixed; F-2 kept strict with DEF-5561"}
+{"stage": "api-validator", "ts": "2026-09-26T10:44:00Z", "tokens": 18000, "duration_s": 156, "status": "FAIL", "artifact": "04_api_validation.json", "note": "round 0 classification"}
+{"stage": "api-validator", "ts": "2026-09-26T10:56:00Z", "tokens": 12000, "duration_s": 156, "status": "PASS", "artifact": "04_api_validation.json", "note": "round 1"}
+{"stage": "reviewer", "ts": "2026-09-26T11:02:00Z", "tokens": 20000, "duration_s": 120, "status": "FAIL", "artifact": "05_review_signoff.md", "note": "first pass: re-derivation found the F-1 citation"}
+{"stage": "reviewer", "ts": "2026-09-26T11:12:00Z", "tokens": 16000, "duration_s": 108, "status": "ESCALATE", "artifact": "05_review_signoff.md", "note": "product defect present; human decision required"}
