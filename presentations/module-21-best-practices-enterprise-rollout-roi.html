@@ -1,0 +1,1338 @@
+<title>Enterprise Rollout and ROI</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F1F7;
+    --paper-raised:#FFFFFF;
+    --ink:#221B2C;
+    --ink-soft:#5B5468;
+    --plum:#5E2A63;
+    --plum-tint:#EAE0EA;
+    --copper:#A85F2C;
+    --teal:#2E7A68;
+    --brick:#A8453B;
+    --line:rgba(34,27,44,0.16);
+    --line-strong:rgba(34,27,44,0.32);
+    --font-display:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-body:'IBM Plex Sans','Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16131D;
+      --paper-raised:#211C2B;
+      --ink:#ECE7F2;
+      --ink-soft:#B4ABC4;
+      --plum:#CC97D1;
+      --plum-tint:#372A3B;
+      --copper:#E2A06A;
+      --teal:#74C4B0;
+      --brick:#E28D80;
+      --line:rgba(236,231,242,0.14);
+      --line-strong:rgba(236,231,242,0.30);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16131D;
+    --paper-raised:#211C2B;
+    --ink:#ECE7F2;
+    --ink-soft:#B4ABC4;
+    --plum:#CC97D1;
+    --plum-tint:#372A3B;
+    --copper:#E2A06A;
+    --teal:#74C4B0;
+    --brick:#E28D80;
+    --line:rgba(236,231,242,0.14);
+    --line-strong:rgba(236,231,242,0.30);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+  a{ color:inherit; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--plum); outline-offset:3px; }
+  h1,h2,h3{ font-family:var(--font-display); }
+  img{ max-width:100%; }
+  [hidden]{ display:none !important; }
+  code{ font-family:var(--font-mono); background:var(--plum-tint); padding:1px 6px; border-radius:4px; font-size:0.92em; }
+
+  .progress-track{ position:fixed; top:0; left:0; right:0; height:4px; background:var(--line); z-index:60; padding-top:env(safe-area-inset-top,0px); }
+  .progress-fill{ height:4px; width:0%; background:var(--plum); }
+  @media (max-width:900px){ .progress-track{ display:none; } }
+
+  .rail{ position:fixed; left:24px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:11px; z-index:50; }
+  .rail a{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:2px 0; }
+  .rail .dot{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); flex:none; transition:background .2s, transform .2s; }
+  .rail a.active .dot{ background:var(--plum); transform:scale(1.5); }
+  .rail .rail-label{ font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; color:var(--ink-soft); opacity:0; transform:translateX(-4px); transition:opacity .2s, transform .2s; white-space:nowrap; }
+  .rail a:hover .rail-label, .rail a.active .rail-label{ opacity:1; transform:translateX(0); }
+  @media (max-width:900px){ .rail{ display:none; } }
+
+  .mobile-nav{ display:none; }
+  @media (max-width:900px){
+    .mobile-nav{ display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:55; background:var(--paper); padding:12px 16px; border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; }
+    .mobile-nav a{ flex:none; font-family:var(--font-mono); font-size:11px; text-decoration:none; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:6px 12px; }
+    .mobile-nav a.active{ color:var(--plum); border-color:var(--plum); }
+  }
+
+  main{ padding-top:4px; }
+  .deck-section{ border-bottom:1px solid var(--line); }
+  .deck-section:last-of-type{ border-bottom:none; }
+
+  .section-inner{ position:relative; max-width:1080px; margin:0 auto; padding:clamp(60px,9vw,96px) clamp(20px,5vw,32px); }
+  .section-inner::before, .section-inner::after{
+    content:""; position:absolute; width:14px; height:14px;
+    background-image:linear-gradient(var(--line-strong),var(--line-strong)), linear-gradient(var(--line-strong),var(--line-strong));
+    background-repeat:no-repeat; background-size:100% 1.5px, 1.5px 100%; background-position:center, center;
+  }
+  .section-inner::before{ top:20px; left:4px; }
+  .section-inner::after{ bottom:20px; right:4px; }
+
+  .eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--plum); margin:0 0 16px; }
+  .section-title{ font-weight:600; font-size:clamp(26px,3.6vw,42px); line-height:1.15; margin:0 0 20px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 8px; }
+
+  .hero-inner{ padding-top:clamp(80px,14vw,132px); }
+  .hero-title{ font-weight:600; font-size:clamp(38px,7vw,66px); line-height:1.06; margin:0 0 24px; text-wrap:balance; }
+  .hero-lede{ font-size:19px; max-width:60ch; margin-bottom:40px; }
+  .stat-row{ list-style:none; margin:0 0 48px; padding:0; display:flex; flex-wrap:wrap; gap:14px; }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:14px 20px; min-width:112px; }
+  .stat-num{ display:block; font-family:var(--font-display); font-size:28px; font-weight:600; color:var(--plum); font-variant-numeric:tabular-nums; }
+  .stat-label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+  .agenda{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; max-width:660px; border-top:1px solid var(--line); }
+  .agenda li{ border-bottom:1px solid var(--line); }
+  .agenda a{ display:flex; align-items:baseline; gap:18px; text-decoration:none; padding:14px 4px; color:var(--ink); }
+  .agenda a:hover{ color:var(--plum); }
+  .agenda-index{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); flex:none; width:22px; }
+
+  figure.diagram{ margin:36px 0 0; padding:22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .diagram-wrap{ overflow-x:auto; }
+  figure.diagram svg{ display:block; width:100%; height:auto; min-width:520px; }
+  figure.diagram figcaption{ margin-top:14px; font-size:13.5px; color:var(--ink-soft); max-width:70ch; }
+  svg text{ font-family:var(--font-mono); }
+  .box{ fill:var(--paper-raised); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-plum{ fill:var(--plum); fill-opacity:.14; stroke:var(--plum); stroke-width:1.5; }
+  .box-copper{ fill:var(--copper); fill-opacity:.16; stroke:var(--copper); stroke-width:1.5; }
+  .box-teal{ fill:var(--teal); fill-opacity:.16; stroke:var(--teal); stroke-width:1.5; }
+  .box-brick{ fill:var(--brick); fill-opacity:.14; stroke:var(--brick); stroke-width:1.5; }
+  .arrow{ stroke:var(--ink-soft); stroke-width:1.8; fill:none; }
+  .arrow-thin{ stroke-width:1.4; fill:none; }
+  .arrowhead{ fill:var(--ink-soft); }
+  .lbl{ fill:var(--ink-soft); }
+  .lbl-strong{ fill:var(--ink); font-weight:600; }
+  .dim{ opacity:.6; }
+  .fill-plum{ fill:var(--plum); } .fill-copper{ fill:var(--copper); } .fill-teal{ fill:var(--teal); } .fill-brick{ fill:var(--brick); }
+  .stroke-plum{ stroke:var(--plum); } .stroke-copper{ stroke:var(--copper); } .stroke-teal{ stroke:var(--teal); } .stroke-brick{ stroke:var(--brick); }
+  .txt-plum{ fill:var(--plum); font-weight:600; } .txt-copper{ fill:var(--copper); font-weight:600; } .txt-teal{ fill:var(--teal); font-weight:600; } .txt-brick{ fill:var(--brick); font-weight:600; }
+
+  .activity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:32px; }
+  @media (max-width:680px){ .activity-grid{ grid-template-columns:1fr; } }
+  .activity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+  .activity-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin:0 0 10px; }
+  .activity-card h3{ font-size:17px; margin:0 0 10px; }
+  .activity-card p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .recap-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+  @media (max-width:640px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-chip{ display:flex; gap:16px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .recap-num{ font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--plum); flex:none; }
+  .recap-chip p{ margin:0; font-size:14.5px; }
+  .bridge{ margin-top:40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 22px; border:1px solid var(--line-strong); border-radius:12px; background:var(--paper-raised); }
+  .bridge-tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border:1px solid var(--line-strong); border-radius:999px; padding:5px 12px; }
+  .bridge p{ margin:0; font-size:15px; }
+
+  footer.colophon{ text-align:center; padding:40px 20px 56px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+
+  /* Module 15 additions */
+  .hero-figure{ margin:0 0 44px; padding:18px 22px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; }
+  .hero-figure svg{ display:block; width:100%; height:auto; min-width:560px; }
+  .flow-dot{ fill:var(--plum); }
+  .flow-dot.copper{ fill:var(--copper); } .flow-dot.teal{ fill:var(--teal); }
+  .dash-flow{ stroke-dasharray:5 6; animation:dashmove 1.4s linear infinite; }
+  @keyframes dashmove{ to{ stroke-dashoffset:-22; } }
+  @media (prefers-reduced-motion:reduce){ .dash-flow{ animation:none; } }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+  @media (max-width:680px){ .split{ grid-template-columns:1fr; } }
+  .mini-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .mini-card h3{ font-size:16px; margin:0 0 8px; }
+  .mini-card p, .mini-card li{ font-size:13.5px; color:var(--ink-soft); }
+  .mini-card p{ margin:0; }
+  .mini-card ul{ margin:0; padding-left:18px; }
+  .mini-card li{ margin:3px 0; }
+  .mini-card.good{ border-top:3px solid var(--teal); }
+  .mini-card.warn{ border-top:3px solid var(--copper); }
+  .mini-card.bad{ border-top:3px solid var(--brick); }
+  .mini-card.plum{ border-top:3px solid var(--plum); }
+
+  .role-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:32px; }
+  @media (max-width:900px){ .role-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .role-grid{ grid-template-columns:1fr; } }
+  .role-card{ position:relative; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 18px 18px; overflow:hidden; }
+  .role-card::before{ content:""; position:absolute; left:0; top:0; right:0; height:4px; background:var(--accent); }
+  .role-icon{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); margin-bottom:12px; }
+  .role-icon svg{ width:22px; height:22px; }
+  .role-step{ font-family:var(--font-mono); font-size:11px; color:var(--accent); letter-spacing:.06em; text-transform:uppercase; margin:0 0 4px; }
+  .role-card h3{ font-size:19px; margin:0 0 6px; }
+  .role-card .q{ font-size:13.5px; font-style:italic; color:var(--ink); margin:0 0 12px; }
+  .role-card dl{ margin:0; font-size:12.5px; }
+  .role-card dt{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:8px; }
+  .role-card dd{ margin:2px 0 0; color:var(--ink); }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+  .chip{ font-family:var(--font-mono); font-size:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-radius:999px; padding:6px 14px; }
+  .chip b{ color:var(--plum); font-weight:600; }
+
+  .compare{ width:100%; border-collapse:collapse; margin-top:28px; font-size:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .compare-wrap{ overflow-x:auto; }
+  .compare th, .compare td{ text-align:left; padding:12px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .compare thead th{ font-family:var(--font-mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); background:var(--plum-tint); }
+  .compare tbody th{ font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--ink-soft); width:22%; }
+  .compare tr:last-child th, .compare tr:last-child td{ border-bottom:none; }
+
+  .toggle{ display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; padding:3px; margin-top:24px; background:var(--paper-raised); }
+  .toggle button{ font-family:var(--font-mono); font-size:12px; border:0; background:transparent; color:var(--ink-soft); padding:7px 16px; border-radius:999px; cursor:pointer; }
+  .toggle button[aria-pressed="true"]{ background:var(--plum); color:var(--paper); }
+
+  .walk{ list-style:none; margin:28px 0 0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:12px; counter-reset:walk; }
+  @media (max-width:680px){ .walk{ grid-template-columns:1fr; } }
+  .walk li{ counter-increment:walk; display:flex; gap:14px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; font-size:14px; }
+  .walk li::before{ content:counter(walk); flex:none; width:26px; height:26px; border-radius:50%; background:var(--plum); color:var(--paper); font-family:var(--font-mono); font-size:12px; display:grid; place-items:center; }
+  .walk strong{ display:block; margin-bottom:2px; }
+  .walk span{ color:var(--ink-soft); font-size:13.5px; }
+
+  /* Module 16 additions */
+  .timebar{ display:flex; gap:3px; margin:0 0 44px; max-width:860px; font-family:var(--font-mono); font-size:10.5px; }
+  .timebar .seg{ border-radius:6px; padding:8px 8px 7px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .timebar .seg b{ display:block; font-size:12px; font-weight:600; }
+  .timebar .a{ background:color-mix(in srgb, var(--teal) 16%, transparent); color:var(--teal); }
+  .timebar .brk{ background:var(--line); color:var(--ink-soft); }
+  .timebar .b{ background:color-mix(in srgb, var(--plum) 14%, transparent); color:var(--plum); }
+  .timebar-legend{ display:flex; gap:18px; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin:0 0 8px; }
+  @media (max-width:680px){ .timebar{ flex-wrap:wrap; } .timebar .seg{ flex:1 1 30% !important; } }
+
+  .split > *{ min-width:0; }
+  .split > .callout, .split > .mini-card{ align-self:start; }
+  pre.code{ margin:0; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-family:var(--font-mono); font-size:12.5px; line-height:1.6; color:var(--ink); }
+  pre.code .c{ color:var(--ink-soft); } pre.code .k{ color:var(--plum); font-weight:600; } pre.code .s{ color:var(--teal); } pre.code .m{ color:var(--copper); font-weight:600; } pre.code .e{ color:var(--brick); font-weight:600; }
+  .code-label{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:0 0 8px; }
+  .stack{ margin-top:24px; }
+
+  .doc-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:14px; }
+  .doc-card h3{ font-size:16px; margin:0 0 6px; }
+  .doc-card .story{ color:var(--ink-soft); font-style:italic; margin:0 0 10px; }
+  .doc-card ul{ list-style:none; margin:0; padding:0; }
+  .doc-card li{ padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .doc-card li code{ margin-right:6px; }
+  .doc-card li.flag{ background:color-mix(in srgb, var(--copper) 12%, transparent); border-radius:6px; padding:7px 8px; border-top-color:transparent; }
+  .flag-note{ font-family:var(--font-mono); font-size:11px; color:var(--copper); display:block; margin-top:4px; }
+
+  .callout{ margin-top:24px; display:flex; gap:14px; align-items:flex-start; padding:16px 20px; border-radius:12px; border:1px solid var(--line-strong); background:var(--paper-raised); border-left:4px solid var(--accent, var(--plum)); }
+  .callout p{ margin:0; font-size:14.5px; }
+  .callout .tag{ flex:none; font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent, var(--plum)); padding-top:2px; }
+
+  .checklist{ list-style:none; margin:0; padding:0; }
+  .checklist li{ position:relative; padding:6px 0 6px 24px; font-size:13.5px; color:var(--ink); }
+  .checklist li::before{ content:""; position:absolute; left:0; top:9px; width:14px; height:14px; border:1.5px solid var(--teal); border-radius:4px; background:color-mix(in srgb, var(--teal) 14%, transparent); }
+
+  .checkpoint{ margin-top:32px; display:flex; flex-wrap:wrap; gap:14px 22px; align-items:center; padding:18px 22px; border-radius:14px; border:1.5px dashed var(--teal); background:color-mix(in srgb, var(--teal) 7%, var(--paper-raised)); }
+  .checkpoint .tag{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); border:1px solid var(--teal); border-radius:999px; padding:5px 12px; }
+  .checkpoint p{ margin:0; font-size:14.5px; flex:1 1 320px; }
+
+  .pit-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:28px; }
+  @media (max-width:900px){ .pit-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .pit-grid{ grid-template-columns:1fr; } }
+  .pit{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .pit h3{ font-size:15px; margin:0 0 8px; }
+  .pit .see{ font-size:13px; color:var(--brick); margin:0 0 6px; }
+  .pit .fix{ font-size:13px; color:var(--teal); margin:0; }
+  .pit .see::before{ content:"You'll see: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+  .pit .fix::before{ content:"Fix: "; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+
+  .qa{ margin-top:28px; display:flex; flex-direction:column; gap:10px; }
+  .qa details{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:14px 18px; }
+  .qa summary{ cursor:pointer; font-size:14.5px; font-weight:600; list-style:none; display:flex; gap:12px; }
+  .qa summary::-webkit-details-marker{ display:none; }
+  .qa summary::before{ content:"+"; font-family:var(--font-mono); color:var(--plum); flex:none; width:12px; }
+  .qa details[open] summary::before{ content:"−"; }
+  .qa details p{ margin:10px 0 0 24px; font-size:14px; color:var(--ink-soft); }
+
+  /* Module 17 additions */
+  .trio{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:0 0 44px; }
+  @media (max-width:760px){ .trio{ grid-template-columns:1fr; } }
+  .trio .role-card .checks{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin:12px 0 6px; }
+  .trio .role-card .outs{ display:flex; flex-wrap:wrap; gap:6px; }
+  .trio .role-card .outs span{ font-family:var(--font-mono); font-size:11px; border:1px solid var(--accent); color:var(--accent); border-radius:999px; padding:2px 9px; }
+  .trio .role-card p.desc{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .sim{ margin-top:28px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .sim h3{ font-size:17px; margin:0 0 4px; }
+  .sim .hint{ font-size:13.5px; color:var(--ink-soft); margin:0 0 14px; }
+  .sim-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .sim-btns button{ font-family:var(--font-mono); font-size:12px; background:var(--paper); color:var(--ink); border:1px solid var(--line-strong); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  .sim-btns button:hover{ border-color:var(--plum); color:var(--plum); }
+  .sim-btns button[aria-pressed="true"]{ background:var(--plum); border-color:var(--plum); color:var(--paper); }
+  .sim-out{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  @media (max-width:680px){ .sim-out{ grid-template-columns:1fr; } }
+  .sim-cell{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-height:74px; }
+  .sim-cell .k{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:0 0 6px; }
+  .sim-cell .v{ font-family:var(--font-mono); font-size:13px; margin:0; word-break:break-word; }
+  .badge{ display:inline-block; font-family:var(--font-mono); font-size:12px; font-weight:600; border-radius:999px; padding:3px 12px; }
+  .badge.allow{ color:var(--teal); background:color-mix(in srgb, var(--teal) 16%, transparent); }
+  .badge.deny{ color:var(--brick); background:color-mix(in srgb, var(--brick) 16%, transparent); }
+  .badge.ask{ color:var(--copper); background:color-mix(in srgb, var(--copper) 18%, transparent); }
+  .sim-log{ margin-top:12px; }
+  .sim-log pre.code{ font-size:11.5px; }
+
+  .grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:24px; }
+  @media (max-width:900px){ .grid4{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .grid4{ grid-template-columns:1fr; } }
+  .grid4 .role-card h3{ font-size:16px; }
+  .grid4 .role-card p{ font-size:13px; color:var(--ink-soft); margin:0; }
+
+  .compare td.row-bad{ color:var(--brick); font-weight:600; }
+  .compare td.row-ok{ color:var(--copper); font-weight:600; }
+
+  /* Module 18 additions */
+  .sub-title{ font-family:var(--font-display); font-size:22px; font-weight:600; margin:44px 0 0; }
+  .chip-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-top:28px; }
+  .chip-btns button, .run-ctrl button{ font-family:var(--font-mono); font-size:12px; background:var(--paper-raised); color:var(--ink); border:1px solid var(--line-strong); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  .chip-btns button:hover, .run-ctrl button:hover{ border-color:var(--plum); color:var(--plum); }
+  .chip-btns button[aria-pressed="true"], .run-ctrl button.primary{ background:var(--plum); border-color:var(--plum); color:var(--paper); }
+  .run-ctrl button:disabled{ opacity:.4; cursor:default; }
+
+  .rr-stage{ transition:opacity .25s; }
+  .rr-stage.skip{ opacity:.32; }
+  .rr-stage.hot rect{ stroke-width:3; }
+  .rr-st{ font-family:var(--font-mono); }
+  .rr-st.skip{ fill:var(--ink-soft); } .rr-st.regate{ fill:var(--copper); } .rr-st.rerun{ fill:var(--plum); }
+
+  .runner{ margin-top:28px; background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .run-head{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:16px; }
+  .run-head h3{ font-size:17px; margin:0; }
+  .round-meter{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
+  .round-meter #rmUsed{ color:var(--copper); font-weight:600; }
+  .pips i{ display:inline-block; width:14px; height:14px; border-radius:4px; border:1.5px solid var(--copper); margin-left:4px; vertical-align:middle; transition:background .25s; }
+  .pips i.on{ background:var(--copper); }
+  .run-track{ list-style:none; margin:0 0 14px; padding:0; display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+  @media (max-width:760px){ .run-track{ grid-template-columns:repeat(3,1fr); } }
+  .run-track li{ --c:var(--line-strong); border:1.5px solid var(--c); border-radius:10px; padding:10px 10px 9px; transition:all .25s; background:color-mix(in srgb, var(--c) 8%, transparent); }
+  .run-track li b{ display:block; font-size:12.5px; font-weight:600; margin-bottom:3px; }
+  .run-track li span{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--c); font-weight:600; }
+  .run-track li[data-s="idle"] span{ color:var(--ink-soft); font-weight:400; }
+  .run-track li[data-s="run"]{ --c:var(--plum); }
+  .run-track li[data-s="pass"], .run-track li[data-s="approved"]{ --c:var(--teal); }
+  .run-track li[data-s="fail"]{ --c:var(--brick); }
+  .run-track li[data-s="flag"], .run-track li[data-s="esc"]{ --c:var(--copper); }
+  .run-track li[data-s="rerun"]{ --c:var(--plum); border-style:dashed; }
+  .run-track li[data-s="skip"]{ opacity:.5; border-style:dashed; }
+  .run-step{ border:1px solid var(--line); border-radius:10px; padding:14px 16px; min-height:124px; }
+  .run-step .k{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:0 0 6px; }
+  .run-step h4{ margin:0 0 6px; font-size:15.5px; font-family:var(--font-body); }
+  .run-step p.body{ margin:0; font-size:14px; color:var(--ink-soft); }
+  .run-ctrl{ display:flex; gap:8px; margin:14px 0 14px; flex-wrap:wrap; }
+  pre.run-log{ font-size:11.5px; min-height:120px; max-height:320px; overflow:auto; }
+
+  /* Module 19 additions */
+  .nouns{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:28px; }
+  @media (max-width:760px){ .nouns{ grid-template-columns:1fr 1fr; } }
+  .nouns div{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .nouns div.sec{ border-style:dashed; border-color:var(--brick); }
+  .nouns b{ display:block; font-family:var(--font-mono); font-size:13px; color:var(--plum); margin-bottom:4px; }
+  .nouns div.sec b{ color:var(--brick); }
+  .nouns span{ font-size:13px; color:var(--ink-soft); }
+  .compare.mini{ font-size:13px; }
+  .compare.mini th, .compare.mini td{ padding:8px 10px; }
+  .mini-card .compare.mini{ border:0; margin:0; }
+  .sim + .split, .sim + .callout{ margin-top:24px; }
+
+  .rd-grid{ display:grid; grid-template-columns:1.1fr 1fr; gap:16px; }
+  @media (max-width:760px){ .rd-grid{ grid-template-columns:1fr; } }
+  .rd-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .rd-list li{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line); border-radius:9px; padding:9px 12px; font-size:13.5px; }
+  .rd-list li .badge{ flex:none; min-width:58px; text-align:center; font-size:11px; }
+  .rd-list li small{ display:block; color:var(--ink-soft); font-size:12px; margin-top:2px; }
+  .rd-list li.block{ border-color:var(--brick); background:color-mix(in srgb, var(--brick) 6%, transparent); }
+  .rd-verdict{ font-family:var(--font-display); font-size:30px; font-weight:600; border-radius:12px; padding:14px 18px; text-align:center; }
+  .rd-verdict.ready{ color:var(--teal); background:color-mix(in srgb, var(--teal) 13%, transparent); }
+  .rd-verdict.not{ color:var(--brick); background:color-mix(in srgb, var(--brick) 13%, transparent); }
+  .rd-verdict small{ display:block; font-family:var(--font-mono); font-size:11px; font-weight:400; color:var(--ink-soft); margin-top:4px; }
+  #rdReport{ font-size:11.5px; white-space:pre-wrap; }
+
+  .five{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:20px; }
+  @media (max-width:980px){ .five{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .five{ grid-template-columns:1fr; } }
+  .five .role-card h3{ font-size:16px; }
+  .five .role-card p{ font-size:13px; color:var(--ink-soft); margin:0; }
+  .five .role-card p.role-step{ color:var(--accent); }
+
+  .rubric{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .rubric li{ display:grid; grid-template-columns:minmax(0,1.3fr) 1fr 40px; gap:10px; align-items:center; font-size:13px; }
+  .rubric i{ display:block; height:10px; border-radius:5px; background:linear-gradient(90deg, var(--plum) calc(var(--w) * 5%), var(--line) 0); }
+  .rubric b{ font-family:var(--font-mono); font-size:12px; text-align:right; color:var(--plum); }
+
+  .ca-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+  @media (max-width:680px){ .ca-grid{ grid-template-columns:1fr; } }
+  .ca-grid div{ background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:11px 14px; font-size:13.5px; display:flex; gap:12px; }
+  .ca-grid div.opt{ border-style:dashed; color:var(--ink-soft); }
+  .ca-grid b{ flex:none; font-family:var(--font-mono); font-size:12px; color:var(--teal); width:44px; padding-top:1px; }
+  .sim .chip-btns{ margin:0 0 16px; }
+  .compare.roles tbody th{ width:44%; }
+
+  /* Module 20 additions */
+  .run-track.cap-track{ grid-template-columns:repeat(9,1fr); gap:6px; }
+  @media (max-width:980px){ .run-track.cap-track{ grid-template-columns:repeat(5,1fr); } }
+  @media (max-width:560px){ .run-track.cap-track{ grid-template-columns:repeat(3,1fr); } }
+  .run-track.cap-track li{ padding:8px 8px 7px; }
+  .run-track.cap-track li b{ font-size:11.5px; }
+  .run-track.cap-track li span{ font-size:9.5px; }
+  .run-track li[data-s="wait"]{ --c:var(--copper); border-style:dashed; }
+
+  .tc-chain{ list-style:none; margin:0; padding:0; }
+  .tc-chain li{ display:grid; grid-template-columns:96px minmax(0,1.15fr) minmax(0,1fr); gap:14px; align-items:baseline; padding:8px 12px 8px 18px; border-left:2px solid var(--plum); margin-left:8px; position:relative; font-size:13.5px; }
+  .tc-chain li::before{ content:''; position:absolute; left:-7px; top:13px; width:8px; height:8px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--plum); }
+  .tc-chain li b{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--plum); font-weight:600; }
+  .tc-chain li code{ font-size:11.5px; color:var(--ink-soft); background:none; padding:0; word-break:break-word; }
+  .tc-chain li.warn{ border-left-color:var(--copper); }
+  .tc-chain li.warn::before{ border-color:var(--copper); }
+  .tc-chain li.warn b{ color:var(--copper); }
+  .tc-chain li.ok{ border-left-color:var(--teal); }
+  .tc-chain li.ok::before{ border-color:var(--teal); background:var(--teal); }
+  .tc-chain li.ok b{ color:var(--teal); }
+  @media (max-width:680px){ .tc-chain li{ grid-template-columns:1fr; gap:2px; } }
+
+  .ck-list{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  @media (max-width:680px){ .ck-list{ grid-template-columns:1fr; } }
+  .ck-list button{ width:100%; height:100%; text-align:left; display:flex; gap:12px; align-items:flex-start; background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; font-size:13.5px; color:var(--ink); cursor:pointer; transition:all .2s; }
+  .ck-list button::before{ content:''; flex:none; width:18px; height:18px; border-radius:5px; border:1.5px solid var(--line-strong); margin-top:1px; box-sizing:border-box; font-size:12px; line-height:15px; text-align:center; color:var(--paper); }
+  .ck-list button[aria-pressed="true"]{ border-color:var(--teal); background:color-mix(in srgb, var(--teal) 8%, var(--paper-raised)); }
+  .ck-list button[aria-pressed="true"]::before{ content:'✓'; background:var(--teal); border-color:var(--teal); }
+  .ck-list b{ font-family:var(--font-mono); font-size:12px; color:var(--teal); flex:none; width:38px; padding-top:1px; }
+  .ck-list small{ display:block; color:var(--ink-soft); font-family:var(--font-mono); font-size:11px; margin-top:3px; }
+  .ck-list li.opt button{ border-style:dashed; }
+  .ck-bar{ height:10px; border-radius:5px; background:var(--line); overflow:hidden; margin:14px 0 6px; }
+  .ck-bar i{ display:block; height:100%; width:0; background:var(--teal); transition:width .3s; }
+
+  .rb-rows{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .rb-rows li{ display:grid; grid-template-columns:minmax(0,1.5fr) 40px minmax(110px,1fr) 108px; gap:12px; align-items:center; font-size:13.5px; }
+  .rb-rows .w{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); text-align:right; }
+  .rb-rows input[type=range]{ width:100%; accent-color:var(--plum); margin:0; }
+  .rb-rows output{ white-space:nowrap; font-family:var(--font-mono); font-size:11.5px; color:var(--plum); text-align:right; }
+  @media (max-width:680px){ .rb-rows li{ grid-template-columns:1fr 40px; } .rb-rows input[type=range]{ grid-column:1; } }
+  #rbGain{ font-size:13.5px; color:var(--ink-soft); margin:12px 0 0; }
+
+  .stage-strip{ display:flex; flex-wrap:wrap; gap:6px; margin:18px 0 0; }
+  .stage-strip span{ font-family:var(--font-mono); font-size:11px; border:1px solid var(--line-strong); border-radius:999px; padding:3px 10px; color:var(--ink-soft); }
+  .stage-strip span.on{ border-color:var(--accent,var(--plum)); color:var(--accent,var(--plum)); font-weight:600; }
+  .fb-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:16px; }
+  @media (max-width:760px){ .fb-grid{ grid-template-columns:1fr; } }
+  .grid4.grid3{ grid-template-columns:repeat(3,1fr); }
+  @media (max-width:760px){ .grid4.grid3{ grid-template-columns:1fr; } }
+  .rd-grid.rb-grid{ grid-template-columns:1.9fr 1fr; }
+  @media (max-width:760px){ .rd-grid.rb-grid{ grid-template-columns:1fr; } }
+
+  /* Module 21 additions */
+  .dd-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:24px; }
+  @media (max-width:760px){ .dd-grid{ grid-template-columns:1fr; } }
+  .dd-col{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; border-top:3px solid var(--c); }
+  .dd-col h3{ margin:0 0 10px; font-size:17px; color:var(--c); }
+  .dd-col ul{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; }
+  .dd-col li{ font-size:14px; padding-left:22px; position:relative; }
+  .dd-col li::before{ content:var(--mark); position:absolute; left:0; top:0; color:var(--c); font-weight:700; }
+  .dd-col li small{ display:block; color:var(--ink-soft); font-size:12.5px; }
+
+  .mode-out{ display:grid; grid-template-columns:200px 1fr; gap:18px; align-items:start; border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  @media (max-width:680px){ .mode-out{ grid-template-columns:1fr; } }
+  .mode-badge{ font-family:var(--font-display); font-size:24px; font-weight:600; color:var(--mc,var(--plum)); line-height:1.15; }
+  .mode-badge small{ display:block; font-family:var(--font-mono); font-size:11px; font-weight:400; color:var(--ink-soft); margin-top:6px; text-transform:uppercase; letter-spacing:.05em; }
+  .mode-out dl{ margin:0; display:grid; grid-template-columns:96px 1fr; gap:8px 12px; font-size:14px; }
+  .mode-out dt{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); padding-top:3px; }
+  .mode-out dd{ margin:0; }
+
+  .calc{ display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:18px; }
+  @media (max-width:820px){ .calc{ grid-template-columns:1fr; } }
+  .calc-in{ display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; }
+  @media (max-width:520px){ .calc-in{ grid-template-columns:1fr; } }
+  .calc-in label{ display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:var(--ink-soft); }
+  .calc-in input{ font:inherit; font-family:var(--font-mono); font-size:14px; color:var(--ink); background:var(--paper); border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px; width:100%; box-sizing:border-box; }
+  .calc-in input:focus{ outline:2px solid var(--plum); outline-offset:1px; }
+  .calc-in .grp{ grid-column:1/-1; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--plum); margin-top:6px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+  .calc-out{ display:flex; flex-direction:column; gap:10px; }
+  .kpi{ border:1px solid var(--line); border-radius:10px; padding:10px 14px; display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+  .kpi span{ font-size:13px; color:var(--ink-soft); }
+  .kpi b{ font-family:var(--font-mono); font-size:17px; color:var(--ink); white-space:nowrap; }
+  .kpi.big{ background:color-mix(in srgb, var(--kc,var(--plum)) 10%, transparent); border-color:color-mix(in srgb, var(--kc,var(--plum)) 40%, transparent); }
+  .kpi.big b{ font-family:var(--font-display); font-size:26px; color:var(--kc,var(--plum)); }
+  .calc-note{ font-size:12.5px; color:var(--ink-soft); margin:0; }
+  .split-bar{ display:flex; height:14px; border-radius:7px; overflow:hidden; background:var(--line); }
+  .split-bar i{ display:block; height:100%; transition:width .3s; }
+  .legend{ display:flex; flex-wrap:wrap; gap:6px 14px; font-size:11.5px; color:var(--ink-soft); font-family:var(--font-mono); }
+  .legend i{ display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+  .link-btn{ font:inherit; font-family:var(--font-mono); font-size:11.5px; background:none; border:1px dashed var(--plum); color:var(--plum); border-radius:999px; padding:4px 10px; cursor:pointer; }
+
+  .gov td code{ font-size:11.5px; }
+  .compare.gov th:first-child{ width:18%; }
+  .spark-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:22px; }
+  @media (max-width:820px){ .spark-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .spark-grid{ grid-template-columns:1fr; } }
+  .spark{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .spark .k{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:0; }
+  .spark .v{ font-family:var(--font-display); font-size:22px; font-weight:600; margin:2px 0 4px; color:var(--sc,var(--plum)); }
+  .spark svg{ width:100%; height:34px; display:block; }
+  .spark p.act{ margin:6px 0 0; font-size:12.5px; color:var(--ink-soft); }
+  .ladder{ list-style:none; margin:24px 0 0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .ladder li{ display:grid; grid-template-columns:210px 1fr 110px; gap:14px; align-items:center; background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--c); border-radius:10px; padding:10px 14px; font-size:14px; }
+  .ladder li b{ font-family:var(--font-display); font-size:16px; color:var(--c); }
+  .ladder li span.m{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-align:right; }
+  @media (max-width:680px){ .ladder li{ grid-template-columns:1fr; gap:2px; } .ladder li span.m{ text-align:left; } }
+  .calc-in .link-btn{ align-self:flex-start; }
+</style>
+
+<header class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></header>
+
+<nav class="rail" aria-label="Module sections">
+  <a href="#dos" data-target="dos"><span class="dot"></span><span class="rail-label">01 · Do's &amp; don'ts</span></a>
+  <a href="#verify" data-target="verify"><span class="dot"></span><span class="rail-label">02 · Verifying output</span></a>
+  <a href="#choose" data-target="choose"><span class="dot"></span><span class="rail-label">03 · Choosing the mode</span></a>
+  <a href="#notagent" data-target="notagent"><span class="dot"></span><span class="rail-label">04 · When not to use an agent</span></a>
+  <a href="#rollout" data-target="rollout"><span class="dot"></span><span class="rail-label">05 · Team rollout</span></a>
+  <a href="#tokens" data-target="tokens"><span class="dot"></span><span class="rail-label">06 · Token economics</span></a>
+  <a href="#roi" data-target="roi"><span class="dot"></span><span class="rail-label">07 · The ROI case</span></a>
+  <a href="#feedback" data-target="feedback"><span class="dot"></span><span class="rail-label">08 · Defects → grounding</span></a>
+  <a href="#governance" data-target="governance"><span class="dot"></span><span class="rail-label">09 · Governance</span></a>
+  <a href="#lifecycle" data-target="lifecycle"><span class="dot"></span><span class="rail-label">10 · Monitor &amp; improve</span></a>
+  <a href="#pitfalls" data-target="pitfalls"><span class="dot"></span><span class="rail-label">11 · Orchestration pitfalls</span></a>
+  <a href="#day8" data-target="day8"><span class="dot"></span><span class="rail-label">12 · Review, demos, wrap-up</span></a>
+  <a href="#recap" data-target="recap"><span class="dot"></span><span class="rail-label">13 · Programme recap</span></a>
+</nav>
+
+<nav class="mobile-nav" aria-label="Module sections (mobile)">
+  <a href="#dos" data-target="dos">01</a>
+  <a href="#verify" data-target="verify">02</a>
+  <a href="#choose" data-target="choose">03</a>
+  <a href="#notagent" data-target="notagent">04</a>
+  <a href="#rollout" data-target="rollout">05</a>
+  <a href="#tokens" data-target="tokens">06</a>
+  <a href="#roi" data-target="roi">07</a>
+  <a href="#feedback" data-target="feedback">08</a>
+  <a href="#governance" data-target="governance">09</a>
+  <a href="#lifecycle" data-target="lifecycle">10</a>
+  <a href="#pitfalls" data-target="pitfalls">11</a>
+  <a href="#day8" data-target="day8">12</a>
+  <a href="#recap" data-target="recap">13</a>
+</nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-teal" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-brick" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-brick" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-copper" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-copper" d="M0,0 L10,5 L0,10 Z"></path></marker>
+    <marker id="arrow-plum" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="fill-plum" d="M0,0 L10,5 L0,10 Z"></path></marker>
+  </defs>
+</svg>
+
+<main>
+
+<section class="deck-section hero" id="top">
+  <div class="section-inner hero-inner">
+    <p class="eyebrow">Day 8 · Review, Demos &amp; Programme Wrap-Up — Xebia × EY Cursor AI Training</p>
+    <h1 class="hero-title">Best Practices, Enterprise Rollout &amp; ROI</h1>
+    <p class="lede hero-lede">Module 21, the last one. Your team has run a ticket end to end and has the evidence to prove it. Now the harder question: how does a <strong>whole organisation</strong> do this every week, safely, at a cost it can justify, and keep it working after the people who built it move on? Adoption is not a launch. It's a <strong>loop</strong> that has to keep turning.</p>
+
+    <figure class="hero-figure">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 226" role="img" aria-label="Animated adoption loop: 1 pilot with one team and one ticket type, 2 a paved road of templates and shared assets, 3 phased rollout with exit criteria, 4 monitoring cost, rounds and escaped defects, 5 learning from defects and incidents, 6 updating assets with versioning and tests, then back to the start. Adoption is a loop, not a launch." style="min-width:720px">
+          <path id="loopPath" d="M430,34 A320,78 0 1,1 429.9,34 Z" fill="none" stroke="var(--line-strong)" stroke-dasharray="3 5"></path>
+          <rect x="358" y="14" width="144" height="40" rx="9" fill="var(--paper-raised)"></rect><rect class="box-teal" x="358" y="14" width="144" height="40" rx="9"></rect><text class="txt-teal" x="430" y="31" text-anchor="middle" font-size="10">1 · Pilot</text><text class="lbl" x="430" y="45" text-anchor="middle" font-size="8">one team, one ticket type</text>
+          <rect x="635" y="53" width="144" height="40" rx="9" fill="var(--paper-raised)"></rect><rect class="box-plum" x="635" y="53" width="144" height="40" rx="9"></rect><text class="txt-plum" x="707" y="70" text-anchor="middle" font-size="10">2 · Paved road</text><text class="lbl" x="707" y="84" text-anchor="middle" font-size="8">template + shared assets</text>
+          <rect x="635" y="131" width="144" height="40" rx="9" fill="var(--paper-raised)"></rect><rect class="box-plum" x="635" y="131" width="144" height="40" rx="9"></rect><text class="txt-plum" x="707" y="148" text-anchor="middle" font-size="10">3 · Roll out</text><text class="lbl" x="707" y="162" text-anchor="middle" font-size="8">phases + exit criteria</text>
+          <rect x="358" y="170" width="144" height="40" rx="9" fill="var(--paper-raised)"></rect><rect class="box-copper" x="358" y="170" width="144" height="40" rx="9"></rect><text class="txt-copper" x="430" y="187" text-anchor="middle" font-size="10">4 · Monitor</text><text class="lbl" x="430" y="201" text-anchor="middle" font-size="8">cost · rounds · escapes</text>
+          <rect x="81" y="131" width="144" height="40" rx="9" fill="var(--paper-raised)"></rect><rect class="box-brick" x="81" y="131" width="144" height="40" rx="9"></rect><text class="txt-brick" x="153" y="148" text-anchor="middle" font-size="10">5 · Learn</text><text class="lbl" x="153" y="162" text-anchor="middle" font-size="8">defects + incidents</text>
+          <rect x="81" y="53" width="144" height="40" rx="9" fill="var(--paper-raised)"></rect><rect class="box-copper" x="81" y="53" width="144" height="40" rx="9"></rect><text class="txt-copper" x="153" y="70" text-anchor="middle" font-size="10">6 · Update assets</text><text class="lbl" x="153" y="84" text-anchor="middle" font-size="8">versioned + tested</text>
+          <text class="lbl-strong" x="430" y="108" text-anchor="middle" font-size="12">Adoption is a loop,</text><text class="lbl-strong" x="430" y="126" text-anchor="middle" font-size="12">not a launch</text>
+          <circle r="6" class="fill-plum"><animateMotion dur="12s" repeatCount="indefinite"><mpath href="#loopPath"></mpath></animateMotion></circle>
+        </svg>
+      </div>
+    </figure>
+
+    <ul class="stat-row" role="list">
+      <li class="stat-tile"><span class="stat-num">8</span><span class="stat-label">core topics</span></li>
+      <li class="stat-tile"><span class="stat-num">3</span><span class="stat-label">subtopics</span></li>
+      <li class="stat-tile"><span class="stat-num">3</span><span class="stat-label">decision tools to try</span></li>
+      <li class="stat-tile"><span class="stat-num">1</span><span class="stat-label">workflow to take home</span></li>
+    </ul>
+    <ol class="agenda" role="list">
+      <li><a href="#dos"><span class="agenda-index">01</span><span>Do's and don'ts of AI-assisted and multi-agent development; avoiding over-reliance</span></a></li>
+      <li><a href="#verify"><span class="agenda-index">02</span><span>Verifying output for correctness, security, maintainability and traceability</span></a></li>
+      <li><a href="#choose"><span class="agenda-index">03</span><span>Choosing the right Cursor interaction, and when not to use an agent</span></a></li>
+      <li><a href="#rollout"><span class="agenda-index">05</span><span>Rolling out rules, skills, agent patterns and quality gates across a team</span></a></li>
+      <li><a href="#tokens"><span class="agenda-index">06</span><span>Token economics: cost per call, cost per task, the price of grounding</span></a></li>
+      <li><a href="#roi"><span class="agenda-index">07</span><span>Building an ROI case: time saved vs. token spend vs. defect reduction</span></a></li>
+      <li><a href="#feedback"><span class="agenda-index">08</span><span>Keeping grounding current with defect logs and production feedback</span></a></li>
+      <li><a href="#governance"><span class="agenda-index">09</span><span>Ownership, governance, versioning, review and maintenance of shared AI assets</span></a></li>
+      <li><a href="#day8"><span class="agenda-index">12</span><span>Peer/AI-assisted review, demos, wrap-up and Q&amp;A</span></a></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 01 -->
+<section class="deck-section" id="dos">
+  <div class="section-inner">
+    <p class="eyebrow">01 — Do's and don'ts; avoiding over-reliance</p>
+    <h2 class="section-title">The agent drafts. You stay the engineer.</h2>
+    <p class="lede">Every practice in this programme comes down to one idea: an agent is a fast, tireless, <strong>unaccountable</strong> contributor. It speeds up drafting, searching and checking. It can't own a decision, and it will state a wrong answer as confidently as a right one. The do's keep you in the loop where it matters. The don'ts are the ways teams quietly drop out of it.</p>
+
+    <div class="dd-grid">
+      <div class="dd-col" style="--c:var(--teal);--mark:'✓'">
+        <h3>Do</h3>
+        <ul>
+          <li>Start from a spec with acceptance criteria, not a vague prompt<small>Module 9: the spec is the contract the output is judged against.</small></li>
+          <li>Ground on the right context, not all of it<small>Rules, the relevant files, the spec. More context costs more and often answers worse.</small></li>
+          <li>Plan before you let an agent edit many files<small>Approve the plan; it's the cheapest checkpoint.</small></li>
+          <li>Make checks deterministic wherever you can<small>Gates, tests, linters and hooks, not "the agent said it's fine".</small></li>
+          <li>Review diffs like a colleague's PR<small>Read what changed, run it, ask why.</small></li>
+          <li>Keep humans on intent and risk decisions<small>Plan approval, sign-off, readiness, anything outward-facing.</small></li>
+        </ul>
+      </div>
+      <div class="dd-col" style="--c:var(--brick);--mark:'✕'">
+        <h3>Don't</h3>
+        <ul>
+          <li>Accept code you couldn't explain in review<small>If you can't defend it, you don't own it yet.</small></li>
+          <li>Let the agent grade its own homework<small>Use a separate-context reviewer and real tests.</small></li>
+          <li>Paste secrets, customer data or production credentials into context<small>Hooks and ignore files stop it; habits matter too.</small></li>
+          <li>Loop without a budget<small>Cap rounds, tokens and time; escalate instead of retrying forever.</small></li>
+          <li>Fix a test so it passes a real bug<small>Classify first: test, product or environment.</small></li>
+          <li>Approve everything, all the time<small>Approval fatigue turns every checkpoint into a rubber stamp.</small></li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Signs of over-reliance, in a person or a team</h3>
+    <div class="grid4">
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">Skill fade</p><h3>"Ask the agent"</h3><p>Nobody can debug the module without an agent open. Keep some tasks hands-on, and rotate who reviews.</p></article>
+      <article class="role-card" style="--accent:var(--brick)"><p class="role-step">Rubber-stamping</p><h3>Approvals in seconds</h3><p>Sign-offs arrive faster than anyone could read the diff. Sample and audit them, and reduce how many you ask for.</p></article>
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">Plausibility bias</p><h3>"Looks right"</h3><p>Output is accepted because it's fluent. Require evidence: a test, a trace, a reference.</p></article>
+      <article class="role-card" style="--accent:var(--teal)"><p class="role-step">Lost context</p><h3>No why in history</h3><p>PRs say what changed, not why. Keep the ticket, plan and trailers so decisions stay traceable.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="deck-section" id="verify">
+  <div class="section-inner">
+    <p class="eyebrow">02 — Verifying AI and agent output</p>
+    <h2 class="section-title">Four questions every change must answer, and who checks each</h2>
+    <p class="lede">"It compiles and the agent is confident" answers none of them. Verification is layered: cheap deterministic checks run first and catch most problems, then independent review catches what rules can't, and a person decides. Each layer is only worth something if it's <strong>independent</strong> of the one that produced the change.</p>
+
+    <div class="grid4">
+      <article class="role-card" style="--accent:var(--teal)"><p class="role-step">Correctness</p><h3>Does it do what the spec says?</h3><p>Tests traced to ACs, negative paths, contract checks, run against a real target. Evidence: <code>junit.xml</code>, coverage by AC.</p></article>
+      <article class="role-card" style="--accent:var(--brick)"><p class="role-step">Security</p><h3>Could it hurt us?</h3><p>Secret scan, dependency review, SAST, hook logs, least-privilege tools, no untrusted text followed as instructions.</p></article>
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">Maintainability</p><h3>Can we live with it?</h3><p>Lint, complexity, duplication, naming, matches house patterns (rules), readable by the next person, no dead code.</p></article>
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">Traceability</p><h3>Can we explain it later?</h3><p>Ticket and AC IDs in markers, trailers and PRs; approvals bound to hashes; evidence linked, not retyped.</p></article>
+    </div>
+
+    <h3 class="sub-title">The verification ladder</h3>
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 222" role="img" aria-label="Verification ladder from cheapest to most decisive: author self-check by the generating agent, deterministic gates (tests, lint, scans, hooks) which catch most problems on every run, independent review by a separate-context agent judging against the spec, CI replay on a clean runner that nobody can bypass, and a human decision on intent and risk." style="min-width:720px">
+          <rect class="box" x="14" y="120" width="156" height="56" rx="9"></rect><text class="lbl-strong" x="92" y="140" text-anchor="middle" font-size="10.5">Author self-check</text><text class="lbl" x="92" y="155" text-anchor="middle" font-size="8">the generating agent</text><text class="lbl" x="92" y="168" text-anchor="middle" font-size="8">cheap, least trusted</text>
+          <rect class="box-teal" x="182" y="96" width="156" height="80" rx="9"></rect><text class="txt-teal" x="260" y="116" text-anchor="middle" font-size="10.5">Deterministic gates</text><text class="lbl" x="260" y="131" text-anchor="middle" font-size="8">tests · lint · scans · hooks</text><text class="lbl" x="260" y="168" text-anchor="middle" font-size="8">catches most, every run</text>
+          <rect class="box-plum" x="350" y="72" width="156" height="104" rx="9"></rect><text class="txt-plum" x="428" y="92" text-anchor="middle" font-size="10.5">Independent review</text><text class="lbl" x="428" y="107" text-anchor="middle" font-size="8">separate-context agent</text><text class="lbl" x="428" y="168" text-anchor="middle" font-size="8">judgement vs. the spec</text>
+          <rect class="box-copper" x="518" y="48" width="156" height="128" rx="9"></rect><text class="txt-copper" x="596" y="68" text-anchor="middle" font-size="10.5">CI replay</text><text class="lbl" x="596" y="83" text-anchor="middle" font-size="8">clean runner, committed policy</text><text class="lbl" x="596" y="168" text-anchor="middle" font-size="8">nobody can bypass it</text>
+          <rect class="box-brick" x="686" y="24" width="156" height="152" rx="9"></rect><text class="txt-brick" x="764" y="44" text-anchor="middle" font-size="10.5">Human decision</text><text class="lbl" x="764" y="59" text-anchor="middle" font-size="8">reviewer · owner · approver</text><text class="lbl" x="764" y="168" text-anchor="middle" font-size="8">intent and risk</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M20,196 L840,196" marker-end="url(#arrow)"></path><text class="lbl" x="20" y="212" text-anchor="start" font-size="8.5">runs first, cheapest, most often</text><text class="lbl" x="840" y="212" text-anchor="end" font-size="8.5">runs last, most expensive, decides</text>
+          <text class="lbl" x="430" y="212" text-anchor="middle" font-size="8.5">each rung must be independent of the one that produced the change</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="callout" style="--accent:var(--plum)"><span class="tag">Discuss</span><p>Which rung does your team skip most often under deadline pressure? What would it take to make that rung automatic rather than a matter of discipline?</p></div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="deck-section" id="choose">
+  <div class="section-inner">
+    <p class="eyebrow">03 — Choosing the right Cursor interaction</p>
+    <h2 class="section-title">Match the tool to the task, not the task to the tool</h2>
+    <p class="lede">The most autonomous mode is rarely the best. Pick the smallest interaction that does the job: less autonomy means less context, lower cost, faster feedback and an easier review. Move up the ladder only when the task needs more steps, more files or more isolation.</p>
+
+    <div class="sim">
+      <h3>What should I use for this?</h3>
+      <p class="hint">Pick a situation to see the recommended interaction, why, and the guardrail that goes with it.</p>
+      <div class="chip-btns mode-btns" role="group" aria-label="Situations">
+        <button type="button" data-m="0" aria-pressed="true">Finish this line</button>
+        <button type="button" data-m="1">Tidy this function</button>
+        <button type="button" data-m="2">How does auth work here?</button>
+        <button type="button" data-m="3">Feature across 6 files</button>
+        <button type="button" data-m="4">Implement the approved plan</button>
+        <button type="button" data-m="5">Flaky, can't reproduce</button>
+        <button type="button" data-m="6">Same procedure every sprint</button>
+        <button type="button" data-m="7">Independent review</button>
+        <button type="button" data-m="8">Long, isolated, PR-shaped</button>
+        <button type="button" data-m="9">Prod incident, prod creds</button>
+        <button type="button" data-m="10">Unclear business rule</button>
+      </div>
+      <div class="mode-out" aria-live="polite">
+        <div class="mode-badge" id="mdName"></div>
+        <dl>
+          <dt>Why</dt><dd id="mdWhy"></dd>
+          <dt>Guardrail</dt><dd id="mdGuard"></dd>
+          <dt>Avoid</dt><dd id="mdAvoid"></dd>
+        </dl>
+      </div>
+    </div>
+
+    <ol class="ladder" role="list">
+      <li style="--c:var(--teal)"><b>Tab / inline edit</b><span>Local, you watch every character. Lowest cost and risk.</span><span class="m">M5</span></li>
+      <li style="--c:var(--teal)"><b>Ask</b><span>Read-only questions about the codebase. Nothing changes.</span><span class="m">M4</span></li>
+      <li style="--c:var(--plum)"><b>Plan</b><span>Agrees the approach before files change; the output is reviewable.</span><span class="m">M7, M9</span></li>
+      <li style="--c:var(--plum)"><b>Agent / Debug</b><span>Multi-file edits and tool use; Debug adds a reproduce-and-instrument loop.</span><span class="m">M6, M7</span></li>
+      <li style="--c:var(--copper)"><b>Skill / Subagent</b><span>Repeatable procedures; isolated contexts for review or parallel work.</span><span class="m">M8, M10, M15</span></li>
+      <li style="--c:var(--brick)"><b>Background / cloud agent</b><span>Unattended, remote, returns a PR. Needs controls set up beforehand.</span><span class="m">M19</span></li>
+    </ol>
+    <p class="calc-note" style="margin-top:12px">Mode names and availability change between Cursor releases. Check the current docs and your organisation's enabled features.</p>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="deck-section" id="notagent">
+  <div class="section-inner">
+    <p class="eyebrow">04 — Subtopic · When not to use an agent or autonomous workflow</p>
+    <h2 class="section-title">Sometimes the best agent is no agent</h2>
+    <p class="lede">An autonomous workflow pays off when the task is <strong>specifiable, checkable and repeatable</strong>, and a mistake is cheap to catch. If any of those is missing, the agent adds cost and risk without adding speed. Ask these questions before you reach for autonomy.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 172" role="img" aria-label="Decision flow for using an agent. Is the outcome specifiable? If not, clarify with the owner first. Can it be checked? If not, write the test or oracle first. Is it reversible and internal? If not, it is human-led and the agent prepares at most. Is sensitive data kept out? If not, keep it out of agent context. Is it worth the setup? If not, just do it with Tab or inline edit. If all answers are yes, use an agent or workflow." style="min-width:720px">
+          <path class="box-plum" d="M10,62 L75,28 L140,62 L75,96 Z"></path><text class="txt-plum" x="75" y="59" text-anchor="middle" font-size="8.5">Outcome</text><text class="txt-plum" x="75" y="72" text-anchor="middle" font-size="8.5">specifiable?</text>
+          <path class="arrow-thin" stroke="var(--brick)" d="M75,96 L75,120" marker-end="url(#arrow-brick)"></path><text class="lbl" x="81" y="112" text-anchor="start" font-size="8">no</text>
+          <rect class="box-brick" x="9" y="122" width="132" height="40" rx="8"></rect><text class="txt-brick" x="75" y="139" text-anchor="middle" font-size="8.5">Clarify with the</text><text class="lbl" x="75" y="153" text-anchor="middle" font-size="8">owner first</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M140,62 L157,62" marker-end="url(#arrow-teal)"></path><text class="txt-teal" x="150" y="56" text-anchor="middle" font-size="8">yes</text>
+          <path class="box-plum" d="M160,62 L225,28 L290,62 L225,96 Z"></path><text class="txt-plum" x="225" y="59" text-anchor="middle" font-size="8.5">Can it be</text><text class="txt-plum" x="225" y="72" text-anchor="middle" font-size="8.5">checked?</text>
+          <path class="arrow-thin" stroke="var(--brick)" d="M225,96 L225,120" marker-end="url(#arrow-brick)"></path><text class="lbl" x="231" y="112" text-anchor="start" font-size="8">no</text>
+          <rect class="box-brick" x="159" y="122" width="132" height="40" rx="8"></rect><text class="txt-brick" x="225" y="139" text-anchor="middle" font-size="8.5">Write the test</text><text class="lbl" x="225" y="153" text-anchor="middle" font-size="8">or oracle first</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M290,62 L307,62" marker-end="url(#arrow-teal)"></path><text class="txt-teal" x="300" y="56" text-anchor="middle" font-size="8">yes</text>
+          <path class="box-plum" d="M310,62 L375,28 L440,62 L375,96 Z"></path><text class="txt-plum" x="375" y="59" text-anchor="middle" font-size="8.5">Reversible</text><text class="txt-plum" x="375" y="72" text-anchor="middle" font-size="8.5">and internal?</text>
+          <path class="arrow-thin" stroke="var(--brick)" d="M375,96 L375,120" marker-end="url(#arrow-brick)"></path><text class="lbl" x="381" y="112" text-anchor="start" font-size="8">no</text>
+          <rect class="box-brick" x="309" y="122" width="132" height="40" rx="8"></rect><text class="txt-brick" x="375" y="139" text-anchor="middle" font-size="8.5">Human-led; agent</text><text class="lbl" x="375" y="153" text-anchor="middle" font-size="8">prepares at most</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M440,62 L457,62" marker-end="url(#arrow-teal)"></path><text class="txt-teal" x="450" y="56" text-anchor="middle" font-size="8">yes</text>
+          <path class="box-plum" d="M460,62 L525,28 L590,62 L525,96 Z"></path><text class="txt-plum" x="525" y="59" text-anchor="middle" font-size="8.5">Sensitive data</text><text class="txt-plum" x="525" y="72" text-anchor="middle" font-size="8.5">kept out?</text>
+          <path class="arrow-thin" stroke="var(--brick)" d="M525,96 L525,120" marker-end="url(#arrow-brick)"></path><text class="lbl" x="531" y="112" text-anchor="start" font-size="8">no</text>
+          <rect class="box-brick" x="459" y="122" width="132" height="40" rx="8"></rect><text class="txt-brick" x="525" y="139" text-anchor="middle" font-size="8.5">Keep it out of</text><text class="lbl" x="525" y="153" text-anchor="middle" font-size="8">agent context</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M590,62 L607,62" marker-end="url(#arrow-teal)"></path><text class="txt-teal" x="600" y="56" text-anchor="middle" font-size="8">yes</text>
+          <path class="box-plum" d="M610,62 L675,28 L740,62 L675,96 Z"></path><text class="txt-plum" x="675" y="59" text-anchor="middle" font-size="8.5">Worth the</text><text class="txt-plum" x="675" y="72" text-anchor="middle" font-size="8.5">setup?</text>
+          <path class="arrow-thin" stroke="var(--brick)" d="M675,96 L675,120" marker-end="url(#arrow-brick)"></path><text class="lbl" x="681" y="112" text-anchor="start" font-size="8">no</text>
+          <rect class="box-copper" x="609" y="122" width="132" height="40" rx="8"></rect><text class="txt-copper" x="675" y="139" text-anchor="middle" font-size="8.5">Just do it:</text><text class="lbl" x="675" y="153" text-anchor="middle" font-size="8">Tab or inline</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M740,62 L759,62" marker-end="url(#arrow-teal)"></path><text class="txt-teal" x="751" y="56" text-anchor="middle" font-size="8">yes</text>
+          <rect class="box-teal" x="762" y="40" width="92" height="44" rx="9"></rect><text class="txt-teal" x="808" y="58" text-anchor="middle" font-size="10">Agent or</text><text class="txt-teal" x="808" y="73" text-anchor="middle" font-size="10">workflow ✓</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="pit-grid">
+      <article class="pit"><h3>The requirement is the question</h3><p class="see">Pricing rules, legal wording, a product trade-off.</p><p class="fix">A person decides with the owner. AI can draft options in Ask mode, not choose.</p></article>
+      <article class="pit"><h3>No oracle to check against</h3><p class="see">No spec, no tests, no reference output.</p><p class="fix">Write the spec or the test first, then automate.</p></article>
+      <article class="pit"><h3>Irreversible or outward-facing</h3><p class="see">Production data changes, customer messages, releases.</p><p class="fix">Human-executed, or agent-prepared with explicit approval and a rollback plan.</p></article>
+      <article class="pit"><h3>Faster by hand</h3><p class="see">A one-line change you already understand.</p><p class="fix">Just make it. Setting up context costs more than the edit.</p></article>
+      <article class="pit"><h3>Sensitive context</h3><p class="see">Regulated data, secrets, production credentials in scope.</p><p class="fix">Keep it out of agent context entirely, whatever the mode.</p></article>
+      <article class="pit"><h3>Learning is the point</h3><p class="see">An onboarding task or a new area of the system.</p><p class="fix">Do it yourself with Ask as a tutor. Understanding is the deliverable.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="deck-section" id="rollout">
+  <div class="section-inner">
+    <p class="eyebrow">05 — Rolling out rules, skills, agent patterns and gates across a team</p>
+    <h2 class="section-title">A paved road, not a mandate</h2>
+    <p class="lede">What spreads is what's easy to adopt. Package what worked in the capstone as a <strong>template</strong>: rules, skills, subagent definitions, hooks, <code>gates.yaml</code>, <code>readiness.yaml</code> and the CI workflow, parameterised by one manifest. Then roll it out in phases, each with <strong>exit criteria</strong> measured, not felt.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 170" role="img" aria-label="Phased rollout. Phase 0 pilot with one team and one ticket type for about 4 to 6 weeks; exit when a baseline was taken first, cost per ticket is measured and there are no Sev-1 or Sev-2 escapes. Phase 1 paved road with a template and assets v1 for about 4 weeks; exit when it works in a second repo, docs and office hours exist and owners are named. Phase 2 expand to 3 to 5 teams with champions for about a quarter; exit when the adoption target is met, the escape rate is at or below baseline and teams contribute asset PRs. Phase 3 default org baseline with admin controls, ongoing: quarterly re-baseline, access and MCP review, retire unused assets." style="min-width:720px">
+          <rect class="box-teal" x="10" y="14" width="184" height="58" rx="10"></rect><text class="txt-teal" x="102" y="36" text-anchor="middle" font-size="11">0 · Pilot</text><text class="lbl" x="102" y="51" text-anchor="middle" font-size="8.5">1 team · 1 ticket type</text><text class="lbl" x="102" y="64" text-anchor="middle" font-size="8">~4–6 weeks</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M194,43 L222,43" marker-end="url(#arrow)"></path>
+          <text class="txt-teal" x="18" y="94" text-anchor="start" font-size="8.5">exit criteria</text>
+          <text class="lbl" x="18" y="110" text-anchor="start" font-size="8.5">✓ baseline taken first</text>
+          <text class="lbl" x="18" y="125" text-anchor="start" font-size="8.5">✓ cost/ticket measured</text>
+          <text class="lbl" x="18" y="140" text-anchor="start" font-size="8.5">✓ no Sev-1/2 escapes</text>
+          <rect class="box-plum" x="224" y="14" width="184" height="58" rx="10"></rect><text class="txt-plum" x="316" y="36" text-anchor="middle" font-size="11">1 · Paved road</text><text class="lbl" x="316" y="51" text-anchor="middle" font-size="8.5">template + assets v1</text><text class="lbl" x="316" y="64" text-anchor="middle" font-size="8">~4 weeks</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M408,43 L436,43" marker-end="url(#arrow)"></path>
+          <text class="txt-plum" x="232" y="94" text-anchor="start" font-size="8.5">exit criteria</text>
+          <text class="lbl" x="232" y="110" text-anchor="start" font-size="8.5">✓ works in a 2nd repo</text>
+          <text class="lbl" x="232" y="125" text-anchor="start" font-size="8.5">✓ docs + office hours</text>
+          <text class="lbl" x="232" y="140" text-anchor="start" font-size="8.5">✓ owners named</text>
+          <rect class="box-copper" x="438" y="14" width="184" height="58" rx="10"></rect><text class="txt-copper" x="530" y="36" text-anchor="middle" font-size="11">2 · Expand</text><text class="lbl" x="530" y="51" text-anchor="middle" font-size="8.5">3–5 teams + champions</text><text class="lbl" x="530" y="64" text-anchor="middle" font-size="8">~1 quarter</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M622,43 L650,43" marker-end="url(#arrow)"></path>
+          <text class="txt-copper" x="446" y="94" text-anchor="start" font-size="8.5">exit criteria</text>
+          <text class="lbl" x="446" y="110" text-anchor="start" font-size="8.5">✓ adoption target met</text>
+          <text class="lbl" x="446" y="125" text-anchor="start" font-size="8.5">✓ escape rate ≤ baseline</text>
+          <text class="lbl" x="446" y="140" text-anchor="start" font-size="8.5">✓ asset PRs from teams</text>
+          <rect class="box-brick" x="652" y="14" width="184" height="58" rx="10"></rect><text class="txt-brick" x="744" y="36" text-anchor="middle" font-size="11">3 · Default</text><text class="lbl" x="744" y="51" text-anchor="middle" font-size="8.5">org baseline + admin</text><text class="lbl" x="744" y="64" text-anchor="middle" font-size="8">ongoing</text>
+          <text class="txt-brick" x="660" y="94" text-anchor="start" font-size="8.5">keep doing</text>
+          <text class="lbl" x="660" y="110" text-anchor="start" font-size="8.5">✓ quarterly re-baseline</text>
+          <text class="lbl" x="660" y="125" text-anchor="start" font-size="8.5">✓ access + MCP review</text>
+          <text class="lbl" x="660" y="140" text-anchor="start" font-size="8.5">✓ retire unused assets</text>
+          <text class="lbl" x="850" y="164" text-anchor="end" font-size="8">durations are suggestions; exit criteria are what move you on</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="split">
+      <div>
+        <p class="code-label">shared assets: org level vs. repo level</p>
+<pre class="code">ai-engineering-assets/    <span class="c"># org repo, versioned</span>
+├── rules/                <span class="c"># security, testing, style</span>
+├── skills/               <span class="c"># e.g. api-tests</span>
+├── agents/               <span class="c"># reviewer, generator</span>
+├── hooks/                <span class="c"># mcp-policy, guards</span>
+├── policies/gates.yaml   <span class="c"># tighten, never loosen</span>
+├── policies/readiness.yaml
+├── templates/capstone.yaml <span class="c"># paved road</span>
+├── evals/                <span class="c"># regression set</span>
+└── CHANGELOG.md
+
+service-repo/.cursor/     <span class="c"># pins assets@v2.3.1</span></pre>
+      </div>
+      <div>
+        <div class="callout" style="--accent:var(--teal)"><span class="tag">Tighten, not loosen</span><p>Repos inherit the org baseline and may add stricter rules or gates. Loosening one (for example removing the secret-deny hook) requires the asset owner's review. That's what makes central governance and local ownership compatible.</p></div>
+        <div class="callout" style="--accent:var(--copper)"><span class="tag">Enable, then measure</span><p>Each phase needs champions, office hours and a feedback channel. Track adoption (active users, runs per week) alongside outcomes (rounds per run, escaped defects), not instead of them.</p></div>
+        <div class="callout" style="--accent:var(--plum)"><span class="tag">Admin controls</span><p>Use organisation-level settings for privacy mode, allowed models, MCP servers and background agents rather than asking each engineer to configure them. Check your Cursor plan's admin features.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="deck-section" id="tokens">
+  <div class="section-inner">
+    <p class="eyebrow">06 — Token economics</p>
+    <h2 class="section-title">An agent re-reads its context on every call</h2>
+    <p class="lede">The price of one call is easy: tokens in × input rate + tokens out × output rate. The price of a <strong>task</strong> is what surprises people. An agent loop makes dozens of calls, and each one re-sends the grounding context plus the growing history. Grounding size multiplies across every call, so <strong>targeted context is a cost control</strong>, not only a quality one.</p>
+
+    <div class="split">
+      <div>
+        <p class="code-label">the model</p>
+<pre class="code"><span class="k">cost_per_call</span> =
+    ctx_tokens × (1 − cache_hit) × <span class="m">in_rate</span>
+  + ctx_tokens × cache_hit       × <span class="m">cached_rate</span>
+  + out_tokens                   × <span class="m">out_rate</span>
+
+<span class="k">cost_per_task</span>  = cost_per_call × calls_per_task
+<span class="k">cost_per_month</span> = cost_per_task × tasks_per_month
+
+<span class="c"># rates per 1M tokens, from YOUR contract/plan;</span>
+<span class="c"># read real token counts from run_log.jsonl or</span>
+<span class="c"># the admin usage dashboard, don't guess them</span></pre>
+      </div>
+      <div>
+        <figure class="diagram" style="margin:0">
+          <div class="diagram-wrap">
+        <svg viewBox="0 0 400 200" role="img" aria-label="Illustrative chart of cumulative input tokens over 20 agent calls in one task. With the whole history re-sent and broad grounding, tokens grow quadratically to about 1.03 million. With narrow grounding and isolated subagent contexts, growth stays roughly linear at about 0.35 million." style="min-width:340px">
+          <path d="M52,166 L382,166" stroke="var(--line)" stroke-dasharray="2 4"></path><text class="lbl" x="46" y="169" text-anchor="end" font-size="8">0k</text>
+          <path d="M52,132 L382,132" stroke="var(--line)" stroke-dasharray="2 4"></path><text class="lbl" x="46" y="135" text-anchor="end" font-size="8">250k</text>
+          <path d="M52,98 L382,98" stroke="var(--line)" stroke-dasharray="2 4"></path><text class="lbl" x="46" y="101" text-anchor="end" font-size="8">500k</text>
+          <path d="M52,64 L382,64" stroke="var(--line)" stroke-dasharray="2 4"></path><text class="lbl" x="46" y="67" text-anchor="end" font-size="8">750k</text>
+          <path d="M52,30 L382,30" stroke="var(--line)" stroke-dasharray="2 4"></path><text class="lbl" x="46" y="33" text-anchor="end" font-size="8">1M</text>
+          <polyline fill="none" stroke="var(--brick)" stroke-width="2.2" points="52.0,162.9 69.4,159.3 86.7,155.4 104.1,151.0 121.5,146.2 138.8,141.0 156.2,135.5 173.6,129.5 190.9,123.0 208.3,116.2 225.7,109.0 243.1,101.4 260.4,93.3 277.8,84.9 295.2,76.0 312.5,66.7 329.9,57.0 347.3,47.0 364.6,36.5 382.0,25.5"></polyline>
+          <polyline fill="none" stroke="var(--teal)" stroke-width="2.2" points="52.0,164.1 69.4,161.9 86.7,159.5 104.1,156.7 121.5,154.0 138.8,151.3 156.2,148.5 173.6,145.8 190.9,143.1 208.3,140.4 225.7,137.6 243.1,134.9 260.4,132.2 277.8,129.5 295.2,126.7 312.5,124.0 329.9,121.3 347.3,118.5 364.6,115.8 382.0,113.1"></polyline>
+          <text class="txt-brick" x="260" y="83" text-anchor="end" font-size="8.5">whole history · 1.03M</text>
+          <text class="txt-teal" x="174" y="158" text-anchor="start" font-size="8.5">narrow + isolated · 388k</text>
+          <path d="M52,166 L382,166" stroke="var(--line-strong)"></path>
+          <text class="lbl" x="52" y="179" text-anchor="middle" font-size="8">1</text>
+          <text class="lbl" x="121" y="179" text-anchor="middle" font-size="8">5</text>
+          <text class="lbl" x="208" y="179" text-anchor="middle" font-size="8">10</text>
+          <text class="lbl" x="295" y="179" text-anchor="middle" font-size="8">15</text>
+          <text class="lbl" x="382" y="179" text-anchor="middle" font-size="8">20</text>
+          <text class="lbl" x="217" y="193" text-anchor="middle" font-size="8">agent calls in one task → cumulative input tokens (illustrative)</text>
+        </svg>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="sim">
+      <h3>Cost-per-task calculator</h3>
+      <p class="hint">Start from a preset, then change any number. The rates are placeholders; use your own.</p>
+      <div class="chip-btns tk-presets" role="group" aria-label="Presets">
+        <button type="button" data-p="0" aria-pressed="false">Ask a question</button>
+        <button type="button" data-p="1" aria-pressed="true">Targeted agent task</button>
+        <button type="button" data-p="2" aria-pressed="false">Kitchen-sink grounding</button>
+        <button type="button" data-p="3" aria-pressed="false">Capstone pipeline run</button>
+      </div>
+      <div class="calc">
+        <div class="calc-in" id="tkIn">
+          <span class="grp">Per call</span>
+          <label>Context tokens per call<input type="number" min="0" step="1000" data-k="ctx"></label>
+          <label>Output tokens per call<input type="number" min="0" step="100" data-k="out"></label>
+          <label>Cache hit on context (%)<input type="number" min="0" max="100" step="5" data-k="hit"></label>
+          <label>Calls per task<input type="number" min="1" step="1" data-k="calls"></label>
+          <span class="grp">Rates (per 1M tokens) and volume</span>
+          <label>Input rate<input type="number" min="0" step="0.1" data-k="rin"></label>
+          <label>Cached input rate<input type="number" min="0" step="0.05" data-k="rcache"></label>
+          <label>Output rate<input type="number" min="0" step="0.5" data-k="rout"></label>
+          <label>Tasks per month<input type="number" min="0" step="10" data-k="tasks"></label>
+        </div>
+        <div class="calc-out" aria-live="polite">
+          <div class="kpi"><span>Cost per call</span><b id="tkCall"></b></div>
+          <div class="kpi"><span>Tokens per task</span><b id="tkTok"></b></div>
+          <div class="kpi big"><span>Cost per task</span><b id="tkTask"></b></div>
+          <div class="kpi"><span>Cost per month</span><b id="tkMonth"></b></div>
+          <div class="split-bar" aria-hidden="true"><i id="tkBarIn" style="background:var(--plum)"></i><i id="tkBarCache" style="background:var(--teal)"></i><i id="tkBarOut" style="background:var(--copper)"></i></div>
+          <div class="legend"><span><i style="background:var(--plum)"></i>uncached input</span><span><i style="background:var(--teal)"></i>cached input</span><span><i style="background:var(--copper)"></i>output</span></div>
+          <p class="calc-note" id="tkNote"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid4">
+      <article class="role-card" style="--accent:var(--teal)"><p class="role-step">Lever 1</p><h3>Ground narrowly</h3><p>Relevant files and the spec, found by search, not the whole repo. Rules short and scoped by glob.</p></article>
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">Lever 2</p><h3>Isolate contexts</h3><p>Subagents start fresh with only the files they need, so history doesn't pile up.</p></article>
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">Lever 3</p><h3>Cut rounds</h3><p>Each correction round re-runs stages. Better first drafts are cheaper than more retries.</p></article>
+      <article class="role-card" style="--accent:var(--brick)"><p class="role-step">Lever 4</p><h3>Right-size models</h3><p>Use a smaller model for routing and extraction, and the strongest one for planning and review.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="deck-section" id="roi">
+  <div class="section-inner">
+    <p class="eyebrow">07 — Building an ROI case</p>
+    <h2 class="section-title">Time saved vs. token spend vs. defect reduction</h2>
+    <p class="lede">A credible ROI case counts <strong>all</strong> the costs, including review time, enablement and keeping the assets maintained, and measures benefits against a <strong>baseline</strong> taken before rollout. Capstone-style run logs give you the cost side almost for free. Time saved and defects avoided have to be measured, not assumed.</p>
+
+    <div class="sim">
+      <h3>Monthly ROI model</h3>
+      <p class="hint">Illustrative defaults in generic currency units. Replace every number with your own baseline data.</p>
+      <div class="calc">
+        <div class="calc-in" id="roiIn">
+          <span class="grp">Scale</span>
+          <label>Engineers using the workflow<input type="number" min="0" step="1" data-k="eng" value="20"></label>
+          <label>AI-assisted tasks per engineer / month<input type="number" min="0" step="1" data-k="tpe" value="12"></label>
+          <span class="grp">Benefits (measured vs. baseline)</span>
+          <label>Hours saved per task<input type="number" min="0" step="0.1" data-k="hs" value="1.5"></label>
+          <label>Loaded cost per engineer-hour<input type="number" min="0" step="5" data-k="rate" value="90"></label>
+          <label>Escaped defects avoided / month<input type="number" min="0" step="0.5" data-k="dav" value="2"></label>
+          <label>Cost of one escaped defect<input type="number" min="0" step="100" data-k="dcost" value="4000"></label>
+          <span class="grp">Costs</span>
+          <label>Token cost per task <button type="button" class="link-btn" id="roiPull">use calculator above</button><input type="number" min="0" step="0.1" data-k="tok" value="2.5"></label>
+          <label>Seat / platform cost per engineer / month<input type="number" min="0" step="5" data-k="seat" value="40"></label>
+          <label>Extra review hours per task<input type="number" min="0" step="0.1" data-k="rev" value="0.3"></label>
+          <label>Enablement + asset upkeep hours / month<input type="number" min="0" step="5" data-k="upk" value="30"></label>
+        </div>
+        <div class="calc-out" aria-live="polite">
+          <div class="kpi"><span>Benefit / month</span><b id="roiBen"></b></div>
+          <div class="kpi"><span>Cost / month</span><b id="roiCost"></b></div>
+          <div class="kpi big" id="roiNetBox"><span>Net / month</span><b id="roiNet"></b></div>
+          <div class="kpi"><span>ROI (net ÷ cost)</span><b id="roiPct"></b></div>
+          <div class="split-bar" aria-hidden="true"><i id="rbTok" style="background:var(--plum)"></i><i id="rbSeat" style="background:var(--copper)"></i><i id="rbRev" style="background:var(--brick)"></i><i id="rbUpk" style="background:var(--teal)"></i></div>
+          <div class="legend"><span><i style="background:var(--plum)"></i>tokens</span><span><i style="background:var(--copper)"></i>seats</span><span><i style="background:var(--brick)"></i>review time</span><span><i style="background:var(--teal)"></i>upkeep</span></div>
+          <p class="calc-note" id="roiNote"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div>
+        <div class="callout" style="--accent:var(--teal)"><span class="tag">Measure these</span><p>Cycle time per ticket, review time, rounds per run, escaped defects per release and their cost, cost per ticket from <code>run_log.jsonl</code>. Take a baseline before rollout and compare like with like: similar tickets, similar teams.</p></div>
+      </div>
+      <div>
+        <div class="callout" style="--accent:var(--brick)"><span class="tag">Common inflation</span><p>Counting "hours saved" from self-reports, ignoring review and rework time, or crediting the AI with defect reductions that came from adding tests. An honest, smaller number survives a finance review; an inflated one doesn't.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="deck-section" id="feedback">
+  <div class="section-inner">
+    <p class="eyebrow">08 — Defect logs and production feedback → grounding</p>
+    <h2 class="section-title">Every escaped defect is a missing rule, example or test</h2>
+    <p class="lede">Grounding sources (rules, skills, specs, examples, test patterns, reviewer checklists) go stale as the system changes. The best signal for what's missing is what got through. Route defects and incidents back into the assets that should have caught them, and <strong>test the change</strong> before you release it, like any other code.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 114" role="img" aria-label="Defect-to-grounding feedback loop: 1 a signal such as an escaped defect, incident or review finding; 2 triage as test, product or environment; 3 root cause: which asset missed it; 4 update a rule, skill, spec template or checklist; 5 evaluate against a regression set of old and new cases; 6 release with a version, review and changelog; then monitor the metric the change was meant to move and repeat." style="min-width:720px">
+          <rect class="box-brick" x="10" y="22" width="128" height="50" rx="9"></rect><text class="txt-brick" x="74" y="43" text-anchor="middle" font-size="10.5">1 · Signal</text><text class="lbl" x="74" y="59" text-anchor="middle" font-size="8">defect · incident</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M138,47 L150,47" marker-end="url(#arrow)"></path>
+          <rect class="box-copper" x="152" y="22" width="128" height="50" rx="9"></rect><text class="txt-copper" x="216" y="43" text-anchor="middle" font-size="10.5">2 · Triage</text><text class="lbl" x="216" y="59" text-anchor="middle" font-size="8">test/product/env</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M280,47 L292,47" marker-end="url(#arrow)"></path>
+          <rect class="box-plum" x="294" y="22" width="128" height="50" rx="9"></rect><text class="txt-plum" x="358" y="43" text-anchor="middle" font-size="10.5">3 · Root cause</text><text class="lbl" x="358" y="59" text-anchor="middle" font-size="8">which asset missed?</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M422,47 L434,47" marker-end="url(#arrow)"></path>
+          <rect class="box-plum" x="436" y="22" width="128" height="50" rx="9"></rect><text class="txt-plum" x="500" y="43" text-anchor="middle" font-size="10.5">4 · Update</text><text class="lbl" x="500" y="59" text-anchor="middle" font-size="8">rule · skill · spec</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M564,47 L576,47" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="578" y="22" width="128" height="50" rx="9"></rect><text class="txt-teal" x="642" y="43" text-anchor="middle" font-size="10.5">5 · Evaluate</text><text class="lbl" x="642" y="59" text-anchor="middle" font-size="8">old + new cases</text>
+          <path class="arrow-thin" stroke="var(--ink-soft)" d="M706,47 L718,47" marker-end="url(#arrow)"></path>
+          <rect class="box-teal" x="720" y="22" width="128" height="50" rx="9"></rect><text class="txt-teal" x="784" y="43" text-anchor="middle" font-size="10.5">6 · Release</text><text class="lbl" x="784" y="59" text-anchor="middle" font-size="8">version · changelog</text>
+          <path class="arrow-thin" stroke="var(--teal)" d="M780,72 L780,104 L74,104 L74,76" marker-end="url(#arrow-teal)"></path>
+          <text class="txt-teal" x="427" y="98" text-anchor="middle" font-size="8.5">monitor the metric the change was meant to move · the loop never closes for good</text>
+          <text class="lbl" x="427" y="14" text-anchor="middle" font-size="8.5">from production and review back into grounding</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="diagram-wrap" style="margin-top:22px">
+      <table class="compare mini">
+        <thead><tr><th>Signal</th><th>Root cause looks like</th><th>Update this asset</th><th>Prove it with</th></tr></thead>
+        <tbody>
+          <tr><th>Escaped defect: error body missing a field</th><td>Tests asserted status codes only</td><td>Reviewer checklist + test-generator rule: assert the body schema</td><td>Replay the old run; the new reviewer flags it</td></tr>
+          <tr><th>Incident: timeout under load</th><td>No non-functional ACs in specs</td><td>Spec template gains a performance section</td><td>Next three specs include it (gate G1)</td></tr>
+          <tr><th>Agent keeps using a deprecated client</th><td>Rules reference the old library</td><td>Rule update with the new pattern and an example</td><td>Eval prompt produces the new client</td></tr>
+          <tr><th>Reviewer and humans disagree often</th><td>Reviewer contract too vague</td><td>Reviewer prompt + examples of good findings</td><td>Disagreement rate on the regression set drops</td></tr>
+          <tr><th>Same test defect every run</th><td>Generator lacks a fixture pattern</td><td>Skill: fixture example + instructions</td><td>Rounds per run fall on the next runs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout" style="--accent:var(--copper)"><span class="tag">Keep a regression set</span><p>Store past tickets, runs and known-bad outputs under <code>evals/</code>. Every change to a rule, skill or prompt must still catch the defects it caught before. Without that, an "improvement" can quietly undo an earlier fix.</p></div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="deck-section" id="governance">
+  <div class="section-inner">
+    <p class="eyebrow">09 — Ownership, governance, versioning, review and maintenance</p>
+    <h2 class="section-title">Shared AI assets are production code. Treat them that way.</h2>
+    <p class="lede">A rule file changes the behaviour of every agent run in every repo that uses it. That makes it as consequential as a shared library, so it needs what a shared library has: a <strong>named owner</strong>, <strong>semantic versions</strong>, <strong>review before release</strong>, a changelog, tests, and a date by which someone checks it's still true.</p>
+
+    <div class="diagram-wrap" style="margin-top:24px">
+      <table class="compare mini gov">
+        <thead><tr><th>Asset</th><th>Owner</th><th>Versioning</th><th>Review before release</th><th>Maintenance trigger</th></tr></thead>
+        <tbody>
+          <tr><th>Rules</th><td>Platform / guild lead</td><td>SemVer in the assets repo; repos pin</td><td>CODEOWNERS + eval set passes</td><td>Library/framework change, repeated review finding</td></tr>
+          <tr><th>Skills</th><td>Team that uses it most</td><td>SemVer; breaking = major</td><td>Owner + one consumer team</td><td>Tool or API change; low usage (retire)</td></tr>
+          <tr><th>Subagent / reviewer definitions</th><td>Quality lead</td><td>SemVer + prompt hash in logs</td><td>Regression set: same or better findings</td><td>Human–AI disagreement rate rises</td></tr>
+          <tr><th>Hooks</th><td>Security / platform</td><td>SemVer; fail-safe tested</td><td>Security review; deny-on-error test</td><td>New tool, new MCP server, incident</td></tr>
+          <tr><th><code>gates.yaml</code> / <code>readiness.yaml</code></th><td>Engineering leadership + risk</td><td>SemVer; version written to every log</td><td>Change request with the reason</td><td>Escaped defect, audit finding, new regulation</td></tr>
+          <tr><th>MCP configuration</th><td>Platform + security</td><td>Pinned server versions</td><td>Least-privilege review of tools and scopes</td><td>New server or scope; quarterly access review</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="split">
+      <div>
+        <p class="code-label">ai-engineering-assets/CHANGELOG.md</p>
+<pre class="code"><span class="k">## 2.4.0</span> — 2026-10-12
+<span class="m">Added</span>  rules/api-testing: assert error body schema
+        (from DEF-5561; eval: evals/def-5561 ✔)
+<span class="m">Changed</span> agents/reviewer: checklist item 7 examples
+<span class="k">## 2.3.1</span> — 2026-09-30
+<span class="m">Fixed</span>  hooks/mcp-policy: deny on malformed JSON
+<span class="k">## 2.0.0</span> — 2026-08-01  <span class="e">BREAKING</span>
+        gates.yaml v2: G3 requires ac markers</pre>
+      </div>
+      <div>
+        <div class="callout" style="--accent:var(--plum)"><span class="tag">Version in every log</span><p>Every run records which asset versions it used (<code>gates_version</code>, rule and prompt hashes). When behaviour changes, you can tell whether the model changed, the asset changed, or the input did.</p></div>
+        <div class="callout" style="--accent:var(--brick)"><span class="tag">Expiry dates</span><p>Give every asset a <code>review_by</code> date. An asset nobody has reviewed in six months is a guess about how the system used to work.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="deck-section" id="lifecycle">
+  <div class="section-inner">
+    <p class="eyebrow">10 — Subtopic · Maintenance, monitoring and continuous improvement</p>
+    <h2 class="section-title">Lifecycle phases, not a one-time handoff</h2>
+    <p class="lede">The pipeline you built is a living system: models change, the codebase changes, tickets change. Without monitoring it degrades <strong>silently</strong>. Gates still pass while the tests get shallower, and costs creep up one round at a time. Watch a few signals, give each one an owner, and decide in advance what action it triggers.</p>
+
+    <div class="spark-grid">
+      <div class="spark" style="--sc:var(--teal)"><p class="k">First-try gate pass rate</p><p class="v">71%</p><svg viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="var(--teal)" stroke-width="2" vector-effect="non-scaling-stroke" points="0.0,4.0 14.3,8.7 28.6,6.4 42.9,13.5 57.1,18.2 71.4,22.9 85.7,25.3 100.0,30.0"></polyline></svg><p class="act">Falling: a grounding source is stale. Check recent escapes and rule changes.</p></div>
+      <div class="spark" style="--sc:var(--plum)"><p class="k">Rounds per run</p><p class="v">1.4</p><svg viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="var(--plum)" stroke-width="2" vector-effect="non-scaling-stroke" points="0.0,23.5 14.3,30.0 28.6,17.0 42.9,23.5 57.1,10.5 71.4,17.0 85.7,4.0 100.0,4.0"></polyline></svg><p class="act">Rising: generator rules or skills need examples; look at the top finding type.</p></div>
+      <div class="spark" style="--sc:var(--copper)"><p class="k">Escalation rate</p><p class="v">9%</p><svg viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="var(--copper)" stroke-width="2" vector-effect="non-scaling-stroke" points="0.0,23.5 14.3,30.0 28.6,17.0 42.9,23.5 57.1,10.5 71.4,17.0 85.7,4.0 100.0,4.0"></polyline></svg><p class="act">Rising: tickets are less specifiable, or the gates are too strict. Sample the escalations.</p></div>
+      <div class="spark" style="--sc:var(--plum)"><p class="k">Cost per ticket</p><p class="v">2.9</p><svg viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="var(--plum)" stroke-width="2" vector-effect="non-scaling-stroke" points="0.0,30.0 14.3,26.7 28.6,26.7 42.9,20.3 57.1,17.0 71.4,13.7 85.7,7.3 100.0,4.0"></polyline></svg><p class="act">Creeping: context growth or a model change. Compare per-stage tokens in run_log.</p></div>
+      <div class="spark" style="--sc:var(--brick)"><p class="k">Human–AI review disagreement</p><p class="v">18%</p><svg viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="var(--brick)" stroke-width="2" vector-effect="non-scaling-stroke" points="0.0,30.0 14.3,26.8 28.6,30.0 42.9,23.5 57.1,17.0 71.4,13.8 85.7,7.2 100.0,4.0"></polyline></svg><p class="act">Rising: the reviewer contract has drifted. Update examples; re-run the regression set.</p></div>
+      <div class="spark" style="--sc:var(--teal)"><p class="k">Escaped defects / release</p><p class="v">0.6</p><svg viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="var(--teal)" stroke-width="2" vector-effect="non-scaling-stroke" points="0.0,4.0 14.3,10.5 28.6,13.7 42.9,20.2 57.1,23.5 71.4,23.5 85.7,26.8 100.0,30.0"></polyline></svg><p class="act">Falling: keep it that way. Every escape still enters the feedback loop.</p></div>
+    </div>
+
+    <div class="callout" style="--accent:var(--teal);margin-top:24px"><span class="tag">Cadence</span><p><strong>Weekly:</strong> glance at the dashboard, triage escalations. <strong>Monthly:</strong> review the defect → grounding backlog, release asset updates. <strong>Quarterly:</strong> re-baseline ROI, review access and MCP scopes, retire unused skills, re-check models and pricing.</p></div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="deck-section" id="pitfalls">
+  <div class="section-inner">
+    <p class="eyebrow">11 — Subtopic · Common pitfalls in orchestration</p>
+    <h2 class="section-title">How multi-agent workflows go wrong, and how to avoid it</h2>
+    <div class="pit-grid">
+      <article class="pit"><h3>Unbounded loops</h3><p class="see">Retries until the tests pass or the budget is gone.</p><p class="fix">Shared round cap, no-progress detection, escalate to a human (Module 18).</p></article>
+      <article class="pit"><h3>Shared-context reviewers</h3><p class="see">The reviewer agrees with everything the generator did.</p><p class="fix">Separate context, files only, its own contract and checklist.</p></article>
+      <article class="pit"><h3>Soft gates</h3><p class="see">"Please make sure tests have markers" in a prompt.</p><p class="fix">Deterministic checks in code; prompts guide, gates decide.</p></article>
+      <article class="pit"><h3>Over-orchestration</h3><p class="see">Seven agents for a job one prompt and a test would do.</p><p class="fix">Start with one agent plus gates; split only where isolation or parallelism pays.</p></article>
+      <article class="pit"><h3>Hidden state</h3><p class="see">Agents pass results in chat, so nothing can be replayed.</p><p class="fix">Artifacts on disk with hashes; every stage reads files and writes files.</p></article>
+      <article class="pit"><h3>Approval everywhere</h3><p class="see">Humans asked at every stage start clicking through.</p><p class="fix">Two meaningful checkpoints, bound to hashes; automate the rest.</p></article>
+      <article class="pit"><h3>Trusting inputs</h3><p class="see">A ticket comment changes what the agent does.</p><p class="fix">Untrusted text quarantined as data; write tools behind "ask".</p></article>
+      <article class="pit"><h3>Fail-open hooks</h3><p class="see">The policy script crashes and the action goes through.</p><p class="fix">Deny on error, and test that path.</p></article>
+      <article class="pit"><h3>No cost visibility</h3><p class="see">The bill arrives before anyone knew a run took 1M tokens.</p><p class="fix">Per-stage token logging, budgets per run, alerts on outliers.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="deck-section" id="day8">
+  <div class="section-inner">
+    <p class="eyebrow">12 — Day 8 · Peer / AI-assisted review, demos, wrap-up</p>
+    <h2 class="section-title">Review each other's packages, then tell the story</h2>
+    <p class="lede">Teams swap capstone packages and review them against the rubric using the Module 20 protocol. An AI reviewer may propose findings in read-only mode, but <strong>humans decide the scores</strong>, as with AI PR review. Then each team demos its ticket-to-readiness story, and we close with the rollout discussion.</p>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 84" role="img" aria-label="Day 8 plan: peer and AI-assisted review for 45 minutes using the rubric and protocol, team demos for 75 minutes as five-minute stories, Module 21 on best practices, rollout and ROI, then wrap-up with feedback and Q&amp;A." style="min-width:720px">
+          <rect class="box-copper" x="10" y="14" width="202" height="46" rx="9"></rect><text class="txt-copper" x="111" y="34" text-anchor="middle" font-size="10.5">Peer / AI-assisted review</text><text class="lbl" x="111" y="50" text-anchor="middle" font-size="8.5">45 min · rubric + protocol</text>
+          <rect class="box-plum" x="220" y="14" width="292" height="46" rx="9"></rect><text class="txt-plum" x="366" y="34" text-anchor="middle" font-size="10.5">Team demos</text><text class="lbl" x="366" y="50" text-anchor="middle" font-size="8.5">75 min · 5-min stories</text>
+          <rect class="box-teal" x="520" y="14" width="182" height="46" rx="9"></rect><text class="txt-teal" x="611" y="34" text-anchor="middle" font-size="10.5">Module 21</text><text class="lbl" x="611" y="50" text-anchor="middle" font-size="8.5">best practices · rollout · ROI</text>
+          <rect class="box-brick" x="710" y="14" width="122" height="46" rx="9"></rect><text class="txt-brick" x="771" y="34" text-anchor="middle" font-size="10.5">Wrap-up</text><text class="lbl" x="771" y="50" text-anchor="middle" font-size="8.5">feedback · Q&amp;A</text>
+          <text class="lbl" x="850" y="76" text-anchor="end" font-size="8">review and demo times from the Module 20 guide; the rest is set by the facilitator</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="diagram-wrap" style="margin-top:22px">
+      <table class="compare mini">
+        <thead><tr><th>Review step</th><th>What "good" looks like</th><th>Red flag</th></tr></thead>
+        <tbody>
+          <tr><th>1 · Package check</th><td>All required rows PASS, or failures listed honestly in the report</td><td>Checker edited; failures not mentioned</td></tr>
+          <tr><th>2 · One-minute trace test</th><td>Two random ACs traced ticket → readiness in under 60 s, by links alone</td><td>"It's in the chat" or "ask so-and-so"</td></tr>
+          <tr><th>3 · Break-it attempt</th><td>Change one test: the sign-off goes stale and CI goes red</td><td>A stale sign-off is still accepted</td></tr>
+          <tr><th>4 · Rubric + comments</th><td>Evidence-based comments with file references</td><td>Generic praise, nothing specific</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-title">Hands-on discussion prompts</h3>
+    <div class="grid4">
+      <article class="role-card" style="--accent:var(--teal)"><p class="role-step">Rollout</p><h3>Your first pilot</h3><p>Which team and which type of ticket would you pilot on, and what exit criteria would prove it worked?</p></article>
+      <article class="role-card" style="--accent:var(--plum)"><p class="role-step">Economics</p><h3>Your cost per ticket</h3><p>From your capstone's run log: what did a ticket cost, and which single change would cut it most?</p></article>
+      <article class="role-card" style="--accent:var(--copper)"><p class="role-step">Governance</p><h3>Who owns it?</h3><p>Name the owner of each shared asset in your organisation today. Where the answer is "nobody", what happens next?</p></article>
+      <article class="role-card" style="--accent:var(--brick)"><p class="role-step">Limits</p><h3>Where you'd say no</h3><p>Which work in your area should stay human-led, and how would you explain why to a keen sponsor?</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="deck-section" id="recap">
+  <div class="section-inner">
+    <p class="eyebrow">13 — Programme recap</p>
+    <h2 class="section-title">One workflow, from requirement to deployment readiness</h2>
+    <p class="lede"><strong>Programme outcome:</strong> a practical Cursor-based AI-assisted engineering workflow spanning requirements, planning, specification, implementation, testing, review, governance, CI/CD and deployment readiness. It rests on five layers of engineering discipline, each building on the one below.</p>
+
+    <ol class="ladder" role="list">
+      <li style="--c:var(--teal)"><b>Prompt engineering</b><span>Clear task instructions</span><span class="m">M1–M5</span></li>
+      <li style="--c:var(--teal)"><b>Context engineering</b><span>The right repository, specification, standards and knowledge</span><span class="m">M4, M9, M12, M13</span></li>
+      <li style="--c:var(--plum)"><b>Agent engineering</b><span>Roles, tools, guardrails, skills and subagents</span><span class="m">M8, M10–M16</span></li>
+      <li style="--c:var(--copper)"><b>Workflow engineering</b><span>Stages, gates, correction loops, hooks and approvals</span><span class="m">M17–M19</span></li>
+      <li style="--c:var(--brick)"><b>AI-assisted SDLC</b><span>All of the above, applied systematically from requirement to readiness</span><span class="m">M20–M21</span></li>
+    </ol>
+
+    <figure class="diagram">
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 860 176" role="img" aria-label="AI-assisted SDLC mapping: requirements (modules 4, 9, 12, 19), analysis (4, 6, 9, 12), architecture (9), specification (9), implementation (5, 6), refactoring (7), testing (7, 16), code review (17, 18), security (14, 17, 18), CI/CD (19), deployment readiness (18, 19, 20) and maintenance (20, 21)." style="min-width:720px">
+          <rect class="box-teal" x="6" y="8" width="134" height="74" rx="9"></rect><text class="txt-teal" x="73" y="26" text-anchor="middle" font-size="10.5">Requirements</text><text class="lbl" x="73" y="42" text-anchor="middle" font-size="8">Ask · Agent · MCP</text><text class="lbl" x="73" y="54" text-anchor="middle" font-size="8">ticket integration</text><text class="lbl-strong" x="73" y="72" text-anchor="middle" font-size="8.5">M 4 · 9 · 12 · 19</text>
+          <rect class="box-teal" x="148" y="8" width="134" height="74" rx="9"></rect><text class="txt-teal" x="215" y="26" text-anchor="middle" font-size="10.5">Analysis</text><text class="lbl" x="215" y="42" text-anchor="middle" font-size="8">context engineering</text><text class="lbl" x="215" y="54" text-anchor="middle" font-size="8">repo exploration</text><text class="lbl-strong" x="215" y="72" text-anchor="middle" font-size="8.5">M 4 · 6 · 9 · 12</text>
+          <rect class="box-plum" x="290" y="8" width="134" height="74" rx="9"></rect><text class="txt-plum" x="357" y="26" text-anchor="middle" font-size="10.5">Architecture</text><text class="lbl" x="357" y="42" text-anchor="middle" font-size="8">Plan · diagrams</text><text class="lbl" x="357" y="54" text-anchor="middle" font-size="8">ADRs · specs</text><text class="lbl-strong" x="357" y="72" text-anchor="middle" font-size="8.5">M 9</text>
+          <rect class="box-plum" x="432" y="8" width="134" height="74" rx="9"></rect><text class="txt-plum" x="499" y="26" text-anchor="middle" font-size="10.5">Specification</text><text class="lbl" x="499" y="42" text-anchor="middle" font-size="8">spec-driven dev</text><text class="lbl" x="499" y="54" text-anchor="middle" font-size="8">acceptance criteria</text><text class="lbl-strong" x="499" y="72" text-anchor="middle" font-size="8.5">M 9</text>
+          <rect class="box-plum" x="574" y="8" width="134" height="74" rx="9"></rect><text class="txt-plum" x="641" y="26" text-anchor="middle" font-size="10.5">Implementation</text><text class="lbl" x="641" y="42" text-anchor="middle" font-size="8">Tab · Inline · Agent</text><text class="lbl" x="641" y="54" text-anchor="middle" font-size="8">multi-file edits</text><text class="lbl-strong" x="641" y="72" text-anchor="middle" font-size="8.5">M 5 · 6</text>
+          <rect class="box-plum" x="716" y="8" width="134" height="74" rx="9"></rect><text class="txt-plum" x="783" y="26" text-anchor="middle" font-size="10.5">Refactoring</text><text class="lbl" x="783" y="42" text-anchor="middle" font-size="8">Agent · Debug</text><text class="lbl" x="783" y="54" text-anchor="middle" font-size="8">tests</text><text class="lbl-strong" x="783" y="72" text-anchor="middle" font-size="8.5">M 7</text>
+          <rect class="box-copper" x="6" y="92" width="134" height="74" rx="9"></rect><text class="txt-copper" x="73" y="110" text-anchor="middle" font-size="10.5">Testing</text><text class="lbl" x="73" y="126" text-anchor="middle" font-size="8">test generation</text><text class="lbl" x="73" y="138" text-anchor="middle" font-size="8">validation agents</text><text class="lbl-strong" x="73" y="156" text-anchor="middle" font-size="8.5">M 7 · 16</text>
+          <rect class="box-copper" x="148" y="92" width="134" height="74" rx="9"></rect><text class="txt-copper" x="215" y="110" text-anchor="middle" font-size="10.5">Code review</text><text class="lbl" x="215" y="126" text-anchor="middle" font-size="8">reviewer subagent</text><text class="lbl" x="215" y="138" text-anchor="middle" font-size="8">diffs · gates</text><text class="lbl-strong" x="215" y="156" text-anchor="middle" font-size="8.5">M 17 · 18</text>
+          <rect class="box-brick" x="290" y="92" width="134" height="74" rx="9"></rect><text class="txt-brick" x="357" y="110" text-anchor="middle" font-size="10.5">Security</text><text class="lbl" x="357" y="126" text-anchor="middle" font-size="8">rules · hooks</text><text class="lbl" x="357" y="138" text-anchor="middle" font-size="8">permissions · review</text><text class="lbl-strong" x="357" y="156" text-anchor="middle" font-size="8.5">M 14 · 17 · 18</text>
+          <rect class="box-brick" x="432" y="92" width="134" height="74" rx="9"></rect><text class="txt-brick" x="499" y="110" text-anchor="middle" font-size="10.5">CI/CD</text><text class="lbl" x="499" y="126" text-anchor="middle" font-size="8">Git · PR · Actions</text><text class="lbl" x="499" y="138" text-anchor="middle" font-size="8">deployment gates</text><text class="lbl-strong" x="499" y="156" text-anchor="middle" font-size="8.5">M 19</text>
+          <rect class="box-brick" x="574" y="92" width="134" height="74" rx="9"></rect><text class="txt-brick" x="641" y="110" text-anchor="middle" font-size="10.5">Readiness</text><text class="lbl" x="641" y="126" text-anchor="middle" font-size="8">automated gates</text><text class="lbl" x="641" y="138" text-anchor="middle" font-size="8">human approval</text><text class="lbl-strong" x="641" y="156" text-anchor="middle" font-size="8.5">M 18 · 19 · 20</text>
+          <rect class="box-teal" x="716" y="92" width="134" height="74" rx="9"></rect><text class="txt-teal" x="783" y="110" text-anchor="middle" font-size="10.5">Maintenance</text><text class="lbl" x="783" y="126" text-anchor="middle" font-size="8">defect feedback</text><text class="lbl" x="783" y="138" text-anchor="middle" font-size="8">grounding updates</text><text class="lbl-strong" x="783" y="156" text-anchor="middle" font-size="8.5">M 20 · 21</text>
+        </svg>
+      </div>
+    </figure>
+
+    <div class="recap-grid">
+      <div class="recap-chip"><span class="recap-num">01</span><p>Use the <strong>smallest interaction</strong> that does the job, and know when the answer is no agent at all.</p></div>
+      <div class="recap-chip"><span class="recap-num">02</span><p>Verify in layers: deterministic checks, independent review, then a <strong>human decision</strong> on intent and risk.</p></div>
+      <div class="recap-chip"><span class="recap-num">03</span><p>Cost per task is dominated by <strong>context × calls</strong>. Targeted grounding and fewer rounds are the biggest levers.</p></div>
+      <div class="recap-chip"><span class="recap-num">04</span><p>ROI counts review, enablement and upkeep, and is <strong>measured against a baseline</strong>, not assumed.</p></div>
+      <div class="recap-chip" style="grid-column:1/-1"><span class="recap-num">05</span><p>Shared AI assets are production code: <strong>owned, versioned, reviewed, tested and maintained</strong>, with defects and incidents feeding back into them.</p></div>
+    </div>
+
+    <div class="qa">
+      <details><summary>Your agent's output compiles and the tests it wrote pass. What's still unverified?</summary><p>Whether the tests match the spec (they could assert the bug), security (secrets, dependencies, unsafe calls), maintainability against house patterns, and traceability to the ticket and ACs. Independent tests, gates and a separate-context review cover those; a human decides.</p></details>
+      <details><summary>Why can doubling the grounding context more than double the cost of a task?</summary><p>Context is re-sent on every call in the loop, and larger contexts tend to lead to more calls and rounds when relevant signal is diluted. Caching helps with repeated prefixes, but growing history is not cached. Narrow grounding and isolated subagent contexts keep both factors down.</p></details>
+      <details><summary>A sponsor says "the AI saves two hours per ticket". What do you ask?</summary><p>Measured how and against what baseline? Is review and rework time included? What are token, seat and upkeep costs? Did defect rates change, and is that change attributable to the workflow or to the extra tests? A defensible case survives those questions.</p></details>
+      <details><summary>A production incident reveals a pattern your reviewer agent never flags. What's the full fix?</summary><p>Classify the root cause, update the reviewer checklist or rule with an example, add the case to the regression set, check the updated asset catches it without losing earlier catches, bump the version, release through review, and watch the disagreement and escape metrics.</p></details>
+      <details><summary>Who should own the organisation's shared reviewer-agent definition, and why not "everyone"?</summary><p>A named quality owner, with CODEOWNERS on the file. "Everyone" means nobody reviews changes, nobody maintains the regression set, and behaviour drifts without anyone noticing.</p></details>
+      <details><summary>Name two situations where you'd deliberately not use an autonomous workflow.</summary><p>For example: when the requirement itself is the open question (a business decision), when there's no oracle to check against, when the action is irreversible or outward-facing, when sensitive data would enter the context, or when learning the area is the point.</p></details>
+    </div>
+
+    <div class="bridge">
+      <span class="bridge-tag">After the programme</span>
+      <p><strong>Next 30 days:</strong> apply the workflow to one real ticket type in your team, with the capstone template and a baseline. <strong>60 days:</strong> publish your rules, skills and gates as versioned shared assets with named owners. <strong>90 days:</strong> report cost per ticket, rounds, escaped defects and time saved against the baseline, and decide what to scale.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">Xebia × EY — Cursor AI Training · Advanced Agentic Engineering Track · Module 21 field guide</footer>
+
+<script>
+(function(){
+  try{
+    var sections = document.querySelectorAll('main section[id]');
+    var navLinks = document.querySelectorAll('.rail a, .mobile-nav a');
+    var map = {};
+    navLinks.forEach(function(a){
+      var id = a.getAttribute('href').slice(1);
+      (map[id] = map[id] || []).push(a);
+    });
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          var links = map[entry.target.id];
+          if(!links) return;
+          links.forEach(function(a){ a.classList.toggle('active', entry.isIntersecting); });
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach(function(s){ io.observe(s); });
+    }
+
+    var fill = document.getElementById('progressFill');
+    function onScroll(){
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrollTop / height) * 100 : 0;
+      if(fill) fill.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', function(){ window.requestAnimationFrame(onScroll); }, { passive:true });
+    onScroll();
+
+    // Mode chooser
+    var MODES = [
+      { n:'Tab', s:'completion', c:'var(--teal)', w:'You already know what you want; the model only saves keystrokes. You see every suggestion before accepting it.', g:'Read what you accept, especially in security-sensitive code.', a:'Opening an agent chat for a one-line change.' },
+      { n:'Inline edit', s:'Ctrl/Cmd+K', c:'var(--teal)', w:'The change is local to a selection: rename, simplify, add types. The diff is small enough to review at a glance.', g:'Run the tests for that function afterwards.', a:'Letting a local edit grow into a multi-file refactor.' },
+      { n:'Ask', s:'read-only', c:'var(--teal)', w:'You need understanding, not changes. Ask searches and explains the codebase without touching files.', g:'Verify claims by opening the files it cites.', a:'Agent mode "just to look around", with write tools enabled.' },
+      { n:'Plan → Agent', s:'plan first', c:'var(--plum)', w:'Several files, and the approach isn\'t obvious. A plan you can review and approve is cheaper than reviewing a wrong multi-file diff.', g:'Approve the plan before any edits; keep it in the repo.', a:'Starting Agent mode on a vague prompt and reviewing whatever comes back.' },
+      { n:'Agent', s:'multi-file + tools', c:'var(--plum)', w:'The plan is approved and the task is specified. The agent edits files, runs commands and iterates against tests.', g:'Rules, hooks and a test command it must pass; review the diff like a PR.', a:'Running without tests, so "done" means "the agent stopped".' },
+      { n:'Debug', s:'reproduce + instrument', c:'var(--plum)', w:'The failure is intermittent. You need a reproduce → instrument → hypothesise loop grounded in real runtime evidence, not guesses.', g:'Remove temporary instrumentation before commit.', a:'Asking an agent to "fix the flaky test" by adding retries.' },
+      { n:'Skill', s:'repeatable procedure', c:'var(--copper)', w:'The same multi-step procedure recurs, such as tests from an OpenAPI spec. A skill packages the steps, examples and scripts once.', g:'Version it, give it an owner, keep examples current.', a:'Re-typing a long prompt every sprint, slightly differently each time.' },
+      { n:'Subagent', s:'isolated context', c:'var(--copper)', w:'You need an independent verdict or parallel research. A fresh context sees only the files you give it, not the author\'s reasoning.', g:'Pass files, not chat; give it its own contract and checklist.', a:'Asking the same agent that wrote the code to review it.' },
+      { n:'Background agent', s:'cloud · returns a PR', c:'var(--brick)', w:'Long, isolated and well specified, with a PR as the output, for example a dependency bump plus test fixes. Nobody needs to watch it.', g:'Delegation checklist: environment, secrets, network, permissions, human review.', a:'Delegating anything that needs a judgement call on the way.' },
+      { n:'No agent', s:'human-led', c:'var(--brick)', w:'Production credentials, live impact and time pressure: every action is irreversible and outward-facing. A person drives and owns each step.', g:'Ask mode for read-only help with logs or code, with no secrets in context.', a:'"Let the agent try a fix on prod."' },
+      { n:'No agent', s:'talk to the owner', c:'var(--brick)', w:'The requirement itself is the open question. There\'s nothing to check the output against, so an agent would invent the answer.', g:'Clarify with the ticket owner; record the decision in the spec.', a:'Letting an agent "assume a reasonable default" for a business rule.' }
+    ];
+    var mdBtns = document.querySelectorAll('.mode-btns button');
+    var mdName = document.getElementById('mdName'), mdWhy = document.getElementById('mdWhy'), mdGuard = document.getElementById('mdGuard'), mdAvoid = document.getElementById('mdAvoid');
+    function showMode(i){
+      var m = MODES[i];
+      mdName.style.setProperty('--mc', m.c);
+      mdName.innerHTML = m.n + '<small>' + m.s + '</small>';
+      mdWhy.textContent = m.w; mdGuard.textContent = m.g; mdAvoid.textContent = m.a;
+    }
+    mdBtns.forEach(function(b){
+      if(!b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed','false');
+      b.addEventListener('click', function(){
+        mdBtns.forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+        showMode(parseInt(b.getAttribute('data-m'), 10));
+      });
+    });
+    if(mdName) showMode(0);
+
+    // Token cost calculator
+    var PRESETS = [
+      { ctx:8000, out:800, hit:0, calls:1, rin:3, rcache:0.3, rout:15, tasks:2000, note:'One Ask call: cheap. Most of the spend in a team comes from agent loops, not questions.' },
+      { ctx:30000, out:1500, hit:60, calls:25, rin:3, rcache:0.3, rout:15, tasks:400, note:'A targeted agent task: context resent on every call, but much of it is a cached prefix.' },
+      { ctx:150000, out:1500, hit:40, calls:35, rin:3, rcache:0.3, rout:15, tasks:400, note:'Same task, whole folders in context: bigger context, lower cache reuse and more calls because the signal is diluted.' },
+      { ctx:40000, out:3000, hit:50, calls:60, rin:3, rcache:0.3, rout:15, tasks:40, note:'A full ticket-to-report run: many stages and rounds. Compare with your own run_log.jsonl.' }
+    ];
+    var tkInputs = document.querySelectorAll('#tkIn input');
+    var tkBtns = document.querySelectorAll('.tk-presets button');
+    var tkNoteBase = '';
+    var lastTaskCost = null;
+    function money(v){
+      if(v >= 1000) return v.toLocaleString(undefined, { maximumFractionDigits:0 });
+      if(v >= 1) return v.toFixed(2);
+      return v.toFixed(v >= 0.01 ? 3 : 4);
+    }
+    function tokFmt(v){ return v >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : Math.round(v / 1000) + 'k'; }
+    function tkVals(){
+      var o = {};
+      tkInputs.forEach(function(inp){ var x = parseFloat(inp.value); o[inp.getAttribute('data-k')] = isNaN(x) || x < 0 ? 0 : x; });
+      o.hit = Math.min(o.hit, 100) / 100;
+      return o;
+    }
+    function renderTk(){
+      var v = tkVals();
+      var cIn = v.ctx * (1 - v.hit) * v.rin / 1e6, cCache = v.ctx * v.hit * v.rcache / 1e6, cOut = v.out * v.rout / 1e6;
+      var call = cIn + cCache + cOut, task = call * v.calls;
+      lastTaskCost = task;
+      document.getElementById('tkCall').textContent = money(call);
+      document.getElementById('tkTok').textContent = tokFmt((v.ctx + v.out) * v.calls);
+      document.getElementById('tkTask').textContent = money(task);
+      document.getElementById('tkMonth').textContent = money(task * v.tasks);
+      var tot = call || 1;
+      document.getElementById('tkBarIn').style.width = (cIn / tot * 100) + '%';
+      document.getElementById('tkBarCache').style.width = (cCache / tot * 100) + '%';
+      document.getElementById('tkBarOut').style.width = (cOut / tot * 100) + '%';
+      var share = call ? Math.round((cIn + cCache) / call * 100) : 0;
+      document.getElementById('tkNote').textContent = (tkNoteBase ? tkNoteBase + ' ' : '') + 'Context is ' + share + '% of the cost of each call.';
+    }
+    function loadPreset(i){
+      var p = PRESETS[i];
+      tkInputs.forEach(function(inp){ inp.value = p[inp.getAttribute('data-k')]; });
+      tkNoteBase = p.note;
+      tkBtns.forEach(function(x){ x.setAttribute('aria-pressed', String(x.getAttribute('data-p') === String(i))); });
+      renderTk();
+    }
+    tkBtns.forEach(function(b){ b.addEventListener('click', function(){ loadPreset(parseInt(b.getAttribute('data-p'), 10)); }); });
+    tkInputs.forEach(function(inp){ inp.addEventListener('input', function(){ tkNoteBase = ''; tkBtns.forEach(function(x){ x.setAttribute('aria-pressed','false'); }); renderTk(); }); });
+    if(tkInputs.length) loadPreset(1);
+
+    // ROI calculator
+    var roiInputs = document.querySelectorAll('#roiIn input');
+    function roiVals(){
+      var o = {};
+      roiInputs.forEach(function(inp){ var x = parseFloat(inp.value); o[inp.getAttribute('data-k')] = isNaN(x) || x < 0 ? 0 : x; });
+      return o;
+    }
+    function renderRoi(){
+      var v = roiVals();
+      var tasks = v.eng * v.tpe;
+      var benTime = tasks * v.hs * v.rate, benDef = v.dav * v.dcost, ben = benTime + benDef;
+      var cTok = tasks * v.tok, cSeat = v.eng * v.seat, cRev = tasks * v.rev * v.rate, cUpk = v.upk * v.rate;
+      var cost = cTok + cSeat + cRev + cUpk, net = ben - cost;
+      document.getElementById('roiBen').textContent = money(ben);
+      document.getElementById('roiCost').textContent = money(cost);
+      document.getElementById('roiNet').textContent = (net < 0 ? '−' : '') + money(Math.abs(net));
+      document.getElementById('roiNetBox').style.setProperty('--kc', net >= 0 ? 'var(--teal)' : 'var(--brick)');
+      document.getElementById('roiPct').textContent = cost ? Math.round(net / cost * 100) + '%' : '—';
+      var t = cost || 1;
+      document.getElementById('rbTok').style.width = (cTok / t * 100) + '%';
+      document.getElementById('rbSeat').style.width = (cSeat / t * 100) + '%';
+      document.getElementById('rbRev').style.width = (cRev / t * 100) + '%';
+      document.getElementById('rbUpk').style.width = (cUpk / t * 100) + '%';
+      var parts = [['tokens', cTok], ['seats', cSeat], ['review time', cRev], ['upkeep', cUpk]].sort(function(a, b){ return b[1] - a[1]; });
+      var be = (v.rate > 0 && tasks > 0) ? (cost - benDef) / (tasks * v.rate) : null;
+      document.getElementById('roiNote').textContent = 'Largest cost: ' + parts[0][0] + ' (' + Math.round(parts[0][1] / t * 100) + '%). '
+        + (be !== null ? 'Break-even needs ' + Math.max(0, be).toFixed(2) + ' hours saved per task' + (benDef ? ', given the defect savings' : '') + '.' : '');
+    }
+    roiInputs.forEach(function(inp){ inp.addEventListener('input', renderRoi); });
+    var roiPull = document.getElementById('roiPull');
+    if(roiPull) roiPull.addEventListener('click', function(){
+      if(lastTaskCost === null) return;
+      var inp = document.querySelector('#roiIn input[data-k="tok"]');
+      inp.value = lastTaskCost.toFixed(2);
+      renderRoi();
+    });
+    if(roiInputs.length) renderRoi();
+  }catch(e){}
+})();
+</script>
